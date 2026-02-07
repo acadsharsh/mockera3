@@ -24,8 +24,8 @@ export default function LandingPage() {
           <a href="#features" className="hover:text-white">
             Features
           </a>
-          <a href="#tiers" className="hover:text-white">
-            Pricing
+          <a href="#workflow" className="hover:text-white">
+            Workflow
           </a>
           <Link
             href="/login"
@@ -140,18 +140,61 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="tiers" className="grid gap-6 lg:grid-cols-4">
-          {[
-            { title: "Tier 0 · Elite", copy: "Top 0.1% performers climb the Global Matrix." },
-            { title: "Tier 1 · Core", copy: "Precision + velocity drive your rank stability." },
-            { title: "Tier 2 · Aspirant", copy: "Measure consistency with continuity streaks." },
-            { title: "Tier 3 · Starter", copy: "Structured tests help you build discipline fast." },
-          ].map((tier) => (
-            <div key={tier.title} className={bentoCard}>
-              <p className="text-[11px] uppercase tracking-[0.35em] text-white/50">{tier.title}</p>
-              <p className="mt-4 text-sm text-white/70">{tier.copy}</p>
+        <section id="workflow" className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className={`${glassCard} p-8`}>
+            <p className="text-[11px] uppercase tracking-[0.35em] text-white/50">
+              Workflow
+            </p>
+            <h2 className="mt-4 text-2xl font-semibold">From PDF to published CBT in 4 steps.</h2>
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {[
+                {
+                  title: "1. Upload",
+                  copy: "Drop your PDF and auto-detect pages for cropping.",
+                },
+                {
+                  title: "2. Crop & Tag",
+                  copy: "Define question bounds and metadata in one pass.",
+                },
+                {
+                  title: "3. Publish",
+                  copy: "Generate a locked CBT with controlled navigation.",
+                },
+                {
+                  title: "4. Analyze",
+                  copy: "Review test analysis and overall insights instantly.",
+                },
+              ].map((step) => (
+                <div
+                  key={step.title}
+                  className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4"
+                >
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">{step.title}</p>
+                  <p className="mt-2 text-sm text-white/70">{step.copy}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div className={`${glassCard} p-8`}>
+            <p className="text-[11px] uppercase tracking-[0.35em] text-white/50">
+              Control Panel
+            </p>
+            <div className="mt-6 space-y-4">
+              {[
+                "Precision cropping with instant preview.",
+                "Role-based admin controls for percentile mapping.",
+                "Locked exam flow with attempt telemetry.",
+                "Export-ready analytics for institutes.",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 text-sm text-white/70"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
       </main>
 
@@ -162,8 +205,8 @@ export default function LandingPage() {
             <a className="hover:text-white" href="#features">
               Features
             </a>
-            <a className="hover:text-white" href="#tiers">
-              Pricing
+            <a className="hover:text-white" href="#workflow">
+              Workflow
             </a>
             <Link className="hover:text-white" href="/login">
               Start
