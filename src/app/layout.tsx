@@ -44,17 +44,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const clerkPublishableKey =
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "pk_test_Y2xlcmsuZXhhbXBsZS5jb20k";
+  const appShell = (
+    <Providers>
+      <PageTransition>{children}</PageTransition>
+      <SpeedInsights />
+    </Providers>
+  );
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${marcellus.variable} antialiased`}
       >
-        <ClerkProvider>
-          <Providers>
-            <PageTransition>{children}</PageTransition>
-            <SpeedInsights />
-          </Providers>
-        </ClerkProvider>
+        <ClerkProvider publishableKey={clerkPublishableKey}>{appShell}</ClerkProvider>
       </body>
     </html>
   );

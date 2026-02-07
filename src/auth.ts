@@ -32,7 +32,7 @@ const getDisplayName = (user: Awaited<ReturnType<typeof currentUser>>) => {
 };
 
 export async function auth(): Promise<AppSession | null> {
-  const { userId } = clerkAuth();
+  const { userId } = await clerkAuth();
   if (!userId) {
     return null;
   }
@@ -94,10 +94,7 @@ export async function auth(): Promise<AppSession | null> {
 }
 
 export async function getClerkSessions(userId: string, limit = 5) {
-  const client =
-    typeof clerkClient === "function"
-      ? await (clerkClient as unknown as () => Promise<typeof clerkClient>)()
-      : clerkClient;
+  const client = await clerkClient();
   const response = await client.sessions.getSessionList({
     userId,
     limit,

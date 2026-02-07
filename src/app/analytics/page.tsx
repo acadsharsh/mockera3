@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
 
+export const dynamic = "force-dynamic";
+
 type Crop = {
   id: string;
   subject: "Physics" | "Chemistry" | "Maths";
