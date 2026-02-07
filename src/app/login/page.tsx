@@ -5,7 +5,7 @@ import SignInButton from "@/components/SignInButton";
 export default async function LoginPage() {
   const session = await auth();
   if (session?.user) {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   return (
@@ -15,7 +15,7 @@ export default async function LoginPage() {
           <p className="text-xs uppercase text-white/60">Welcome Back</p>
           <h1 className="mt-3 text-3xl font-semibold">Sign in to your Creator Studio</h1>
           <p className="mt-2 text-sm text-white/60">
-            Upload PDFs, build CBT mock tests, and unlock Quizrr-style analytics.
+            Upload PDFs, build CBT mock tests, and unlock advanced analytics.
           </p>
           <div className="mt-6">
             <SignInButton />
