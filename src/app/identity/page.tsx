@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { signOut } from "next-auth/react";
+import { SignOutButton } from "@clerk/nextjs";
 import GlassRail from "@/components/GlassRail";
 
 type ProfileData = {
@@ -96,12 +96,11 @@ export default function IdentityPage() {
               Manage your presence, sessions, and the glow of your workspace.
             </p>
           </div>
-          <button
-            className="rounded-full bg-rose-500/20 px-4 py-2 text-xs text-rose-100 transition hover:bg-rose-500/40"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-          >
-            Sign Out
-          </button>
+          <SignOutButton redirectUrl="/login">
+            <button className="rounded-full bg-rose-500/20 px-4 py-2 text-xs text-rose-100 transition hover:bg-rose-500/40">
+              Sign Out
+            </button>
+          </SignOutButton>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import { Geist_Mono, Inter, JetBrains_Mono, Marcellus, Space_Grotesk } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -48,10 +49,12 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${marcellus.variable} antialiased`}
       >
-        <Providers>
-          <PageTransition>{children}</PageTransition>
-          <SpeedInsights />
-        </Providers>
+        <ClerkProvider>
+          <Providers>
+            <PageTransition>{children}</PageTransition>
+            <SpeedInsights />
+          </Providers>
+        </ClerkProvider>
       </body>
     </html>
   );

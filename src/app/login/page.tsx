@@ -1,11 +1,11 @@
-﻿import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import SignInButton from "@/components/SignInButton";
+import { redirect } from "next/navigation";
+import { SignIn } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 
 export default async function LoginPage() {
-  const session = await auth();
-  if (session?.user) {
-    redirect("/dashboard");
+  const { userId } = auth();
+  if (userId) {
+    redirect("/");
   }
 
   return (
@@ -17,8 +17,25 @@ export default async function LoginPage() {
           <p className="mt-2 text-sm text-white/60">
             Upload PDFs, build CBT mock tests, and unlock advanced analytics.
           </p>
-          <div className="mt-6">
-            <SignInButton />
+          <div className="mt-8">
+            <SignIn
+              path="/login"
+              appearance={{
+                variables: {
+                  colorPrimary: "#4f46e5",
+                  colorText: "#ffffff",
+                  colorBackground: "#0d0f13",
+                },
+                elements: {
+                  card: "shadow-none border border-white/10 bg-white/5",
+                  headerTitle: "text-white",
+                  headerSubtitle: "text-white/60",
+                  formButtonPrimary: "bg-[#4f46e5] hover:bg-[#4338ca]",
+                  formFieldInput:
+                    "bg-white/5 border-white/10 text-white placeholder:text-white/30",
+                },
+              }}
+            />
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 
 type Crop = {
   id: string;
@@ -69,6 +70,7 @@ const calculatorButtons = [
 
 export default function CBT() {
   const router = useRouter();
+  const { user } = useUser();
   const [testIdParam, setTestIdParam] = useState<string | null>(null);
   const [jumpParam, setJumpParam] = useState<string | null>(null);
   const [test, setTest] = useState<Test | null>(null);
@@ -178,15 +180,15 @@ export default function CBT() {
   }, [testIdParam]);
 
   useEffect(() => {
-    const loadSession = async () => {
-      const response = await fetch("/api/auth/session");
-      const data = await response.json();
-      if (data?.user?.name && candidateName === "Candidate") {
-        setCandidateName(data.user.name);
-      }
-    };
-    loadSession();
-  }, []);
+    if (!user) return;
+    if (candidateName !== "Candidate") return;
+    const displayName =
+      user.fullName ??
+      user.username ??
+      user.primaryEmailAddress?.emailAddress?.split("@")[0] ??
+      "Candidate";
+    setCandidateName(displayName);
+  }, [user, candidateName]);
 
   useEffect(() => {
     if (!testIdParam) return;

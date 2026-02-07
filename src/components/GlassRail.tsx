@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
-import { signOut } from "next-auth/react";
+import { SignOutButton, useUser } from "@clerk/nextjs";
 
 const SUBJECT_LINKS = [
   { label: "Physics", href: "/library?subject=Physics" },
@@ -57,6 +57,16 @@ export default function GlassRail() {
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tests, setTests] = useState<TestItem[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
+  const { user } = useUser();
+  const profileLabel =
+    user?.fullName
+      ? user.fullName
+          .split(" ")
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((part) => part[0]?.toUpperCase())
+          .join("")
+      : user?.primaryEmailAddress?.emailAddress?.slice(0, 2).toUpperCase() ?? "ME";
 
   const breadcrumbs = useMemo(() => {
     const parts = pathname.split("/").filter(Boolean);
@@ -216,7 +226,7 @@ export default function GlassRail() {
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[11px] font-semibold text-white/80 transition hover:border-white/30 hover:text-white"
                 aria-label="Profile"
               >
-                ME
+                {profileLabel}
               </Link>
               {profileOpen && (
                 <div className="absolute right-0 top-10 z-50 w-40 rounded-2xl border border-white/10 bg-black/80 p-2 text-xs text-white shadow-xl backdrop-blur">
@@ -232,13 +242,14 @@ export default function GlassRail() {
                   >
                     Settings
                   </Link>
-                  <button
-                    type="button"
-                    className="w-full rounded-xl px-3 py-2 text-left transition hover:bg-white/10"
-                    onClick={() => signOut({ callbackUrl: "/login" })}
-                  >
-                    Sign Out
-                  </button>
+                  <SignOutButton redirectUrl="/login">
+                    <button
+                      type="button"
+                      className="w-full rounded-xl px-3 py-2 text-left transition hover:bg-white/10"
+                    >
+                      Sign Out
+                    </button>
+                  </SignOutButton>
                 </div>
               )}
             </div>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useAuth } from "@clerk/nextjs";
 import GlassRail from "@/components/GlassRail";
 
 type Crop = {
@@ -49,21 +50,16 @@ const isCorrectAnswer = (crop: Crop, selected?: string) => {
 
 export default function SkillTreePage() {
   const router = useRouter();
-  const [authChecked, setAuthChecked] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
   const [tests, setTests] = useState<Test[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const response = await fetch("/api/auth/session");
-      const data = await response.json();
-      if (!data?.user) {
-        router.push("/login");
-      }
-      setAuthChecked(true);
-    };
-    checkAuth();
-  }, [router]);
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      router.push("/login");
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   useEffect(() => {
     const load = async () => {
@@ -130,7 +126,7 @@ export default function SkillTreePage() {
     return withAttempts.sort((a, b) => a.accuracy - b.accuracy)[0];
   }, [nodes]);
 
-  if (!authChecked) {
+  if (!isLoaded || !isSignedIn) {
     return <div className="min-h-screen bg-[#0F0F10]" />;
   }
 
@@ -202,4 +198,3 @@ export default function SkillTreePage() {
     </div>
   );
 }
-

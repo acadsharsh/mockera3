@@ -1,31 +1,26 @@
-﻿import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export async function middleware(request: Request) {
-  const url = new URL(request.url);
-  const pathname = url.pathname;
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/studio(.*)",
+  "/library(.*)",
+  "/analytics(.*)",
+  "/test-analysis(.*)",
+  "/test-created(.*)",
+  "/cbt(.*)",
+  "/admin(.*)",
+]);
 
-  if (pathname === "/" || pathname.startsWith("/login") || pathname.startsWith("/api/auth")) {
-    return NextResponse.next();
+export default clerkMiddleware(async (auth, request) => {
+  if (isProtectedRoute(request)) {
+    await auth().protect();
   }
-
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/studio/:path*",
-    "/library/:path*",
-    "/analytics/:path*",
-    "/test-analysis/:path*",
-    "/test-created/:path*",
-    "/cbt/:path*",
-    "/admin/:path*",
+    "/((?!.+\\.[\\w]+$|_next).*)",
+    "/",
+    "/(api|trpc)(.*)",
   ],
 };

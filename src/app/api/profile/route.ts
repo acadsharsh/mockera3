@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth, getClerkSessions } from "@/auth";
+import { auth as clerkAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -74,12 +75,8 @@ export async function GET() {
     .slice()
     .sort((a, b) => b.accuracy - a.accuracy)[0]?.subject;
 
-  const sessions = await prisma.session.findMany({
-    where: { userId: session.user.id },
-    orderBy: { expires: "desc" },
-    take: 5,
-    select: { id: true, expires: true },
-  });
+  const { userId: clerkUserId } = clerkAuth();
+  const clerkSessions = clerkUserId ? await getClerkSessions(clerkUserId, 5) : [];
 
   return NextResponse.json({
     user,
@@ -98,9 +95,9 @@ export async function GET() {
       rankShieldUntil: user?.rankShieldUntil?.toISOString() ?? null,
       subjectStats,
     },
-    sessions: sessions.map((item) => ({
+    sessions: clerkSessions.map((item) => ({
       id: item.id,
-      expires: item.expires.toISOString(),
+      expires: new Date(item.expireAt).toISOString(),
     })),
   });
 }
