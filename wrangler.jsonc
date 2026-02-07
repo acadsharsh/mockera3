@@ -1,0 +1,5 @@
+{
+  "name": "pdf-to-mock-test",
+  "compatibility_date": "2026-02-07",
+  "main": "src/worker.ts"
+}
