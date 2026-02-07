@@ -78,6 +78,8 @@ export async function GET() {
   const { userId: clerkUserId } = await clerkAuth();
   const clerkSessions = clerkUserId ? await getClerkSessions(clerkUserId, 5) : [];
 
+  type ClerkSessionItem = Awaited<ReturnType<typeof getClerkSessions>>[number];
+
   return NextResponse.json({
     user,
     stats: {
@@ -95,7 +97,7 @@ export async function GET() {
       rankShieldUntil: user?.rankShieldUntil?.toISOString() ?? null,
       subjectStats,
     },
-    sessions: clerkSessions.map((item) => ({
+    sessions: clerkSessions.map((item: ClerkSessionItem) => ({
       id: item.id,
       expires: new Date(item.expireAt).toISOString(),
     })),
