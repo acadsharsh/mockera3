@@ -75,7 +75,7 @@ export async function GET() {
     .slice()
     .sort((a, b) => b.accuracy - a.accuracy)[0]?.subject;
 
-  const { userId: clerkUserId } = clerkAuth();
+  const { userId: clerkUserId } = await clerkAuth();
   const clerkSessions = clerkUserId ? await getClerkSessions(clerkUserId, 5) : [];
 
   return NextResponse.json({
