@@ -3,7 +3,7 @@ import { SignIn } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 
 export default async function LoginPage() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (userId) {
     redirect("/");
   }
