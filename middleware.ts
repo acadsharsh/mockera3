@@ -5,7 +5,7 @@ export async function middleware(request: Request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  if (pathname.startsWith("/login") || pathname.startsWith("/api/auth")) {
+  if (pathname === "/" || pathname.startsWith("/login") || pathname.startsWith("/api/auth")) {
     return NextResponse.next();
   }
 
@@ -18,5 +18,14 @@ export async function middleware(request: Request) {
 }
 
 export const config = {
-  matcher: ["/", "/studio/:path*", "/library/:path*", "/analytics/:path*", "/test-created/:path*", "/cbt/:path*"]
+  matcher: [
+    "/dashboard/:path*",
+    "/studio/:path*",
+    "/library/:path*",
+    "/analytics/:path*",
+    "/test-analysis/:path*",
+    "/test-created/:path*",
+    "/cbt/:path*",
+    "/admin/:path*",
+  ],
 };
