@@ -78,7 +78,9 @@ export default function AuthPage() {
       fetchOptions: {
         onRequest: () => setLoading(true),
         onResponse: () => setLoading(false),
-        onError: (ctx) => toast.error(ctx.error.message),
+        onError: (ctx) => {
+          toast.error(ctx.error.message);
+        },
         onSuccess: () => {
           window.location.href = "/dashboard";
         },
