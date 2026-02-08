@@ -76,9 +76,8 @@ export default function IdentityPage() {
         body: JSON.stringify({ name: nameDraft.trim(), image: imageDraft.trim() }),
       });
       const data = await safeJson<{ user?: ProfileData["user"] } | null>(response, null);
-      if (data?.user) {
-        setProfile((prev) => (prev ? { ...prev, user: data.user } : prev));
-      }
+      const nextUser = data?.user ?? null;
+      setProfile((prev) => (prev ? { ...prev, user: nextUser } : prev));
       setSaveMessage("Profile updated.");
     } catch {
       setSaveMessage("Update failed.");
