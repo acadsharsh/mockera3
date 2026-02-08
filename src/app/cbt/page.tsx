@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { safeJson } from "@/lib/safe-json";
 
 type Crop = {
   id: string;
@@ -164,7 +165,7 @@ export default function CBT() {
   useEffect(() => {
     const load = async () => {
       const response = await fetch("/api/tests");
-      const data = await response.json();
+      const data = await safeJson<Test[]>(response, []);
       const selected = testIdParam ? data.find((item: Test) => item.id === testIdParam) : data[0];
       if (selected) {
         setTest(selected);
@@ -179,8 +180,8 @@ export default function CBT() {
 
   useEffect(() => {
     const loadSession = async () => {
-      const response = await fetch("/api/auth/session");
-      const data = await response.json();
+      const response = await fetch("/api/auth/get-session");
+      const data = await safeJson<{ user?: { name?: string } } | null>(response, null);
       if (data?.user?.name && candidateName === "Candidate") {
         setCandidateName(data.user.name);
       }
@@ -192,8 +193,8 @@ export default function CBT() {
     if (!testIdParam) return;
     const loadAttempts = async () => {
       const response = await fetch(`/api/attempts?testId=${testIdParam}&scope=global`);
-      const data = await response.json();
-      setAttempts(data);
+      const data = await safeJson<Attempt[]>(response, []);
+      setAttempts(Array.isArray(data) ? data : []);
     };
     loadAttempts();
   }, [testIdParam]);

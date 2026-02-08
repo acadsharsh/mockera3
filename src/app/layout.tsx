@@ -3,6 +3,7 @@ import { Geist_Mono, Inter, JetBrains_Mono, Marcellus, Space_Grotesk } from "nex
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,6 +51,7 @@ export default function RootLayout({
       >
         <Providers>
           <PageTransition>{children}</PageTransition>
+          <Toaster richColors />
           <SpeedInsights />
         </Providers>
       </body>

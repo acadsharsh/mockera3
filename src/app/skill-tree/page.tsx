@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import GlassRail from "@/components/GlassRail";
+import { safeJson } from "@/lib/safe-json";
 
 type Crop = {
   id: string;
@@ -55,8 +56,8 @@ export default function SkillTreePage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const response = await fetch("/api/auth/session");
-      const data = await response.json();
+      const response = await fetch("/api/auth/get-session");
+      const data = await safeJson<{ user?: unknown } | null>(response, null);
       if (!data?.user) {
         router.push("/login");
       }
@@ -68,11 +69,11 @@ export default function SkillTreePage() {
   useEffect(() => {
     const load = async () => {
       const testsResponse = await fetch("/api/tests");
-      const testsData = await testsResponse.json();
+      const testsData = await safeJson<Test[]>(testsResponse, []);
       setTests(Array.isArray(testsData) ? testsData : []);
 
       const attemptsResponse = await fetch("/api/attempts");
-      const attemptsData = await attemptsResponse.json();
+      const attemptsData = await safeJson<Attempt[]>(attemptsResponse, []);
       setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
     };
     load();

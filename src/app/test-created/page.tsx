@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { safeJson } from "@/lib/safe-json";
 
 type Test = {
   id: string;
@@ -25,7 +26,7 @@ export default function TestCreated() {
   useEffect(() => {
     const load = async () => {
       const response = await fetch(`/api/tests?testId=${testId}`);
-      const data = await response.json();
+      const data = await safeJson<Test | null>(response, null);
       setTest(data ?? null);
     };
     if (testId) {
@@ -68,13 +69,13 @@ export default function TestCreated() {
 
           <div className="mt-4 flex flex-wrap gap-3">
             <button
-              className="rounded-full bg-[#4f46e5] px-4 py-2 text-sm font-semibold"
+              className="rounded-full border border-white/10 px-4 py-2 text-sm"
               onClick={copyLink}
             >
               Copy Link
             </button>
-            <a className="rounded-full border border-white/10 px-4 py-2 text-sm" href={`/library?tab=leaderboard&testId=${testId}`}>
-              Live Batch Leaderboard
+            <a className="rounded-full bg-[#4f46e5] px-4 py-2 text-sm font-semibold text-white" href={`/cbt?testId=${testId}`}>
+              Attempt Now
             </a>
             <a className="rounded-full border border-white/10 px-4 py-2 text-sm" href="/library">
               Go to Library

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { signOut } from "next-auth/react";
+import { signOut } from "@/lib/auth-client";
 import GlassRail from "@/components/GlassRail";
+import { safeJson } from "@/lib/safe-json";
 
 type ProfileData = {
   user: {
@@ -43,7 +44,7 @@ export default function IdentityPage() {
   useEffect(() => {
     const load = async () => {
       const response = await fetch("/api/profile");
-      const data = await response.json();
+      const data = await safeJson<ProfileData | null>(response, null);
       setProfile(data);
       setNameDraft(data?.user?.name ?? "");
       setImageDraft(data?.user?.image ?? "");
@@ -74,7 +75,7 @@ export default function IdentityPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: nameDraft.trim(), image: imageDraft.trim() }),
       });
-      const data = await response.json();
+      const data = await safeJson<{ user?: ProfileData["user"] } | null>(response, null);
       setProfile((prev) => (prev ? { ...prev, user: data.user } : prev));
       setSaveMessage("Profile updated.");
     } catch {
@@ -98,7 +99,10 @@ export default function IdentityPage() {
           </div>
           <button
             className="rounded-full bg-rose-500/20 px-4 py-2 text-xs text-rose-100 transition hover:bg-rose-500/40"
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={async () => {
+              await signOut();
+              window.location.href = "/login";
+            }}
           >
             Sign Out
           </button>

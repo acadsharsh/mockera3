@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ThemeToggle from "@/components/ThemeToggle";
-import { signOut } from "next-auth/react";
+import { signOut } from "@/lib/auth-client";
+import { safeJson } from "@/lib/safe-json";
 
 const SUBJECT_LINKS = [
   { label: "Physics", href: "/library?subject=Physics" },
@@ -13,7 +13,7 @@ const SUBJECT_LINKS = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Library", href: "/library" },
   { label: "Creator Studio", href: "/studio" },
   { label: "Analytics", href: "/analytics" },
@@ -71,11 +71,6 @@ export default function GlassRail() {
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      const isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
-      if (isCmdK) {
-        event.preventDefault();
-        setOpen(true);
-      }
       if (event.key === "Escape") {
         setOpen(false);
         setQuery("");
@@ -88,7 +83,7 @@ export default function GlassRail() {
   useEffect(() => {
     const load = async () => {
       const response = await fetch("/api/tests");
-      const data = await response.json();
+      const data = await safeJson<TestItem[]>(response, []);
       setTests(Array.isArray(data) ? data : []);
     };
     load();
@@ -123,16 +118,13 @@ export default function GlassRail() {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500/80 to-indigo-900/60" />
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50">Exam Studio</p>
-              <div className="flex items-center gap-2 text-xs text-white/70">
-                {breadcrumbs.map((crumb, index) => (
-                  <span key={`${crumb}-${index}`} className="flex items-center gap-2">
-                    <span>{crumb}</span>
-                    {index < breadcrumbs.length - 1 && <span className="text-white/30">/</span>}
-                  </span>
-                ))}
-              </div>
+            <div className="text-xs text-white/70">
+              {breadcrumbs.map((crumb, index) => (
+                <span key={`${crumb}-${index}`} className="flex items-center gap-2">
+                  <span>{crumb}</span>
+                  {index < breadcrumbs.length - 1 && <span className="text-white/30">/</span>}
+                </span>
+              ))}
             </div>
           </div>
           <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70 md:flex">
@@ -201,11 +193,18 @@ export default function GlassRail() {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-200 transition hover:border-white/30 hover:text-white"
+              aria-label="Search"
             >
-              Cmd+K Search
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0 7 7 0 0 1 14 0"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
             </button>
-            <ThemeToggle />
             <div
               className="relative"
               onMouseEnter={() => setProfileOpen(true)}
@@ -235,7 +234,10 @@ export default function GlassRail() {
                   <button
                     type="button"
                     className="w-full rounded-xl px-3 py-2 text-left transition hover:bg-white/10"
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={async () => {
+                      await signOut();
+                      window.location.href = "/login";
+                    }}
                   >
                     Sign Out
                   </button>
@@ -267,7 +269,7 @@ export default function GlassRail() {
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pt-24 backdrop-blur">
           <div className="glass-card w-full max-w-xl rounded-3xl border border-white/10 bg-white/10 p-5 shadow-2xl">
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <span className="text-xs text-slate-300">Cmd+K</span>
+              <span className="text-xs text-slate-300">Search</span>
               <input
                 autoFocus
                 value={query}

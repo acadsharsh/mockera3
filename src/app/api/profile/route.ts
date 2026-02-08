@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -76,9 +76,9 @@ export async function GET() {
 
   const sessions = await prisma.session.findMany({
     where: { userId: session.user.id },
-    orderBy: { expires: "desc" },
+    orderBy: { expiresAt: "desc" },
     take: 5,
-    select: { id: true, expires: true },
+    select: { id: true, expiresAt: true },
   });
 
   return NextResponse.json({
@@ -100,13 +100,13 @@ export async function GET() {
     },
     sessions: sessions.map((item) => ({
       id: item.id,
-      expires: item.expires.toISOString(),
+      expires: item.expiresAt.toISOString(),
     })),
   });
 }
 
 export async function PATCH(request: Request) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

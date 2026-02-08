@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
+import { safeJson } from "@/lib/safe-json";
 
 type CropMeta = {
   id: string;
@@ -67,6 +68,7 @@ export default function CreatorStudio() {
   const [bulkDifficulty, setBulkDifficulty] = useState<CropMeta["difficulty"]>("Easy");
   const [lockNavigation, setLockNavigation] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isEditingOptions, setIsEditingOptions] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
@@ -79,10 +81,14 @@ export default function CreatorStudio() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const viewerRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingFocusIdRef = useRef<string | null>(null);
   const renderScaleRef = useRef(1);
+  const renderTaskRef = useRef<{ cancel: () => void; promise: Promise<any> } | null>(null);
+  const prevPageRef = useRef<number>(currentPage);
+  const prevActiveIdRef = useRef<string | null>(activeCropId);
 
   useEffect(() => {
     let mounted = true;
@@ -163,7 +169,7 @@ export default function CreatorStudio() {
           lockNavigation,
         }),
       });
-      const saved = await response.json();
+      const saved = await safeJson<{ id?: string } | null>(response, null);
       setToastVisible(true);
       setTimeout(() => setToastVisible(false), 2200);
       router.push(`/test-created?testId=${saved.id}`);
@@ -237,7 +243,18 @@ export default function CreatorStudio() {
 
     if (context) {
       context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
-      await page.render({ canvasContext: context, viewport }).promise;
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+      const renderTask = page.render({ canvasContext: context, viewport });
+      renderTaskRef.current = renderTask;
+      try {
+        await renderTask.promise;
+      } catch (error: any) {
+        if (!error || error.name !== "RenderingCancelledException") {
+          throw error;
+        }
+      }
     }
   };
 
@@ -248,10 +265,18 @@ export default function CreatorStudio() {
   }, [pdfDoc, currentPage, pageScale]);
 
   useEffect(() => {
+    const pageChanged = prevPageRef.current !== currentPage;
+    const cropChanged = prevActiveIdRef.current !== activeCropId;
+    prevPageRef.current = currentPage;
+    prevActiveIdRef.current = activeCropId;
+
     setDraftRect(null);
     setSelectionRect(null);
     setIsDrawing(false);
     setIsSelecting(false);
+    if (pageChanged || cropChanged) {
+      setIsEditingOptions(false);
+    }
     if (activeCropId) {
       const activeCrop = cropRects.find((rect) => rect.id === activeCropId);
       if (activeCrop && activeCrop.pageNumber !== currentPage) {
@@ -259,6 +284,17 @@ export default function CreatorStudio() {
       }
     }
   }, [currentPage, activeCropId, cropRects]);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (!editorRef.current) return;
+      if (!editorRef.current.contains(event.target as Node)) {
+        // Keep edit mode active until user clicks Save.
+      }
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, []);
 
   useEffect(() => {
     if (!pendingFocusIdRef.current) return;
@@ -467,7 +503,7 @@ export default function CreatorStudio() {
     };
 
     setCropRects((prev) => [...prev, newRect]);
-    setActiveCropId(null);
+    setActiveCropId(newRect.id);
     setDraftRect(null);
     setIsDrawing(false);
 
@@ -806,24 +842,49 @@ export default function CreatorStudio() {
             style={{ boxShadow: `0 0 40px ${activeAccent.glow}` }}
           >
             <div className="space-y-4 text-xs">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <p className="text-[11px] uppercase text-white/60">Question Editor</p>
-                <div className="mt-3 space-y-3">
+              <div
+                ref={editorRef}
+                className="rounded-xl border border-white/10 bg-white/5 p-3"
+              >
+                  <p className="text-[11px] uppercase text-white/60">Question Editor</p>
+                  <div className="mt-3 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="text-sm font-semibold">
                       {activeCrop
                         ? `Question ${cropRects.findIndex((crop) => crop.id === activeCrop.id) + 1}`
                         : "Question"}
                     </div>
+                    {activeCrop && (
+                      <button
+                        type="button"
+                        className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                          isEditingOptions
+                            ? "bg-emerald-400/20 text-emerald-100"
+                            : "border border-white/10 text-white/70 hover:border-white/30"
+                        }`}
+                        onClick={() => {
+                          if (isEditingOptions) {
+                            setIsEditingOptions(false);
+                          } else {
+                            setIsEditingOptions(true);
+                          }
+                        }}
+                      >
+                        {isEditingOptions ? "✓ Save" : "Edit"}
+                      </button>
+                    )}
                   </div>
-                  <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
-                    <div className="mb-2 text-[10px] uppercase text-white/50">Select Question</div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
+                      <div className="mb-2 text-[10px] uppercase text-white/50">Select Question</div>
                       <div className="flex max-h-32 flex-wrap gap-2 overflow-auto">
                         {cropRects.map((crop, index) => (
                           <button
                             key={crop.id}
                             type="button"
-                            onClick={() => focusCrop(crop.id)}
+                            onClick={() => {
+                              focusCrop(crop.id);
+                              setShowQuestionEditor(true);
+                            }}
                             draggable
                             onDragStart={(event) => {
                               event.dataTransfer.setData("text/plain", crop.id);
@@ -857,115 +918,157 @@ export default function CreatorStudio() {
                   </div>
                   {activeCrop ? (
                     <>
-                      <div>
-                        <label className="text-white/60">Question Type</label>
-                        <select
-                          value={activeCrop.questionType}
-                          onChange={(event) => {
-                            const next = event.target.value as CropMeta["questionType"];
-                            updateActiveCrop({ questionType: next });
-                          }}
-                          className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                        >
-                          <option value="MCQ">Multiple Choice</option>
-                          <option value="MSQ">Multiple Answer</option>
-                          <option value="NUM">Numerical</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-white/60">Subject</label>
-                        <select
-                          value={activeCrop.subject}
-                          onChange={(event) => {
-                            const next = event.target.value as CropMeta["subject"];
-                            updateActiveCrop({ subject: next });
-                            setLastSubject(next);
-                          }}
-                          className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                        >
-                          {subjects.map((subject) => (
-                            <option key={subject}>{subject}</option>
-                          ))}
-                        </select>
-                      </div>
-                      {activeCrop.questionType === "MCQ" && (
-                        <div>
-                          <label className="text-white/60">Correct Option</label>
-                          <div className="mt-2 grid grid-cols-4 gap-2">
-                            {optionLetters.map((letter) => (
-                              <button
-                                key={letter}
-                                className={`rounded-lg border px-2 py-2 text-xs font-semibold ${
-                                  activeCrop.correctOption === letter
-                                    ? "border-white/80 bg-white/20"
-                                    : "border-white/10 bg-white/5 text-white/70"
-                                }`}
-                                onClick={() => updateActiveCrop({ correctOption: letter })}
-                                type="button"
-                              >
-                                {letter}
-                              </button>
-                            ))}
+                      {isEditingOptions ? (
+                        <>
+                          <div>
+                            <label className="text-white/60">Question Type</label>
+                            <select
+                              value={activeCrop.questionType}
+                              onChange={(event) => {
+                                const next = event.target.value as CropMeta["questionType"];
+                                updateActiveCrop({ questionType: next });
+                              }}
+                              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                            >
+                              <option value="MCQ">Multiple Choice</option>
+                              <option value="MSQ">Multiple Answer</option>
+                              <option value="NUM">Numerical</option>
+                            </select>
                           </div>
-                        </div>
-                      )}
-                      {activeCrop.questionType === "MSQ" && (
-                        <div>
-                          <label className="text-white/60">Correct Options</label>
-                          <div className="mt-2 grid grid-cols-4 gap-2">
-                            {optionLetters.map((letter) => {
-                              const selected = activeCrop.correctOptions?.includes(letter) ?? false;
-                              return (
-                                <button
-                                  key={letter}
-                                  className={`rounded-lg border px-2 py-2 text-xs font-semibold ${
-                                    selected
-                                      ? "border-emerald-300/80 bg-emerald-400/20"
-                                      : "border-white/10 bg-white/5 text-white/70"
-                                  }`}
-                                  onClick={() => toggleCorrectOption(letter)}
-                                  type="button"
-                                >
-                                  {letter}
-                                </button>
-                              );
-                            })}
+                          <div>
+                            <label className="text-white/60">Subject</label>
+                            <select
+                              value={activeCrop.subject}
+                              onChange={(event) => {
+                                const next = event.target.value as CropMeta["subject"];
+                                updateActiveCrop({ subject: next });
+                                setLastSubject(next);
+                              }}
+                              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                            >
+                              {subjects.map((subject) => (
+                                <option key={subject}>{subject}</option>
+                              ))}
+                            </select>
                           </div>
-                        </div>
-                      )}
-                      {activeCrop.questionType === "NUM" && (
-                        <div>
-                          <label className="text-white/60">Correct Answer (Numeric)</label>
-                          <input
-                            value={activeCrop.correctNumeric ?? ""}
-                            onChange={(event) => updateActiveCrop({ correctNumeric: event.target.value })}
-                            className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                            placeholder="e.g., 42"
-                          />
-                        </div>
-                      )}
-                      {activeCrop.questionType !== "NUM" && (
-                        <div>
-                          <label className="text-white/60">Options</label>
-                          <div className="mt-2 space-y-2">
-                            {optionLetters.map((letter, index) => (
-                              <div key={letter} className="flex items-center gap-2">
-                                <span className="w-6 text-[11px] text-white/60">{letter}.</span>
-                                <input
-                                  value={activeCrop.options?.[index] ?? ""}
-                                  onChange={(event) => updateOption(index, event.target.value)}
-                                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                                  placeholder={`Option ${letter}`}
-                                />
+                          {activeCrop.questionType === "MCQ" && (
+                            <div>
+                              <label className="text-white/60">Correct Option</label>
+                              <div className="mt-2 grid grid-cols-4 gap-2">
+                                {optionLetters.map((letter) => (
+                                  <button
+                                    key={letter}
+                                    className={`rounded-lg border px-2 py-2 text-xs font-semibold ${
+                                      activeCrop.correctOption === letter
+                                        ? "border-white/80 bg-white/20"
+                                        : "border-white/10 bg-white/5 text-white/70"
+                                    }`}
+                                    onClick={() => updateActiveCrop({ correctOption: letter })}
+                                    type="button"
+                                  >
+                                    {letter}
+                                  </button>
+                                ))}
                               </div>
-                            ))}
+                            </div>
+                          )}
+                          {activeCrop.questionType === "MSQ" && (
+                            <div>
+                              <label className="text-white/60">Correct Options</label>
+                              <div className="mt-2 grid grid-cols-4 gap-2">
+                                {optionLetters.map((letter) => {
+                                  const selected = activeCrop.correctOptions?.includes(letter) ?? false;
+                                  return (
+                                    <button
+                                      key={letter}
+                                      className={`rounded-lg border px-2 py-2 text-xs font-semibold ${
+                                        selected
+                                          ? "border-emerald-300/80 bg-emerald-400/20"
+                                          : "border-white/10 bg-white/5 text-white/70"
+                                      }`}
+                                      onClick={() => toggleCorrectOption(letter)}
+                                      type="button"
+                                    >
+                                      {letter}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          {activeCrop.questionType === "NUM" && (
+                            <div>
+                              <label className="text-white/60">Correct Answer (Numeric)</label>
+                              <input
+                                value={activeCrop.correctNumeric ?? ""}
+                                onChange={(event) =>
+                                  updateActiveCrop({ correctNumeric: event.target.value })
+                                }
+                                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                                placeholder="e.g., 42"
+                              />
+                            </div>
+                          )}
+                          {activeCrop.questionType !== "NUM" && (
+                            <div>
+                              <label className="text-white/60">Options</label>
+                              <div className="mt-2 space-y-2">
+                                {optionLetters.map((letter, index) => (
+                                  <div key={letter} className="flex items-center gap-2">
+                                    <span className="w-6 text-[11px] text-white/60">{letter}.</span>
+                                    <input
+                                      value={activeCrop.options?.[index] ?? ""}
+                                      onChange={(event) => updateOption(index, event.target.value)}
+                                      className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                                      placeholder={`Option ${letter}`}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="space-y-3 text-sm text-white/70">
+                          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                            <div className="text-[11px] uppercase text-white/50">Question Type</div>
+                            <div className="mt-1 font-semibold text-white">
+                              {activeCrop.questionType}
+                            </div>
                           </div>
+                          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                            <div className="text-[11px] uppercase text-white/50">Subject</div>
+                            <div className="mt-1 font-semibold text-white">
+                              {activeCrop.subject}
+                            </div>
+                          </div>
+                          {activeCrop.questionType === "NUM" ? (
+                            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                              <div className="text-[11px] uppercase text-white/50">
+                                Correct Answer
+                              </div>
+                              <div className="mt-1 font-semibold text-white">
+                                {activeCrop.correctNumeric || "—"}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                              <div className="text-[11px] uppercase text-white/50">
+                                Correct {activeCrop.questionType === "MSQ" ? "Options" : "Option"}
+                              </div>
+                              <div className="mt-1 font-semibold text-white">
+                                {activeCrop.questionType === "MSQ"
+                                  ? (activeCrop.correctOptions ?? []).join(", ") || "—"
+                                  : activeCrop.correctOption}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </>
                   ) : null}
+                  </div>
                 </div>
-              </div>
             </div>
           </aside>
         </div>

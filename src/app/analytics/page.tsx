@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
+import { safeJson } from "@/lib/safe-json";
 
 type Crop = {
   id: string;
@@ -64,12 +65,12 @@ export default function Analytics() {
   useEffect(() => {
     const load = async () => {
       const testsResponse = await fetch("/api/tests");
-      const testsData = await testsResponse.json();
-      setTests(testsData);
+      const testsData = await safeJson<Test[]>(testsResponse, []);
+      setTests(Array.isArray(testsData) ? testsData : []);
 
       const attemptsResponse = await fetch("/api/attempts");
-      const attemptsData = await attemptsResponse.json();
-      setAttempts(attemptsData);
+      const attemptsData = await safeJson<Attempt[]>(attemptsResponse, []);
+      setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
     };
     load();
   }, []);
@@ -469,7 +470,7 @@ export default function Analytics() {
       if (!response.ok) {
         throw new Error("Failed to build retest.");
       }
-      const saved = await response.json();
+      const saved = await safeJson<{ id?: string } | null>(response, null);
       router.push(`/test-created?testId=${saved.id}`);
     } catch (error) {
       setRetestError(error instanceof Error ? error.message : "Failed to build retest.");

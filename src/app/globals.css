@@ -1130,3 +1130,64 @@ a {
   animation: glassShatter 1.2s ease-out forwards;
   mix-blend-mode: screen;
 }
+
+.landing-mesh {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(880px 520px at 12% 8%, rgba(45, 91, 255, 0.18), transparent 60%),
+    radial-gradient(760px 480px at 86% 12%, rgba(88, 28, 135, 0.18), transparent 60%),
+    radial-gradient(680px 520px at 50% 92%, rgba(12, 15, 28, 0.75), transparent 70%);
+  filter: blur(2px);
+  opacity: 0.9;
+}
+
+.landing-anti {
+  background: #09090b;
+}
+
+.landing-anti--active .landing-mesh {
+  opacity: 1;
+  filter: blur(1px);
+}
+
+.landing-float {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 14px 40px rgba(10, 10, 20, 0.45);
+  animation: floatIcon 6s ease-in-out infinite;
+}
+
+.landing-stream {
+  padding: 14px 0;
+}
+
+.landing-ring {
+  position: absolute;
+  inset: 12px;
+  border-radius: 32px;
+  border: 1px dashed rgba(45, 91, 255, 0.35);
+  opacity: 0.7;
+  animation: landingPulse 2.8s ease-in-out infinite;
+}
+
+.landing-drag .landing-ring {
+  border-color: rgba(45, 91, 255, 0.8);
+  box-shadow: 0 0 30px rgba(45, 91, 255, 0.35);
+}
+
+@keyframes landingPulse {
+  0% {
+    transform: scale(0.98);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.01);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0.98);
+    opacity: 0.35;
+  }
+}

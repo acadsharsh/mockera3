@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
 type LeaderRow = {
@@ -11,7 +11,7 @@ type LeaderRow = {
 };
 
 export async function GET(request: Request) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

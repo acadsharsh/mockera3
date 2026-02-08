@@ -451,19 +451,32 @@ export default function TestLibrary() {
                     >
                       <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent blur-2xl" />
-                        <div className="absolute inset-0 flex items-end justify-end p-4 text-[11px] text-white/70">
-                          Marking: +{test.markingCorrect ?? 4} / {test.markingIncorrect ?? -1}
-                        </div>
                       </div>
 
                       <div className="relative">
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-between">
                           <button
                             onClick={() => handleStar(test.id)}
                             className={`text-xs ${starred.has(test.id) ? "text-white" : "text-white/30"}`}
                           >
                             ★
                           </button>
+                          <details className="relative">
+                            <summary className="cursor-pointer list-none text-white/60 hover:text-white">
+                              ⋯
+                            </summary>
+                            <div className="absolute right-0 top-6 z-10 w-36 rounded-xl border border-white/10 bg-[#111318] p-2 text-xs text-white/80 shadow-xl">
+                              <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/test-created?testId=${test.id}`}>
+                                Share
+                              </a>
+                              <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/test-analysis?testId=${test.id}`}>
+                                View Analysis
+                              </a>
+                              <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/cbt?testId=${test.id}`}>
+                                Start
+                              </a>
+                            </div>
+                          </details>
                         </div>
                         <h3 className="mt-4 text-lg font-semibold">{test.title}</h3>
                         <p className="mt-2 text-xs text-white/60">{statusLabel}</p>
@@ -481,6 +494,13 @@ export default function TestLibrary() {
                               <path d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                             {totalQuestions} Qs
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M4 12h16" />
+                              <path d="M12 4v16" />
+                            </svg>
+                            Marking: +{test.markingCorrect ?? 4} / {test.markingIncorrect ?? -1}
                           </span>
                           <span>• Attempted by {formatCount(attemptsCount || 12000)} students</span>
                         </div>

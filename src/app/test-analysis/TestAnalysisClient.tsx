@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
+import { safeJson } from "@/lib/safe-json";
 
 type Crop = {
   id: string;
@@ -111,11 +112,11 @@ export default function TestAnalysisClient() {
   useEffect(() => {
     const load = async () => {
       const testsResponse = await fetch("/api/tests");
-      const testsData = await testsResponse.json();
+      const testsData = await safeJson<Test[]>(testsResponse, []);
       setTests(Array.isArray(testsData) ? testsData : []);
 
       const attemptsResponse = await fetch("/api/attempts");
-      const attemptsData = await attemptsResponse.json();
+      const attemptsData = await safeJson<Attempt[]>(attemptsResponse, []);
       setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
     };
     load();
@@ -125,7 +126,7 @@ export default function TestAnalysisClient() {
     if (!activeTestId) return;
     const loadGlobal = async () => {
       const response = await fetch(`/api/attempts?testId=${activeTestId}&scope=global`);
-      const data = await response.json();
+      const data = await safeJson<Attempt[]>(response, []);
       setGlobalAttempts(Array.isArray(data) ? data : []);
     };
     loadGlobal();
@@ -135,7 +136,7 @@ export default function TestAnalysisClient() {
     if (!activeTestId) return;
     const loadBands = async () => {
       const response = await fetch(`/api/percentile-bands?testId=${activeTestId}`);
-      const data = await response.json();
+      const data = await safeJson<any[]>(response, []);
       setPercentileBands(
         Array.isArray(data)
           ? data.map((band) => ({
