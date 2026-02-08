@@ -471,6 +471,9 @@ export default function Analytics() {
         throw new Error("Failed to build retest.");
       }
       const saved = await safeJson<{ id?: string } | null>(response, null);
+      if (!saved?.id) {
+        throw new Error("Retest creation failed.");
+      }
       router.push(`/test-created?testId=${saved.id}`);
     } catch (error) {
       setRetestError(error instanceof Error ? error.message : "Failed to build retest.");
