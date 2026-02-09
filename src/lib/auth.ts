@@ -1,6 +1,8 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { emailOTP, username } from "better-auth/plugins";
+import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 
 const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {
@@ -27,7 +29,40 @@ export const auth = betterAuth({
     },
   },
   socialProviders,
-  plugins: [nextCookies()],
+  plugins: [
+    username(),
+    emailOTP({
+      async sendVerificationOTP({ email, otp, type }) {
+        const apiKey = process.env.RESEND_API_KEY;
+        const from = process.env.EMAIL_FROM;
+        if (!apiKey || !from) {
+          throw new Error("Missing RESEND_API_KEY or EMAIL_FROM.");
+        }
+
+        const resend = new Resend(apiKey);
+        const subject =
+          type === "sign-in"
+            ? "Your sign-in code"
+            : type === "email-verification"
+              ? "Verify your email"
+              : "Reset your password";
+
+        await resend.emails.send({
+          from,
+          to: email,
+          subject,
+          html: `
+            <div style="font-family: Inter, Arial, sans-serif; line-height: 1.5;">
+              <p>Your verification code is:</p>
+              <p style="font-size: 20px; font-weight: 700; letter-spacing: 2px;">${otp}</p>
+              <p>This code expires in a few minutes.</p>
+            </div>
+          `,
+        });
+      },
+    }),
+    nextCookies(),
+  ],
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   user: { modelName: "User" },
   session: { modelName: "Session" },

@@ -17,6 +17,7 @@ export default function AuthPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -73,6 +74,8 @@ export default function AuthPage() {
       email,
       password,
       name: `${firstName} ${lastName}`.trim(),
+      username: username.trim() || undefined,
+      displayUsername: username.trim() || undefined,
       image: image ? await convertImageToBase64(image) : "",
       callbackURL: "/dashboard",
       fetchOptions: {
@@ -157,6 +160,21 @@ export default function AuthPage() {
                     className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40"
                   />
                 </div>
+              </div>
+            )}
+
+            {mode === "signup" && (
+              <div className="grid gap-2">
+                <label htmlFor="username" className="text-sm text-white/80">
+                  Username (optional)
+                </label>
+                <input
+                  id="username"
+                  placeholder="yourname"
+                  onChange={(event) => setUsername(event.target.value)}
+                  value={username}
+                  className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40"
+                />
               </div>
             )}
 
