@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
-import { signIn, signUp, useSession } from "@/lib/auth-client";
+import { emailOtp, signIn, signUp, useSession } from "@/lib/auth-client";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -19,6 +19,10 @@ export default function AuthPage() {
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
+  const [resetMode, setResetMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,6 +61,9 @@ export default function AuthPage() {
       fetchOptions: {
         onRequest: () => setLoading(true),
         onResponse: () => setLoading(false),
+        onError: (ctx) => {
+          toast.error(ctx.error.message || "Incorrect email or password.");
+        },
         onSuccess: () => {
           window.location.href = "/dashboard";
         },
@@ -199,9 +206,16 @@ export default function AuthPage() {
                   Password
                 </label>
                 {mode === "signin" && (
-                  <Link href="#" className="ml-auto inline-block text-sm underline">
+                  <button
+                    type="button"
+                    className="ml-auto inline-block text-sm underline"
+                    onClick={() => {
+                      setResetMode(true);
+                      setResetSent(false);
+                    }}
+                  >
                     Forgot your password?
-                  </Link>
+                  </button>
                 )}
               </div>
               <input
@@ -290,6 +304,99 @@ export default function AuthPage() {
                 "Create your account"
               )}
             </button>
+
+            {resetMode && mode === "signin" && (
+              <div className="rounded-md border border-white/10 bg-white/5 p-4 text-sm text-white/80">
+                <p className="text-xs uppercase text-white/60">Reset password</p>
+                <div className="mt-3 grid gap-2">
+                  <input
+                    type="email"
+                    placeholder="Email for reset"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40"
+                  />
+                  {!resetSent ? (
+                    <button
+                      type="button"
+                      className="rounded-md bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
+                      disabled={loading}
+                      onClick={async () => {
+                        await emailOtp.requestPasswordReset({
+                          email,
+                          fetchOptions: {
+                            onRequest: () => setLoading(true),
+                            onResponse: () => setLoading(false),
+                            onError: (ctx) => toast.error(ctx.error.message),
+                            onSuccess: () => {
+                              setResetSent(true);
+                              toast.success("OTP sent to your email.");
+                            },
+                          },
+                        });
+                      }}
+                    >
+                      Send OTP
+                    </button>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Enter OTP"
+                        value={resetOtp}
+                        onChange={(event) => setResetOtp(event.target.value)}
+                        className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40"
+                      />
+                      <input
+                        type="password"
+                        placeholder="New password"
+                        value={resetPassword}
+                        onChange={(event) => setResetPassword(event.target.value)}
+                        className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="flex-1 rounded-md bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
+                          disabled={loading}
+                          onClick={async () => {
+                            await emailOtp.resetPassword({
+                              email,
+                              otp: resetOtp,
+                              password: resetPassword,
+                              fetchOptions: {
+                                onRequest: () => setLoading(true),
+                                onResponse: () => setLoading(false),
+                                onError: (ctx) => toast.error(ctx.error.message),
+                                onSuccess: () => {
+                                  setResetMode(false);
+                                  setResetSent(false);
+                                  setResetOtp("");
+                                  setResetPassword("");
+                                  toast.success("Password reset. Please sign in.");
+                                },
+                              },
+                            });
+                          }}
+                        >
+                          Reset Password
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md border border-white/10 px-3 py-2 text-xs text-white/70"
+                          onClick={() => {
+                            setResetMode(false);
+                            setResetSent(false);
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex w-full flex-col items-center gap-2">
               <button

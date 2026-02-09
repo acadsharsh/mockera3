@@ -90,25 +90,28 @@ export default function Dashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const testResponse = await fetch("/api/tests");
-      const testData = await safeJson<Test[]>(testResponse, []);
+      const [testResponse, attemptsResponse, profileResponse, leaderboardResponse] = await Promise.all([
+        fetch("/api/tests"),
+        fetch("/api/attempts"),
+        fetch("/api/profile"),
+        fetch("/api/leaderboard?scope=global"),
+      ]);
+
+      const [testData, attemptsData, profileData, leaderboardData] = await Promise.all([
+        safeJson<Test[]>(testResponse, []),
+        safeJson<Attempt[]>(attemptsResponse, []),
+        safeJson<any>(profileResponse, null),
+        safeJson<LeaderboardResponse | null>(leaderboardResponse, null),
+      ]);
+
       setTests(Array.isArray(testData) ? testData : []);
-
-      const attemptsResponse = await fetch("/api/attempts");
-      const attemptsData = await safeJson<Attempt[]>(attemptsResponse, []);
       setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
-
-      const profileResponse = await fetch("/api/profile");
-      const profileData = await safeJson<any>(profileResponse, null);
       setProfileStats({
         performanceCredits: profileData?.stats?.performanceCredits ?? 0,
         streakDays: profileData?.stats?.streakDays ?? 0,
         userId: profileData?.user?.id,
       });
       setProfileName(profileData?.user?.name ?? "");
-
-      const leaderboardResponse = await fetch("/api/leaderboard?scope=global");
-      const leaderboardData = await safeJson<LeaderboardResponse | null>(leaderboardResponse, null);
       setLeaderboard({
         rows: Array.isArray(leaderboardData?.rows) ? leaderboardData.rows : [],
         totalUsers: typeof leaderboardData?.totalUsers === "number" ? leaderboardData.totalUsers : 0,
