@@ -17,6 +17,9 @@ model User {
   emailVerified      DateTime?
   image              String?
   role               Role      @default(USER)
+  banned             Boolean?  @default(false)
+  banReason          String?
+  banExpires         DateTime?
   performanceCredits Int       @default(0)
   streakDays         Int       @default(0)
   lastAttemptAt      DateTime?
@@ -63,6 +66,7 @@ model Session {
   token     String   @unique
   ipAddress String?
   userAgent String?
+  impersonatedBy String?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

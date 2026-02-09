@@ -1,14 +1,22 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { emailOTP, username } from "better-auth/plugins";
+import { admin, emailOTP, username } from "better-auth/plugins";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 
-const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {
+type SocialProviderConfig = {
+  clientId: string;
+  clientSecret: string;
+  prompt?: string;
+  accessType?: string;
+};
+
+const socialProviders: Record<string, SocialProviderConfig> = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID ?? "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    prompt: "select_account",
   },
 };
 
@@ -31,6 +39,7 @@ export const auth = betterAuth({
   socialProviders,
   plugins: [
     username(),
+    admin(),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
         const apiKey = process.env.RESEND_API_KEY;
