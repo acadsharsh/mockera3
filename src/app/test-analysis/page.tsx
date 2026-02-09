@@ -1,12 +1,80 @@
-﻿import { Suspense } from "react";
+import { headers } from "next/headers";
 import TestAnalysisClient from "./TestAnalysisClient";
 
-export const dynamic = "force-dynamic";
+type Crop = {
+  id: string;
+  subject: "Physics" | "Chemistry" | "Maths";
+  correctOption: "A" | "B" | "C" | "D";
+  marks: "+4/-1";
+  difficulty: "Easy" | "Moderate" | "Tough";
+  imageDataUrl: string;
+};
 
-export default function TestAnalysisPage() {
+type Test = {
+  id: string;
+  title: string;
+  visibility: "Public" | "Private";
+  accessCode?: string;
+  durationMinutes?: number;
+  markingCorrect?: number;
+  markingIncorrect?: number;
+  crops: Crop[];
+};
+
+type Attempt = {
+  id: string;
+  testId: string;
+  createdAt: string;
+  score?: number;
+  accuracy?: number;
+  timeTaken?: number;
+  answers: Record<string, "A" | "B" | "C" | "D" | "">;
+  timeSpent: Record<string, number>;
+  events?: {
+    answerChanges?: Record<string, number>;
+    rapidChanges?: Record<string, number>;
+    firstAnsweredAt?: Record<string, number>;
+    tabSwitches?: number;
+    idleGaps?: number;
+    idleSeconds?: number;
+    sectionOrder?: Array<"Physics" | "Chemistry" | "Maths">;
+  };
+};
+
+const getBaseUrl = () => {
+  const incoming = headers();
+  const host = incoming.get("host");
+  const proto = incoming.get("x-forwarded-proto") ?? "http";
+  if (host) {
+    return `${proto}://${host}`;
+  }
+  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+};
+
+export default async function TestAnalysisPage() {
+  const baseUrl = getBaseUrl();
+  const cookie = headers().get("cookie") ?? "";
+
+  const [testsResponse, attemptsResponse] = await Promise.all([
+    fetch(`${baseUrl}/api/tests`, {
+      headers: { cookie },
+      next: { revalidate: 30 },
+    }),
+    fetch(`${baseUrl}/api/attempts`, {
+      headers: { cookie },
+      next: { revalidate: 30 },
+    }),
+  ]);
+
+  const [initialTests, initialAttempts] = await Promise.all([
+    testsResponse.ok ? testsResponse.json() : Promise.resolve([]),
+    attemptsResponse.ok ? attemptsResponse.json() : Promise.resolve([]),
+  ]);
+
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0F0F10]" />}>
-      <TestAnalysisClient />
-    </Suspense>
+    <TestAnalysisClient
+      initialTests={Array.isArray(initialTests) ? (initialTests as Test[]) : []}
+      initialAttempts={Array.isArray(initialAttempts) ? (initialAttempts as Attempt[]) : []}
+    />
   );
 }

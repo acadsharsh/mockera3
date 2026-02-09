@@ -97,11 +97,16 @@ const isCorrectAnswer = (crop: Crop, selected?: string) => {
   return selected === crop.correctOption;
 };
 
-export default function TestAnalysisClient() {
+type TestAnalysisClientProps = {
+  initialTests: Test[];
+  initialAttempts: Attempt[];
+};
+
+export default function TestAnalysisClient({ initialTests, initialAttempts }: TestAnalysisClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [tests, setTests] = useState<Test[]>([]);
-  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [tests, setTests] = useState<Test[]>(initialTests);
+  const [attempts, setAttempts] = useState<Attempt[]>(initialAttempts);
   const [percentileBands, setPercentileBands] = useState<PercentileBand[]>([]);
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const [activeTestId, setActiveTestId] = useState<string>("");
@@ -109,16 +114,24 @@ export default function TestAnalysisClient() {
   const [learnings, setLearnings] = useState<string[]>(["", "", ""]);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       const testsResponse = await fetch("/api/tests");
       const testsData = await safeJson<Test[]>(testsResponse, []);
-      setTests(Array.isArray(testsData) ? testsData : []);
+      if (!cancelled) {
+        setTests(Array.isArray(testsData) ? testsData : []);
+      }
 
       const attemptsResponse = await fetch("/api/attempts");
       const attemptsData = await safeJson<Attempt[]>(attemptsResponse, []);
-      setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
+      if (!cancelled) {
+        setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
+      }
     };
     load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
 
