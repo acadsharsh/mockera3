@@ -221,10 +221,10 @@ export default function BatchManagerPage() {
                   </div>
                 </div>
                 <a
-                  href="/library?tab=leaderboard"
+                  href="/library"
                   className="mt-5 block w-full rounded-full bg-white/10 px-4 py-2 text-center text-xs text-white transition hover:bg-white/20"
                 >
-                  Open Live View
+                  Open Library
                 </a>
               </motion.div>
             </div>

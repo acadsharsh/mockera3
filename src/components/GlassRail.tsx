@@ -16,9 +16,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Library", href: "/library" },
   { label: "Creator Studio", href: "/studio" },
-  { label: "Analytics", href: "/analytics" },
   { label: "Test Analysis", href: "/test-analysis" },
-  { label: "Skill Tree", href: "/skill-tree" },
 ];
 
 type SearchResult = {
@@ -39,8 +37,6 @@ const navIcon = (label: string) => {
       return "bg-sky-400";
     case "Creator Studio":
       return "bg-emerald-400";
-    case "Analytics":
-      return "bg-amber-400";
     case "Test Analysis":
       return "bg-violet-400";
     default:
@@ -56,7 +52,6 @@ export default function GlassRail() {
   const [moreOpen, setMoreOpen] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tests, setTests] = useState<TestItem[]>([]);
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const breadcrumbs = useMemo(() => {
     const parts = pathname.split("/").filter(Boolean);
@@ -205,45 +200,16 @@ export default function GlassRail() {
                 />
               </svg>
             </button>
-            <div
-              className="relative"
-              onMouseEnter={() => setProfileOpen(true)}
-              onMouseLeave={() => setProfileOpen(false)}
+            <button
+              type="button"
+              className="flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-[11px] font-semibold text-white/80 transition hover:border-white/30 hover:text-white"
+              onClick={async () => {
+                await signOut();
+                window.location.href = "/login";
+              }}
             >
-              <Link
-                href="/identity"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[11px] font-semibold text-white/80 transition hover:border-white/30 hover:text-white"
-                aria-label="Profile"
-              >
-                ME
-              </Link>
-              {profileOpen && (
-                <div className="absolute right-0 top-10 z-50 w-40 rounded-2xl border border-white/10 bg-black/80 p-2 text-xs text-white shadow-xl backdrop-blur">
-                  <Link
-                    href="/identity"
-                    className="block rounded-xl px-3 py-2 transition hover:bg-white/10"
-                  >
-                    My Profile
-                  </Link>
-                  <Link
-                    href="/identity?tab=settings"
-                    className="block rounded-xl px-3 py-2 transition hover:bg-white/10"
-                  >
-                    Settings
-                  </Link>
-                  <button
-                    type="button"
-                    className="w-full rounded-xl px-3 py-2 text-left transition hover:bg-white/10"
-                    onClick={async () => {
-                      await signOut();
-                      window.location.href = "/login";
-                    }}
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
+              Sign Out
+            </button>
           </div>
         </div>
       </header>

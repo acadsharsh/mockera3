@@ -102,7 +102,6 @@ export default function TestAnalysisClient() {
   const searchParams = useSearchParams();
   const [tests, setTests] = useState<Test[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [globalAttempts, setGlobalAttempts] = useState<Attempt[]>([]);
   const [percentileBands, setPercentileBands] = useState<PercentileBand[]>([]);
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const [activeTestId, setActiveTestId] = useState<string>("");
@@ -122,15 +121,6 @@ export default function TestAnalysisClient() {
     load();
   }, []);
 
-  useEffect(() => {
-    if (!activeTestId) return;
-    const loadGlobal = async () => {
-      const response = await fetch(`/api/attempts?testId=${activeTestId}&scope=global`);
-      const data = await safeJson<Attempt[]>(response, []);
-      setGlobalAttempts(Array.isArray(data) ? data : []);
-    };
-    loadGlobal();
-  }, [activeTestId]);
 
   useEffect(() => {
     if (!activeTestId) return;
@@ -189,18 +179,6 @@ export default function TestAnalysisClient() {
     return attemptsForTest.find((attempt) => attempt.id === activeAttemptId) ?? attemptsForTest[0];
   }, [activeAttemptId, attemptsForTest]);
 
-  const leaderboardRank = useMemo(() => {
-    if (!selectedAttempt) return null;
-    if (globalAttempts.length === 0) {
-      return { rank: 1, total: 1 };
-    }
-    const sorted = [...globalAttempts].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-    const index = sorted.findIndex((attempt) => attempt.id === selectedAttempt.id);
-    if (index === -1) {
-      return { rank: 1, total: sorted.length };
-    }
-    return { rank: index + 1, total: sorted.length };
-  }, [globalAttempts, selectedAttempt]);
 
   const questionStats = useMemo(() => {
     if (!activeTest || !selectedAttempt) {
@@ -702,13 +680,7 @@ export default function TestAnalysisClient() {
                     </div>
                   </section>
 
-                  <section className="grid gap-4 lg:grid-cols-4">
-                    <div className="rounded-2xl border border-white/10 bg-[#101624] p-4">
-                      <p className="text-xs text-white/50">Leaderboard Rank</p>
-                      <p className="mt-2 text-2xl font-semibold">
-                        {leaderboardRank ? `${leaderboardRank.rank}/${leaderboardRank.total}` : "1/1"}
-                      </p>
-                    </div>
+                  <section className="grid gap-4 lg:grid-cols-3">
                     <div className="rounded-2xl border border-white/10 bg-[#101624] p-4">
                       <p className="text-xs text-white/50">Positive Score</p>
                       <p className="mt-2 text-2xl font-semibold">{questionStats.score}</p>

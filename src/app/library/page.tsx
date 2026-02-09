@@ -103,12 +103,6 @@ export default function TestLibrary() {
   const [tests, setTests] = useState<Test[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("All Tests");
-  const [leaderboardTestId, setLeaderboardTestId] = useState<string | null>(null);
-  const [leaderboardRows, setLeaderboardRows] = useState<
-    Array<{ name: string; score: number; accuracy: number; attempts: number; userId: string }>
-  >([]);
-  const [leaderboardTest, setLeaderboardTest] = useState<Test | null>(null);
-  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [search, setSearch] = useState("");
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [offlineReadyId, setOfflineReadyId] = useState<string | null>(null);
@@ -118,9 +112,6 @@ export default function TestLibrary() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     setSubjectParam(params.get("subject"));
-    if (params.get("tab") === "leaderboard") {
-      setLeaderboardTestId(params.get("testId"));
-    }
   }, []);
 
   useEffect(() => {
@@ -147,68 +138,6 @@ export default function TestLibrary() {
     load();
   }, []);
 
-  useEffect(() => {
-    const loadLeaderboard = async () => {
-      if (!leaderboardTestId) return;
-      setLoadingLeaderboard(true);
-      const testResponse = await fetch(`/api/tests?testId=${leaderboardTestId}`);
-      const testData = await testResponse.json();
-      setLeaderboardTest(testData ?? null);
-
-      const attemptsResponse = await fetch(`/api/attempts?testId=${leaderboardTestId}&scope=global`);
-      const attemptsData = await attemptsResponse.json();
-      const list = Array.isArray(attemptsData) ? attemptsData : [];
-      const map = new Map<string, { name: string; score: number; accuracy: number; attempts: number }>();
-
-      list.forEach((attempt) => {
-        const test = testData;
-        if (!test) return;
-        let score = 0;
-        let attempted = 0;
-        let correct = 0;
-        test.crops?.forEach((crop: Crop) => {
-          const selected = attempt.answers?.[crop.id];
-          if (!selected) return;
-          attempted += 1;
-          if (selected === crop.correctOption) {
-            score += test.markingCorrect ?? 4;
-            correct += 1;
-          } else {
-            score += test.markingIncorrect ?? -1;
-          }
-        });
-        const accuracy = attempted ? Math.round((correct / attempted) * 100) : 0;
-        const userId = attempt.userId ?? "unknown";
-        const current = map.get(userId);
-        if (!current) {
-          map.set(userId, {
-            name: attempt.userName ?? "Anonymous",
-            score,
-            accuracy,
-            attempts: 1,
-          });
-        } else {
-          const nextAttempts = current.attempts + 1;
-          map.set(userId, {
-            name: current.name,
-            score: current.score + score,
-            accuracy: Math.round((current.accuracy * current.attempts + accuracy) / nextAttempts),
-            attempts: nextAttempts,
-          });
-        }
-      });
-
-      const rows = Array.from(map.entries())
-        .map(([userId, data]) => ({ userId, ...data }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 20);
-      setLeaderboardRows(rows);
-      setLoadingLeaderboard(false);
-    };
-    loadLeaderboard();
-    const interval = setInterval(loadLeaderboard, 10000);
-    return () => clearInterval(interval);
-  }, [leaderboardTestId]);
 
   const filteredTests = useMemo(() => {
     return tests.filter((test) => {
@@ -345,54 +274,7 @@ export default function TestLibrary() {
           </div>
         </div>
 
-        {leaderboardTestId ? (
-          <div className="glass-card p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase text-white/60">Live Batch Leaderboard</p>
-                <p className="mt-1 text-sm text-white/70">
-                  {leaderboardTest?.title ?? "Loading test..."}
-                </p>
-              </div>
-              <a
-                className="rounded-full border border-white/10 px-4 py-2 text-xs"
-                href="/library"
-              >
-                Back to Library
-              </a>
-            </div>
-
-            {loadingLeaderboard ? (
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/60">
-                Loading leaderboard...
-              </div>
-            ) : leaderboardRows.length === 0 ? (
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/60">
-                No attempts yet. The leaderboard will appear after the first attempt.
-              </div>
-            ) : (
-              <div className="mt-6 space-y-3">
-                {leaderboardRows.map((row, index) => (
-                  <div
-                    key={row.userId}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-white/50">#{index + 1}</span>
-                      <span className="font-semibold">{row.name}</span>
-                    </div>
-                    <div className="flex items-center gap-6 text-xs text-white/70">
-                      <span>Score: {row.score}</span>
-                      <span>Accuracy: {row.accuracy}%</span>
-                      <span>Attempts: {row.attempts}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
           <div>
             {authError ? (
               <div className="flex h-[360px] flex-col items-center justify-center rounded-3xl border border-white/10 bg-white/5 p-6 text-center">
@@ -546,7 +428,6 @@ export default function TestLibrary() {
             </div>
           </aside>
         </div>
-        )}
       </div>
     </div>
   );
