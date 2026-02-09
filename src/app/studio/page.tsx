@@ -886,7 +886,6 @@ export default function CreatorStudio() {
                             type="button"
                             onClick={() => {
                               focusCrop(crop.id);
-                              setShowQuestionEditor(true);
                             }}
                             draggable
                             onDragStart={(event) => {
