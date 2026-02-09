@@ -16,7 +16,7 @@ model User {
   email              String    @unique
   emailVerified      Boolean   @default(false)
   image              String?
-  role               Role      @default(USER)
+  role               String    @default("user")
   banned             Boolean?  @default(false)
   banReason          String?
   banExpires         DateTime?
@@ -31,11 +31,6 @@ model User {
   attempts           Attempt[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
-}
-
-enum Role {
-  USER
-  ADMIN
 }
 
 model Account {
