@@ -41,8 +41,8 @@ type Attempt = {
   };
 };
 
-const getBaseUrl = () => {
-  const incoming = headers();
+const getBaseUrl = async () => {
+  const incoming = await headers();
   const host = incoming.get("host");
   const proto = incoming.get("x-forwarded-proto") ?? "http";
   if (host) {
@@ -52,8 +52,9 @@ const getBaseUrl = () => {
 };
 
 export default async function TestAnalysisPage() {
-  const baseUrl = getBaseUrl();
-  const cookie = headers().get("cookie") ?? "";
+  const baseUrl = await getBaseUrl();
+  const incoming = await headers();
+  const cookie = incoming.get("cookie") ?? "";
 
   const [testsResponse, attemptsResponse] = await Promise.all([
     fetch(`${baseUrl}/api/tests`, {
