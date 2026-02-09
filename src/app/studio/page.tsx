@@ -170,6 +170,9 @@ export default function CreatorStudio() {
         }),
       });
       const saved = await safeJson<{ id?: string } | null>(response, null);
+      if (!saved?.id) {
+        throw new Error("Test creation failed.");
+      }
       setToastVisible(true);
       setTimeout(() => setToastVisible(false), 2200);
       router.push(`/test-created?testId=${saved.id}`);
