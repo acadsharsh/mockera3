@@ -1,8 +1,9 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Geist_Mono, Inter, JetBrains_Mono, Marcellus, Space_Grotesk } from "next/font/google";
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -53,6 +54,7 @@ export default function RootLayout({
           <PageTransition>{children}</PageTransition>
           <Toaster richColors />
           <SpeedInsights />
+          <Analytics />
         </Providers>
       </body>
     </html>
