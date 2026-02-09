@@ -26,6 +26,7 @@ export async function GET(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const cacheHeaders = { "Cache-Control": "private, max-age=30" };
   const url = new URL(request.url);
   const testId = url.searchParams.get("testId");
   const batchCode = url.searchParams.get("batchCode");
@@ -59,7 +60,8 @@ export async function GET(request: Request) {
       userId: attempt.userId,
       userName: attempt.user?.name ?? "Anonymous",
       userImage: attempt.user?.image ?? null,
-    }))
+    })),
+    { headers: cacheHeaders }
   );
 }
 

@@ -55,6 +55,7 @@ export async function GET(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const cacheHeaders = { "Cache-Control": "private, max-age=30" };
   const url = new URL(request.url);
   const latest = url.searchParams.get("latest");
   const testId = url.searchParams.get("testId");
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
       },
       include: { questions: true },
     });
-    return NextResponse.json(test ? mapTest(test) : null);
+    return NextResponse.json(test ? mapTest(test) : null, { headers: cacheHeaders });
   }
 
   if (latest) {
@@ -78,7 +79,7 @@ export async function GET(request: Request) {
       include: { questions: true },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(latestTest ? mapTest(latestTest) : null);
+    return NextResponse.json(latestTest ? mapTest(latestTest) : null, { headers: cacheHeaders });
   }
 
   const tests = await prisma.test.findMany({
@@ -88,7 +89,7 @@ export async function GET(request: Request) {
     include: { questions: true },
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json(tests.map(mapTest));
+  return NextResponse.json(tests.map(mapTest), { headers: cacheHeaders });
 }
 
 export async function POST(request: Request) {
