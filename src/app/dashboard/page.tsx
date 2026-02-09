@@ -701,7 +701,7 @@ export default function Dashboard() {
         </header>
 
         <div className="grid gap-4 lg:grid-cols-4 lg:auto-rows-[180px]">
-          <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-indigo-600/60 via-indigo-700/40 to-[#120f2c] p-6 lg:col-span-2 lg:row-span-2">
+          <div className="glass-card relative overflow-hidden p-6 lg:col-span-2 lg:row-span-2">
             <div
               className="absolute -left-16 top-10 h-40 w-40 rounded-full blur-3xl"
               style={{ background: auraColor }}
