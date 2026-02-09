@@ -45,17 +45,19 @@ export default function ResetPasswordPage() {
                 className="w-full rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
                 disabled={loading}
                 onClick={async () => {
-                  await emailOtp.requestPasswordReset({
-                    email,
-                    fetchOptions: {
-                      onRequest: () => setLoading(true),
-                      onResponse: () => setLoading(false),
-                      onError: (ctx) => toast.error(ctx.error.message),
-                      onSuccess: () => {
-                        setOtpSent(true);
-                        toast.success("OTP sent to your email.");
+                    await emailOtp.requestPasswordReset({
+                      email,
+                      fetchOptions: {
+                        onRequest: () => setLoading(true),
+                        onResponse: () => setLoading(false),
+                        onError: (ctx) => {
+                          toast.error(ctx.error.message);
+                        },
+                        onSuccess: () => {
+                          setOtpSent(true);
+                          toast.success("OTP sent to your email.");
+                        },
                       },
-                    },
                   });
                 }}
               >
@@ -101,7 +103,9 @@ export default function ResetPasswordPage() {
                       fetchOptions: {
                         onRequest: () => setLoading(true),
                         onResponse: () => setLoading(false),
-                        onError: (ctx) => toast.error(ctx.error.message),
+                        onError: (ctx) => {
+                          toast.error(ctx.error.message);
+                        },
                         onSuccess: () => {
                           toast.success("Password reset. Please sign in.");
                           window.location.href = "/login";
