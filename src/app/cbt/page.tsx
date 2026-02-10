@@ -9,7 +9,7 @@ type Crop = {
   id: string;
   subject: "Physics" | "Chemistry" | "Maths";
   questionType?: "MCQ" | "MSQ" | "NUM";
-  correctOption: "A" | "B" | "C" | "D";
+  correctOption: string;
   correctOptions?: Array<"A" | "B" | "C" | "D">;
   correctNumeric?: string;
   marks: "+4/-1";

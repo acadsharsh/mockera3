@@ -6,7 +6,7 @@ type Crop = {
   id: string;
   subject: "Physics" | "Chemistry" | "Maths";
   questionType?: "MCQ" | "MSQ" | "NUM";
-  correctOption: "A" | "B" | "C" | "D";
+  correctOption: "" | "A" | "B" | "C" | "D";
   correctOptions?: Array<"A" | "B" | "C" | "D">;
   correctNumeric?: string;
   marks: "+4/-1";
@@ -34,7 +34,7 @@ const mapTest = (test: any) => ({
   crops: test.questions.map((q: any) => ({
     id: q.id,
     subject: q.subject,
-    correctOption: q.correctOption,
+    correctOption: q.correctOption ?? "",
     marks: "+4/-1",
     difficulty: q.difficulty,
     imageDataUrl: q.imageUrl,
@@ -126,10 +126,12 @@ export async function POST(request: Request) {
           questionType: crop.questionType ?? "MCQ",
           correctOption:
             crop.questionType === "MSQ"
-              ? (crop.correctOptions ?? []).join(",")
+              ? (crop.correctOptions ?? []).length
+                ? (crop.correctOptions ?? []).join(",")
+                : null
               : crop.questionType === "NUM"
               ? null
-              : crop.correctOption,
+              : crop.correctOption || null,
           correctNumeric: crop.questionType === "NUM" ? crop.correctNumeric ?? "" : null,
           marksCorrect: payload.markingCorrect,
           marksIncorrect: payload.markingIncorrect,
@@ -172,4 +174,85 @@ export async function DELETE(request: Request) {
 
   await prisma.test.delete({ where: { id: testId } });
   return NextResponse.json({ ok: true });
+}
+
+export async function PATCH(request: Request) {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const payload = (await request.json()) as {
+    testId?: string;
+    entries?: Array<{ index?: number; value: string }>;
+  };
+
+  if (!payload?.testId || !payload.entries?.length) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const test = await prisma.test.findFirst({
+    where: { id: payload.testId, ownerId: session.user.id },
+    include: {
+      questions: {
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+
+  if (!test) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const ordered = test.questions;
+  const updates: Array<Promise<any>> = [];
+
+  const normalize = (value: string) => value.trim().toUpperCase();
+
+  payload.entries.forEach((entry, idx) => {
+    const targetIndex = entry.index ? entry.index - 1 : idx;
+    if (targetIndex < 0 || targetIndex >= ordered.length) return;
+    const question = ordered[targetIndex];
+    const raw = normalize(entry.value);
+    if (!raw) return;
+    if (question.questionType === "NUM") {
+      updates.push(
+        prisma.question.update({
+          where: { id: question.id },
+          data: { correctNumeric: raw, correctOption: null },
+        })
+      );
+      return;
+    }
+    const letters = raw.split(",").join("").split("");
+    const cleaned = letters.filter((letter) => ["A", "B", "C", "D"].includes(letter));
+    if (cleaned.length === 0) return;
+    if (question.questionType === "MSQ") {
+      updates.push(
+        prisma.question.update({
+          where: { id: question.id },
+          data: { correctOption: cleaned.join(","), correctNumeric: null },
+        })
+      );
+      return;
+    }
+    updates.push(
+      prisma.question.update({
+        where: { id: question.id },
+        data: { correctOption: cleaned[0], correctNumeric: null },
+      })
+    );
+  });
+
+  if (updates.length === 0) {
+    return NextResponse.json({ error: "No updates applied" }, { status: 400 });
+  }
+
+  await prisma.$transaction(updates);
+  const refreshed = await prisma.test.findFirst({
+    where: { id: test.id },
+    include: { questions: true },
+  });
+
+  return NextResponse.json(refreshed ? mapTest(refreshed) : null);
 }

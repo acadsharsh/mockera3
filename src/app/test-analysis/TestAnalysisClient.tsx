@@ -9,7 +9,7 @@ type Crop = {
   id: string;
   subject: "Physics" | "Chemistry" | "Maths";
   questionType?: "MCQ" | "MSQ" | "NUM";
-  correctOption: "A" | "B" | "C" | "D";
+  correctOption: string;
   correctOptions?: Array<"A" | "B" | "C" | "D">;
   correctNumeric?: string;
   marks: "+4/-1";
@@ -25,6 +25,7 @@ type Test = {
   durationMinutes?: number;
   markingCorrect?: number;
   markingIncorrect?: number;
+  ownerId?: string;
   crops: Crop[];
 };
 
@@ -35,7 +36,7 @@ type Attempt = {
   score?: number;
   accuracy?: number;
   timeTaken?: number;
-  answers: Record<string, "A" | "B" | "C" | "D" | "">;
+  answers: Record<string, string>;
   timeSpent: Record<string, number>;
   events?: {
     answerChanges?: Record<string, number>;
@@ -97,6 +98,83 @@ const isCorrectAnswer = (crop: Crop, selected?: string) => {
   return selected === crop.correctOption;
 };
 
+const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
+
+const parseAnswerKeyText = (text: string) => {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const parsed: Array<{ index?: number; value: string }> = [];
+  for (const line of lines) {
+    const cleaned = line.replace(/\t+/g, " ").trim();
+    const match = cleaned.match(
+      /^(?:Q\s*)?(\d{1,4})[\)\.\-: ]+\s*([A-Da-d, ]+|[0-9.+-]+)$/i
+    );
+    if (match) {
+      const idx = Number(match[1]);
+      const value = normalizeAnswer(match[2].replace(/\s+/g, ""));
+      parsed.push({ index: Number.isFinite(idx) ? idx : undefined, value });
+      continue;
+    }
+    parsed.push({ value: normalizeAnswer(cleaned.replace(/\s+/g, "")) });
+  }
+  return parsed;
+};
+
+const parseAnswerKeyTokens = (text: string) => {
+  const rawTokens = text
+    .replace(/\r?\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ");
+  const tokens = rawTokens.filter((token) => {
+    const upper = token.toUpperCase();
+    if (["Q", "Q.", "QUE", "QUE.", "QUESTION", "ANS", "ANS.", "A", "A."].includes(upper)) {
+      return false;
+    }
+    if (["SECTION", "PART", "PHYSICS", "CHEMISTRY", "MATHS"].includes(upper)) {
+      return false;
+    }
+    return true;
+  });
+  const entries: Array<{ index?: number; value: string }> = [];
+  for (let i = 0; i < tokens.length - 1; i += 1) {
+    const indexToken = tokens[i];
+    const valueToken = tokens[i + 1];
+    if (!/^\d{1,4}$/.test(indexToken)) {
+      continue;
+    }
+    if (
+      !/^[A-Da-d]+$/.test(valueToken) &&
+      !/^[A-Da-d](?:[,A-Da-d]+)+$/.test(valueToken) &&
+      !/^[0-9.+-]+$/.test(valueToken)
+    ) {
+      continue;
+    }
+    entries.push({ index: Number(indexToken), value: normalizeAnswer(valueToken) });
+  }
+  return entries;
+};
+
+const extractPdfText = async (file: File) => {
+  const mod = await import("pdfjs-dist");
+  mod.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url
+  ).toString();
+  const arrayBuffer = await file.arrayBuffer();
+  const doc = await mod.getDocument({ data: arrayBuffer }).promise;
+  let all = "";
+  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+    const page = await doc.getPage(pageNumber);
+    const content = await page.getTextContent();
+    const text = content.items.map((item: any) => item.str || "").join(" ");
+    all += `${text}\n`;
+  }
+  return all;
+};
+
 type TestAnalysisClientProps = {
   initialTests: Test[];
   initialAttempts: Attempt[];
@@ -112,6 +190,19 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
   const [activeTestId, setActiveTestId] = useState<string>("");
   const [activeAttemptId, setActiveAttemptId] = useState<string>("");
   const [learnings, setLearnings] = useState<string[]>(["", "", ""]);
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+  const [answerKeyStatus, setAnswerKeyStatus] = useState<{
+    message: string;
+    tone: "success" | "error" | "info";
+  } | null>(null);
+  const [answerKeyPreview, setAnswerKeyPreview] = useState<
+    Array<{ index: number; value: string }>
+  >([]);
+  const [answerKeyPending, setAnswerKeyPending] = useState<
+    Array<{ index?: number; value: string }>
+  >([]);
+  const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
+  const [manualAnswerKey, setManualAnswerKey] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -132,6 +223,17 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const response = await fetch("/api/auth/get-session");
+      const data = await safeJson<{ user?: { id?: string } } | null>(response, null);
+      if (data?.user?.id) {
+        setSessionUserId(data.user.id);
+      }
+    };
+    loadSession();
   }, []);
 
 
@@ -168,6 +270,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
     () => tests.find((test) => test.id === activeTestId) ?? null,
     [activeTestId, tests]
   );
+  const isOwner = Boolean(activeTest?.ownerId && sessionUserId && activeTest.ownerId === sessionUserId);
 
   const attemptsForTest = useMemo(() => {
     if (!activeTestId) return [];
@@ -264,6 +367,80 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
       subjectStats,
     };
   }, [activeTest, percentileBands, selectedAttempt]);
+
+  const hasAnswerKey = useMemo(() => {
+    if (!activeTest) return false;
+    return activeTest.crops.some((crop) => {
+      if (crop.questionType === "NUM") {
+        return Boolean(crop.correctNumeric && crop.correctNumeric.trim().length > 0);
+      }
+      if (crop.questionType === "MSQ") {
+        return Boolean(
+          crop.correctOptions &&
+            crop.correctOptions.length > 0 &&
+            crop.correctOptions.some((letter) => letter !== "A")
+        );
+      }
+      return crop.correctOption !== "A";
+    });
+  }, [activeTest]);
+
+  const handleAnswerKeyInput = (text: string) => {
+    const lineEntries = parseAnswerKeyText(text);
+    const tokenEntries = parseAnswerKeyTokens(text);
+    const entries = lineEntries.length >= tokenEntries.length ? lineEntries : tokenEntries;
+    setAnswerKeyPending(entries);
+    const preview = entries
+      .map((entry, idx) => ({
+        index: entry.index ?? idx + 1,
+        value: entry.value,
+      }))
+      .slice(0, 10);
+    setAnswerKeyPreview(preview);
+    setAnswerKeyStatus({
+      message: `Parsed ${entries.length} answers. Review and apply.`,
+      tone: "info",
+    });
+  };
+
+  const handleAnswerKeyUpload = async (file: File | null) => {
+    if (!file) return;
+    setAnswerKeyStatus({ message: "Parsing answer key...", tone: "info" });
+    try {
+      const text =
+        file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
+          ? await extractPdfText(file)
+          : await file.text();
+      handleAnswerKeyInput(text);
+    } catch {
+      setAnswerKeyStatus({
+        message: "Failed to read answer key.",
+        tone: "error",
+      });
+    }
+  };
+
+  const applyAnswerKey = async () => {
+    if (!activeTest) return;
+    if (!answerKeyPending.length) {
+      setAnswerKeyStatus({ message: "No answers to apply.", tone: "error" });
+      return;
+    }
+    const response = await fetch("/api/tests", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ testId: activeTest.id, entries: answerKeyPending }),
+    });
+    const updated = await safeJson<Test | null>(response, null);
+    if (!updated) {
+      setAnswerKeyStatus({ message: "Failed to update answer key.", tone: "error" });
+      return;
+    }
+    setTests((prev) => prev.map((test) => (test.id === updated.id ? updated : test)));
+    setAnswerKeyStatus({ message: "Answer key updated.", tone: "success" });
+    setAnswerKeyPreview([]);
+    setAnswerKeyPending([]);
+  };
 
   const attemptQuality = useMemo(() => {
     if (!activeTest || !selectedAttempt || !questionStats) return null;
@@ -628,6 +805,112 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               </button>
             </div>
           </header>
+
+          {isOwner && !hasAnswerKey && (
+            <section className={cardClass}>
+              <p className="text-sm font-semibold">Add Answer Key</p>
+              <p className="mt-2 text-sm text-white/60">
+                Upload or paste the answer key to score this attempt accurately.
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-[11px]">
+                <button
+                  type="button"
+                  className={`rounded-full px-3 py-1 ${
+                    answerKeyMode === "file"
+                      ? "bg-white/20 text-white"
+                      : "border border-white/10 text-white/70"
+                  }`}
+                  onClick={() => setAnswerKeyMode("file")}
+                >
+                  PDF / File
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-full px-3 py-1 ${
+                    answerKeyMode === "manual"
+                      ? "bg-white/20 text-white"
+                      : "border border-white/10 text-white/70"
+                  }`}
+                  onClick={() => setAnswerKeyMode("manual")}
+                >
+                  Manual
+                </button>
+              </div>
+              {answerKeyMode === "file" ? (
+                <input
+                  type="file"
+                  accept=".txt,.csv,.pdf"
+                  onChange={(event) => handleAnswerKeyUpload(event.target.files?.[0] ?? null)}
+                  className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-[11px] file:text-white"
+                />
+              ) : (
+                <div className="mt-3">
+                  <textarea
+                    value={manualAnswerKey}
+                    onChange={(event) => setManualAnswerKey(event.target.value)}
+                    rows={5}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
+                    placeholder={"1 A\n2 C\n3 42\n4 B,C"}
+                  />
+                  <button
+                    type="button"
+                    className="mt-2 rounded-full bg-white/10 px-3 py-1 text-[11px] text-white/80"
+                    onClick={() => handleAnswerKeyInput(manualAnswerKey)}
+                  >
+                    Parse Manual Key
+                  </button>
+                </div>
+              )}
+              {answerKeyStatus && (
+                <div
+                  className={`mt-3 rounded-lg border px-3 py-2 text-[11px] ${
+                    answerKeyStatus.tone === "success"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                      : answerKeyStatus.tone === "error"
+                      ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                      : "border-white/10 bg-white/5 text-white/70"
+                  }`}
+                >
+                  {answerKeyStatus.message}
+                </div>
+              )}
+              {answerKeyPreview.length > 0 && (
+                <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-white/70">
+                  <div className="text-[10px] uppercase text-white/50">Preview (first 10)</div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {answerKeyPreview.map((entry) => (
+                      <div key={`${entry.index}-${entry.value}`} className="flex items-center gap-2">
+                        <span className="w-8 rounded bg-white/10 px-2 py-1 text-center">
+                          {entry.index}
+                        </span>
+                        <span className="font-semibold">{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-semibold text-emerald-100"
+                      onClick={applyAnswerKey}
+                    >
+                      Apply Answer Key
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70"
+                      onClick={() => {
+                        setAnswerKeyPreview([]);
+                        setAnswerKeyPending([]);
+                        setAnswerKeyStatus(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {!activeTest || !selectedAttempt ? (
             <div className={`${cardClass} text-sm text-white/70`}>

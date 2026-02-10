@@ -15,7 +15,7 @@ type CropMeta = {
   h: number;
   subject: "Physics" | "Chemistry" | "Maths";
   questionType: "MCQ" | "MSQ" | "NUM";
-  correctOption: "A" | "B" | "C" | "D";
+  correctOption: "" | "A" | "B" | "C" | "D";
   correctOptions?: Array<"A" | "B" | "C" | "D">;
   correctNumeric?: string;
   marks: "+4/-1";
@@ -731,8 +731,8 @@ export default function CreatorStudio() {
       ...draftRect,
       subject: lastSubject,
       questionType: "MCQ",
-      correctOption: "A",
-      correctOptions: ["A"],
+      correctOption: "",
+      correctOptions: [],
       correctNumeric: "",
       marks: "+4/-1",
       difficulty: lastDifficulty,
@@ -1524,7 +1524,6 @@ export default function CreatorStudio() {
                   setAnswerKeyMode("manual");
                   setShowSettings(true);
                   setShowAnswerKeyPrompt(false);
-                  fileInputRef.current?.click();
                 }}
               >
                 Enter manually
@@ -1536,7 +1535,6 @@ export default function CreatorStudio() {
                   setAnswerKeyMode("file");
                   setShowSettings(true);
                   setShowAnswerKeyPrompt(false);
-                  fileInputRef.current?.click();
                 }}
               >
                 Upload answer key PDF / file
