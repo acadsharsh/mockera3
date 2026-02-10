@@ -367,7 +367,7 @@ export default function CBT() {
     setSectionOrder(order);
 
     try {
-      await fetch("/api/attempts", {
+      const response = await fetch("/api/attempts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -385,7 +385,9 @@ export default function CBT() {
           sectionOrder: order,
         }),
       });
-      router.push(`/test-analysis?testId=${test.id}`);
+      const saved = await response.json().catch(() => null);
+      const attemptId = saved?.id ? `&attemptId=${saved.id}` : "";
+      router.push(`/answer-key?testId=${test.id}${attemptId}`);
     } finally {
       setSubmitting(false);
     }

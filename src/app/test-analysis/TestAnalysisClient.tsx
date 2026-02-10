@@ -300,6 +300,12 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
     }
   }, [activeTestId, searchParams, tests]);
 
+  useEffect(() => {
+    const queryAttemptId = searchParams.get("attemptId");
+    if (!queryAttemptId) return;
+    setActiveAttemptId(queryAttemptId);
+  }, [searchParams]);
+
   const activeTest = useMemo(
     () => tests.find((test) => test.id === activeTestId) ?? null,
     [activeTestId, tests]
@@ -409,21 +415,50 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
         return Boolean(crop.correctNumeric && crop.correctNumeric.trim().length > 0);
       }
       if (crop.questionType === "MSQ") {
-        return Boolean(
-          crop.correctOptions &&
-            crop.correctOptions.length > 0 &&
-            crop.correctOptions.some((letter) => letter !== "A")
-        );
+        return Boolean(crop.correctOptions && crop.correctOptions.length > 0);
       }
-      return crop.correctOption !== "A";
+      return Boolean(crop.correctOption && crop.correctOption.trim().length > 0);
     });
   }, [activeTest]);
+
+  const scoreEntries = (entries: Array<{ index?: number; value: string }>) => {
+    if (!entries.length) return -1;
+    let letterLike = 0;
+    let numericLike = 0;
+    let shortNums = 0;
+    entries.forEach((entry) => {
+      const value = entry.value.trim();
+      if (/^[A-D](,[A-D])*$/.test(value)) {
+        letterLike += 1;
+        return;
+      }
+      if (/^[0-9.+-]+$/.test(value)) {
+        numericLike += 1;
+        if (!value.includes(".") && value.length <= 2) shortNums += 1;
+      }
+    });
+    return letterLike * 5 + numericLike * 2 - shortNums;
+  };
+
+  const pickBestEntries = (
+    candidates: Array<Array<{ index?: number; value: string }>>
+  ) => {
+    const scored = candidates.map((entries) => ({
+      entries,
+      score: scoreEntries(entries),
+      hasLetters: entries.some((entry) => /^[A-D](,[A-D])*$/.test(entry.value.trim())),
+    }));
+    const withLetters = scored.filter((item) => item.hasLetters);
+    const pool = withLetters.length ? withLetters : scored;
+    return pool.sort((a, b) => b.score - a.score || b.entries.length - a.entries.length)[0]
+      ?.entries ?? [];
+  };
 
   const handleAnswerKeyInput = (text: string) => {
     const lineEntries = parseAnswerKeyText(text);
     const tokenEntries = parseAnswerKeyTokens(text);
     const gridEntries = parseAnswerKeyGrid(text);
-    const entries = [lineEntries, tokenEntries, gridEntries].sort((a, b) => b.length - a.length)[0];
+    const entries = pickBestEntries([lineEntries, tokenEntries, gridEntries]);
     setAnswerKeyPending(entries);
     const preview = entries
       .map((entry, idx) => ({
@@ -467,8 +502,10 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
       body: JSON.stringify({ testId: activeTest.id, entries: answerKeyPending }),
     });
     const updated = await safeJson<Test | null>(response, null);
-    if (!updated) {
-      setAnswerKeyStatus({ message: "Failed to update answer key.", tone: "error" });
+    if (!response.ok || !updated?.id) {
+      const message =
+        (updated as { error?: string } | null)?.error ?? "Failed to update answer key.";
+      setAnswerKeyStatus({ message, tone: "error" });
       return;
     }
     setTests((prev) => prev.map((test) => (test.id === updated.id ? updated : test)));
@@ -912,12 +949,13 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {answerKeyPreview.length > 0 && (
                 <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-white/70">
                   <div className="text-[10px] uppercase text-white/50">Preview (first 10)</div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="mt-2 space-y-1">
                     {answerKeyPreview.map((entry) => (
-                      <div key={`${entry.index}-${entry.value}`} className="flex items-center gap-2">
-                        <span className="w-8 rounded bg-white/10 px-2 py-1 text-center">
-                          {entry.index}
-                        </span>
+                      <div
+                        key={`${entry.index}-${entry.value}`}
+                        className="flex items-center justify-between rounded-md bg-white/5 px-2 py-1"
+                      >
+                        <span className="text-white/70">Q {entry.index}</span>
                         <span className="font-semibold">{entry.value}</span>
                       </div>
                     ))}

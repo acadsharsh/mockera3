@@ -70,7 +70,6 @@ export default function CreatorStudio() {
   const [showSettings, setShowSettings] = useState(false);
   const [isEditingOptions, setIsEditingOptions] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
-  const [showAnswerKeyPrompt, setShowAnswerKeyPrompt] = useState(false);
   const [showAnswerKeyConfirm, setShowAnswerKeyConfirm] = useState(false);
   const [answerKeyStatus, setAnswerKeyStatus] = useState<{
     message: string;
@@ -488,6 +487,39 @@ export default function CreatorStudio() {
     return parsed;
   };
 
+  const scoreEntries = (entries: Array<{ index?: number; value: string }>) => {
+    if (!entries.length) return -1;
+    let letterLike = 0;
+    let numericLike = 0;
+    let shortNums = 0;
+    entries.forEach((entry) => {
+      const value = entry.value.trim();
+      if (/^[A-D](,[A-D])*$/.test(value)) {
+        letterLike += 1;
+        return;
+      }
+      if (/^[0-9.+-]+$/.test(value)) {
+        numericLike += 1;
+        if (!value.includes(".") && value.length <= 2) shortNums += 1;
+      }
+    });
+    return letterLike * 5 + numericLike * 2 - shortNums;
+  };
+
+  const pickBestEntries = (
+    candidates: Array<Array<{ index?: number; value: string }>>
+  ) => {
+    const scored = candidates.map((entries) => ({
+      entries,
+      score: scoreEntries(entries),
+      hasLetters: entries.some((entry) => /^[A-D](,[A-D])*$/.test(entry.value.trim())),
+    }));
+    const withLetters = scored.filter((item) => item.hasLetters);
+    const pool = withLetters.length ? withLetters : scored;
+    return pool.sort((a, b) => b.score - a.score || b.entries.length - a.entries.length)[0]
+      ?.entries ?? [];
+  };
+
   const parseAnswerKeyTokens = (text: string) => {
     const rawTokens = text
       .replace(/\r?\n/g, " ")
@@ -650,7 +682,7 @@ export default function CreatorStudio() {
       const lineEntries = parseAnswerKeyText(text);
       const tokenEntries = parseAnswerKeyTokens(text);
       const gridEntries = parseAnswerKeyGrid(text);
-      const entries = [lineEntries, tokenEntries, gridEntries].sort((a, b) => b.length - a.length)[0];
+      const entries = pickBestEntries([lineEntries, tokenEntries, gridEntries]);
       setAnswerKeyPending(entries);
       const preview = entries
         .map((entry, idx) => ({
@@ -682,7 +714,8 @@ export default function CreatorStudio() {
     }
     const lineEntries = parseAnswerKeyText(text);
     const tokenEntries = parseAnswerKeyTokens(text);
-    const entries = lineEntries.length >= tokenEntries.length ? lineEntries : tokenEntries;
+    const gridEntries = parseAnswerKeyGrid(text);
+    const entries = pickBestEntries([lineEntries, tokenEntries, gridEntries]);
     setAnswerKeyPending(entries);
     const preview = entries
       .map((entry, idx) => ({
@@ -1357,7 +1390,7 @@ export default function CreatorStudio() {
               />
               <button
                 className="rounded-full bg-white px-6 py-3 text-xs font-semibold text-black shadow-lg shadow-white/10"
-                onClick={() => setShowAnswerKeyPrompt(true)}
+                onClick={() => fileInputRef.current?.click()}
                 type="button"
               >
                 Browse PDF
@@ -1468,12 +1501,13 @@ export default function CreatorStudio() {
                 {answerKeyPreview.length > 0 && (
                   <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-white/70">
                     <div className="text-[10px] uppercase text-white/50">Preview (first 10)</div>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div className="mt-2 space-y-1">
                       {answerKeyPreview.map((entry) => (
-                        <div key={`${entry.index}-${entry.value}`} className="flex items-center gap-2">
-                          <span className="w-8 rounded bg-white/10 px-2 py-1 text-center">
-                            {entry.index}
-                          </span>
+                        <div
+                          key={`${entry.index}-${entry.value}`}
+                          className="flex items-center justify-between rounded-md bg-white/5 px-2 py-1"
+                        >
+                          <span className="text-white/70">Q {entry.index}</span>
                           <span className="font-semibold">{entry.value}</span>
                         </div>
                       ))}
@@ -1544,59 +1578,7 @@ export default function CreatorStudio() {
         </div>
       )}
 
-      {showAnswerKeyPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
-            <h2 className="text-lg font-semibold">Add an answer key?</h2>
-            <p className="mt-2 text-sm text-white/70">
-              Adding the answer key now saves time later. You can enter it manually or upload a PDF/file.
-            </p>
-            <div className="mt-4 flex flex-col gap-2 text-xs">
-              <button
-                type="button"
-                className="rounded-full bg-white/10 px-4 py-2 text-white"
-                onClick={() => {
-                  setAnswerKeyMode("manual");
-                  setShowSettings(true);
-                  setShowAnswerKeyPrompt(false);
-                }}
-              >
-                Enter manually
-              </button>
-              <button
-                type="button"
-                className="rounded-full bg-white/10 px-4 py-2 text-white"
-                onClick={() => {
-                  setAnswerKeyMode("file");
-                  setShowSettings(true);
-                  setShowAnswerKeyPrompt(false);
-                }}
-              >
-                Upload answer key PDF / file
-              </button>
-              <button
-                type="button"
-                className="rounded-full border border-white/10 px-4 py-2 text-white/70"
-                onClick={() => {
-                  setShowAnswerKeyPrompt(false);
-                  fileInputRef.current?.click();
-                }}
-              >
-                Later, just upload the question PDF
-              </button>
-            </div>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full border border-white/10 px-4 py-2 text-xs text-white/70"
-              onClick={() => setShowAnswerKeyPrompt(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showAnswerKeyConfirm && (
+            {showAnswerKeyConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
             <h2 className="text-lg font-semibold">Answer key missing</h2>
