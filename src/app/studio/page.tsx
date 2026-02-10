@@ -581,6 +581,46 @@ export default function CreatorStudio() {
     return entries;
   };
 
+  const parseAnswerKeyRows = (text: string) => {
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const entries: Array<{ index?: number; value: string }> = [];
+    const qRegex = /\bQ(?:UE|UESTION)?\.?\b/i;
+    const aRegex = /\bA(?:NS|NSWER)?\.?\b/i;
+    const extractNums = (line: string) => line.match(/\b\d{1,4}\b/g)?.map(Number) ?? [];
+    const extractAns = (line: string) =>
+      line
+        .replace(qRegex, " ")
+        .replace(aRegex, " ")
+        .replace(/[^A-Da-d0-9.+-,]/g, " ")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .filter(
+          (token) =>
+            /^[A-Da-d]+$/.test(token) ||
+            /^[A-Da-d](?:[,A-Da-d]+)+$/.test(token) ||
+            /^[0-9.+-]+$/.test(token)
+        )
+        .map((token) => normalizeAnswer(token));
+
+    for (let i = 0; i < lines.length - 1; i += 1) {
+      if (!qRegex.test(lines[i])) continue;
+      const nums = extractNums(lines[i]);
+      if (nums.length < 3) continue;
+      const ansLine = lines[i + 1];
+      if (!aRegex.test(ansLine)) continue;
+      const ans = extractAns(ansLine);
+      if (ans.length >= nums.length) {
+        nums.forEach((num, idx) => entries.push({ index: num, value: ans[idx] }));
+        return entries;
+      }
+    }
+    return entries;
+  };
+
   const parseAnswerKeyGrid = (text: string) => {
     const lines = text
       .split(/\r?\n/)
@@ -757,10 +797,14 @@ export default function CreatorStudio() {
       } else {
         text = await file.text();
       }
+      const rowEntries = parseAnswerKeyRows(text);
       const lineEntries = parseAnswerKeyText(text);
       const tokenEntries = parseAnswerKeyTokens(text);
       const gridEntries = parseAnswerKeyGrid(text);
-      const entries = pickBestEntries([lineEntries, tokenEntries, gridEntries]);
+      const entries =
+        rowEntries.length > 0
+          ? rowEntries
+          : pickBestEntries([lineEntries, tokenEntries, gridEntries]);
       setAnswerKeyPending(entries);
       const preview = entries
         .map((entry, idx) => ({
@@ -790,10 +834,14 @@ export default function CreatorStudio() {
       });
       return;
     }
+    const rowEntries = parseAnswerKeyRows(text);
     const lineEntries = parseAnswerKeyText(text);
     const tokenEntries = parseAnswerKeyTokens(text);
     const gridEntries = parseAnswerKeyGrid(text);
-    const entries = pickBestEntries([lineEntries, tokenEntries, gridEntries]);
+    const entries =
+      rowEntries.length > 0
+        ? rowEntries
+        : pickBestEntries([lineEntries, tokenEntries, gridEntries]);
     setAnswerKeyPending(entries);
     const preview = entries
       .map((entry, idx) => ({
