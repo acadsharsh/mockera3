@@ -74,6 +74,12 @@ export default function CreatorStudio() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
+  const [answerKeyPreview, setAnswerKeyPreview] = useState<
+    Array<{ index: number; value: string }>
+  >([]);
+  const [answerKeyPending, setAnswerKeyPending] = useState<
+    Array<{ index?: number; value: string }>
+  >([]);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
@@ -376,7 +382,8 @@ export default function CreatorStudio() {
       return "";
     }
     const tempCanvas = document.createElement("canvas");
-    const scale = renderScaleRef.current || 1;
+    // Export at higher resolution for sharper CBT rendering.
+    const scale = (renderScaleRef.current || 1) * 2;
     tempCanvas.width = Math.max(1, Math.floor(rect.w * scale));
     tempCanvas.height = Math.max(1, Math.floor(rect.h * scale));
     const tempContext = tempCanvas.getContext("2d");
@@ -454,6 +461,41 @@ export default function CreatorStudio() {
     return parsed;
   };
 
+  const parseAnswerKeyTokens = (text: string) => {
+    const rawTokens = text
+      .replace(/\r?\n/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ");
+    const tokens = rawTokens.filter((token) => {
+      const upper = token.toUpperCase();
+      if (["Q", "Q.", "QUE", "QUE.", "QUESTION", "ANS", "ANS.", "A", "A."].includes(upper)) {
+        return false;
+      }
+      if (["SECTION", "PART", "PHYSICS", "CHEMISTRY", "MATHS"].includes(upper)) {
+        return false;
+      }
+      return true;
+    });
+    const entries: Array<{ index?: number; value: string }> = [];
+    for (let i = 0; i < tokens.length - 1; i += 1) {
+      const indexToken = tokens[i];
+      const valueToken = tokens[i + 1];
+      if (!/^\d{1,4}$/.test(indexToken)) {
+        continue;
+      }
+      if (
+        !/^[A-Da-d]+$/.test(valueToken) &&
+        !/^[A-Da-d](?:[,A-Da-d]+)+$/.test(valueToken) &&
+        !/^[0-9.+-]+$/.test(valueToken)
+      ) {
+        continue;
+      }
+      entries.push({ index: Number(indexToken), value: normalizeAnswer(valueToken) });
+    }
+    return entries;
+  };
+
   const getOrderedCrops = () =>
     [...cropRects].sort((a, b) => {
       if (a.pageNumber !== b.pageNumber) return a.pageNumber - b.pageNumber;
@@ -516,6 +558,8 @@ export default function CreatorStudio() {
       message: `Applied ${applied} answers.`,
       tone: "success",
     });
+    setAnswerKeyPreview([]);
+    setAnswerKeyPending([]);
   };
 
   const extractPdfText = async (file: File) => {
@@ -542,8 +586,21 @@ export default function CreatorStudio() {
       } else {
         text = await file.text();
       }
-      const entries = parseAnswerKeyText(text);
-      applyAnswerKey(entries);
+      const lineEntries = parseAnswerKeyText(text);
+      const tokenEntries = parseAnswerKeyTokens(text);
+      const entries = lineEntries.length >= tokenEntries.length ? lineEntries : tokenEntries;
+      setAnswerKeyPending(entries);
+      const preview = entries
+        .map((entry, idx) => ({
+          index: entry.index ?? idx + 1,
+          value: entry.value,
+        }))
+        .slice(0, 10);
+      setAnswerKeyPreview(preview);
+      setAnswerKeyStatus({
+        message: `Parsed ${entries.length} answers. Review and apply.`,
+        tone: "info",
+      });
     } catch {
       setAnswerKeyStatus({
         message: "Failed to read answer key.",
@@ -1268,6 +1325,41 @@ export default function CreatorStudio() {
                     }`}
                   >
                     {answerKeyStatus.message}
+                  </div>
+                )}
+                {answerKeyPreview.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-white/70">
+                    <div className="text-[10px] uppercase text-white/50">Preview (first 10)</div>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {answerKeyPreview.map((entry) => (
+                        <div key={`${entry.index}-${entry.value}`} className="flex items-center gap-2">
+                          <span className="w-8 rounded bg-white/10 px-2 py-1 text-center">
+                            {entry.index}
+                          </span>
+                          <span className="font-semibold">{entry.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-semibold text-emerald-100"
+                        onClick={() => applyAnswerKey(answerKeyPending)}
+                      >
+                        Apply Answer Key
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70"
+                        onClick={() => {
+                          setAnswerKeyPreview([]);
+                          setAnswerKeyPending([]);
+                          setAnswerKeyStatus(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
