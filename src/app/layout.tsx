@@ -38,6 +38,9 @@ export const metadata: Metadata = {
   title: "PDF to Mock Test Studio",
   description:
     "Crop questions from PDFs, publish CBT mock tests, and analyze performance with high-end analytics.",
+  verification: {
+    google: "XoHp4XpjNz95uTCQwdcIk7DlXlcb4YpFg5Qv_k4HbjU",
+  },
 };
 
 export default function RootLayout({
@@ -55,6 +58,16 @@ export default function RootLayout({
           type="module"
           strategy="afterInteractive"
         />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-D1VHC992WK"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-D1VHC992WK');`}
+        </Script>
         <Providers>
           <PageTransition>{children}</PageTransition>
           <Toaster richColors />
