@@ -55,7 +55,7 @@ export default function CreatorStudio() {
   } | null>(null);
   const [visibility, setVisibility] = useState<"Public" | "Private">("Public");
   const [accessCode, setAccessCode] = useState(makeAccessCode());
-  const [title, setTitle] = useState("JEE Advanced Mock Test 2024");
+  const [title, setTitle] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(180);
   const [markingCorrect, setMarkingCorrect] = useState(4);
   const [markingIncorrect, setMarkingIncorrect] = useState(-1);
@@ -372,7 +372,8 @@ export default function CreatorStudio() {
       return "";
     }
     const tempCanvas = document.createElement("canvas");
-    const scale = renderScaleRef.current || 1;
+    // Export at higher resolution for CBT clarity.
+    const scale = (renderScaleRef.current || 1) * 2;
     tempCanvas.width = Math.max(1, Math.floor(rect.w * scale));
     tempCanvas.height = Math.max(1, Math.floor(rect.h * scale));
     const tempContext = tempCanvas.getContext("2d");
@@ -1117,6 +1118,7 @@ export default function CreatorStudio() {
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                  placeholder="Enter test title"
                 />
               </div>
               <div>
