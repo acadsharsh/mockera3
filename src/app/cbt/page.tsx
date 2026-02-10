@@ -97,7 +97,7 @@ export default function CBT() {
   const [isPaused, setIsPaused] = useState(false);
   const [focusLocked, setFocusLocked] = useState(false);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [imageZoom, setImageZoom] = useState(1.2);
+  const [imageZoom, setImageZoom] = useState(1);
   const startRef = useRef<number>(Date.now());
   const prevIdRef = useRef<string | null>(null);
   const examStartRef = useRef<number>(Date.now());
@@ -311,7 +311,7 @@ export default function CBT() {
       next.add(activeQuestion.id);
       return next;
     });
-    setImageZoom(1.2);
+    setImageZoom(1);
   }, [activeQuestion?.id]);
 
   const toggleReview = (questionId: string) => {
@@ -531,7 +531,7 @@ export default function CBT() {
                   </button>
                   <button
                     className="rounded border border-slate-200 px-2 py-1 text-[11px]"
-                    onClick={() => setImageZoom(1.2)}
+                    onClick={() => setImageZoom(1)}
                     type="button"
                   >
                     Reset
