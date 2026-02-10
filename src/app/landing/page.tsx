@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 
@@ -51,7 +51,7 @@ export default function LandingPage() {
                 Create Mock Test
               </Link>
               <Link
-                href="/studio"
+                href="/guide"
                 className="rounded-full border border-white/15 px-6 py-3 text-xs font-semibold text-white/80 transition hover:border-white/40"
               >
                 Guide
@@ -94,7 +94,7 @@ export default function LandingPage() {
                   </div>
                   <p className="mt-4 text-2xl font-semibold">Post-Test Analytics</p>
                   <p className="mt-2 text-xs text-black/70">
-                    Detailed breakdown of time spent per question, accuracy by topic, and percentile ranking—all generated instantly after submission.
+                    Detailed breakdown of time spent per question, accuracy by topic, and percentile ranking - all generated instantly after submission.
                   </p>
                 </div>
               </div>
@@ -105,5 +105,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-
