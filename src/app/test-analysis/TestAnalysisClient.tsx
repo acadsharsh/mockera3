@@ -157,6 +157,40 @@ const parseAnswerKeyTokens = (text: string) => {
   return entries;
 };
 
+const parseAnswerKeyGrid = (text: string) => {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const entries: Array<{ index?: number; value: string }> = [];
+  const extractNums = (line: string) => line.match(/\b\d{1,4}\b/g)?.map(Number) ?? [];
+  const extractAns = (line: string) =>
+    line
+      .replace(/[^A-Da-d0-9.+-]/g, " ")
+      .trim()
+      .split(/\s+/)
+      .filter((token) => /^[A-Da-d]+$/.test(token) || /^[0-9.+-]+$/.test(token))
+      .map((token) => normalizeAnswer(token));
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const nums = extractNums(lines[i]);
+    const ansSameLine = extractAns(lines[i]).filter((token) => !/^\d+$/.test(token));
+    if (nums.length >= 3 && ansSameLine.length === nums.length) {
+      nums.forEach((num, idx) => entries.push({ index: num, value: ansSameLine[idx] }));
+      continue;
+    }
+    const nextLine = lines[i + 1];
+    if (!nextLine) continue;
+    const ansNext = extractAns(nextLine).filter((token) => !/^\d+$/.test(token));
+    if (nums.length >= 3 && ansNext.length === nums.length) {
+      nums.forEach((num, idx) => entries.push({ index: num, value: ansNext[idx] }));
+      i += 1;
+    }
+  }
+
+  return entries;
+};
+
 const extractPdfText = async (file: File) => {
   const mod = await import("pdfjs-dist");
   mod.GlobalWorkerOptions.workerSrc = new URL(
@@ -388,7 +422,8 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
   const handleAnswerKeyInput = (text: string) => {
     const lineEntries = parseAnswerKeyText(text);
     const tokenEntries = parseAnswerKeyTokens(text);
-    const entries = lineEntries.length >= tokenEntries.length ? lineEntries : tokenEntries;
+    const gridEntries = parseAnswerKeyGrid(text);
+    const entries = [lineEntries, tokenEntries, gridEntries].sort((a, b) => b.length - a.length)[0];
     setAnswerKeyPending(entries);
     const preview = entries
       .map((entry, idx) => ({
