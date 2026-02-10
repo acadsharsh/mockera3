@@ -367,11 +367,11 @@ export default function LibraryClient({
                             onClick={() => handleStar(test.id)}
                             className={`text-xs ${starred.has(test.id) ? "text-white" : "text-white/30"}`}
                           >
-                            Star
+                            *
                           </button>
                           <details className="relative">
                             <summary className="cursor-pointer list-none text-white/60 hover:text-white">
-                              Menu
+                              ...
                             </summary>
                             <div className="absolute right-0 top-6 z-10 w-36 rounded-xl border border-white/10 bg-[#111318] p-2 text-xs text-white/80 shadow-xl">
                               <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/test-created?testId=${test.id}`}>
