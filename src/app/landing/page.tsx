@@ -102,6 +102,13 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
+
+      <footer className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-12 text-xs text-white/50">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6">
+          <span>Disclaimer: We do not own any tests. All tests are created by users.</span>
+          <span>Support: acads.harsh@gmail.com</span>
+        </div>
+      </footer>
     </div>
   );
 }

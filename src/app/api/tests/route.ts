@@ -148,3 +148,28 @@ export async function POST(request: Request) {
 
   return NextResponse.json(mapTest(created), { status: 201 });
 }
+
+export async function DELETE(request: Request) {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const url = new URL(request.url);
+  const testId = url.searchParams.get("testId");
+  if (!testId) {
+    return NextResponse.json({ error: "Missing testId" }, { status: 400 });
+  }
+
+  const ownedTest = await prisma.test.findFirst({
+    where: { id: testId, ownerId: session.user.id },
+    select: { id: true },
+  });
+
+  if (!ownedTest) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await prisma.test.delete({ where: { id: testId } });
+  return NextResponse.json({ ok: true });
+}

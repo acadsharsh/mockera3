@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import GlassRail from "@/components/GlassRail";
@@ -17,6 +17,7 @@ type Test = {
   id: string;
   title: string;
   visibility: "Public" | "Private";
+  ownerId?: string;
   accessCode?: string;
   durationMinutes?: number;
   markingCorrect?: number;
@@ -116,6 +117,7 @@ export default function LibraryClient({
   const [search, setSearch] = useState("");
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [authError, setAuthError] = useState(initialAuthError);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -126,6 +128,18 @@ export default function LibraryClient({
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      try {
+        const sessionResponse = await fetch("/api/auth/get-session");
+        const sessionData = await sessionResponse.json();
+        if (!cancelled) {
+          setCurrentUserId(sessionData?.user?.id ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setCurrentUserId(null);
+        }
+      }
+
       try {
         const testsResponse = await fetch("/api/tests");
         if (testsResponse.status === 401) {
@@ -227,6 +241,18 @@ export default function LibraryClient({
       }
       return next;
     });
+  };
+
+  const handleDelete = async (id: string, title: string) => {
+    const confirmed = window.confirm(`Delete "${title}"? This cannot be undone.`);
+    if (!confirmed) return;
+    const response = await fetch(`/api/tests?testId=${id}`, { method: "DELETE" });
+    if (!response.ok) {
+      alert("Delete failed. Please try again.");
+      return;
+    }
+    setTests((prev) => prev.filter((test) => test.id !== id));
+    setAttempts((prev) => prev.filter((attempt) => attempt.testId !== id));
   };
 
   return (
@@ -341,11 +367,11 @@ export default function LibraryClient({
                             onClick={() => handleStar(test.id)}
                             className={`text-xs ${starred.has(test.id) ? "text-white" : "text-white/30"}`}
                           >
-                            ★
+                            Star
                           </button>
                           <details className="relative">
                             <summary className="cursor-pointer list-none text-white/60 hover:text-white">
-                              ⋯
+                              Menu
                             </summary>
                             <div className="absolute right-0 top-6 z-10 w-36 rounded-xl border border-white/10 bg-[#111318] p-2 text-xs text-white/80 shadow-xl">
                               <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/test-created?testId=${test.id}`}>
@@ -357,6 +383,15 @@ export default function LibraryClient({
                               <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/cbt?testId=${test.id}`}>
                                 Start
                               </a>
+                              {test.ownerId && currentUserId && test.ownerId === currentUserId && (
+                                <button
+                                  onClick={() => handleDelete(test.id, test.title)}
+                                  className="mt-1 block w-full rounded-lg px-2 py-1 text-left text-red-300 hover:bg-red-500/10"
+                                  type="button"
+                                >
+                                  Delete
+                                </button>
+                              )}
                             </div>
                           </details>
                         </div>
@@ -384,7 +419,7 @@ export default function LibraryClient({
                             </svg>
                             Marking: +{test.markingCorrect ?? 4} / {test.markingIncorrect ?? -1}
                           </span>
-                          <span>• Attempted by {formatCount(attemptsCount || 12000)} students</span>
+                          <span>Attempted by {formatCount(attemptsCount || 12000)} students</span>
                         </div>
                         <a
                           className="mt-6 inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100"
