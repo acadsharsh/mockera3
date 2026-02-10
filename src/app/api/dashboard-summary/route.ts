@@ -47,9 +47,9 @@ export async function GET() {
     ? await prisma.attempt.groupBy({
         by: ["testId"],
         where: { testId: { in: publicIds }, status: "SUBMITTED" },
-        _count: { _all: true },
+        _count: { testId: true },
         _avg: { timeTaken: true },
-        orderBy: { _count: { _all: "desc" } },
+        orderBy: { _count: { testId: "desc" } },
         take: 3,
       })
     : [];
@@ -85,7 +85,7 @@ export async function GET() {
     return {
       id: group.testId,
       title: test?.title ?? "Untitled",
-      attempts: group._count._all,
+      attempts: group._count.testId ?? 0,
       avgMinutes,
     };
   });
