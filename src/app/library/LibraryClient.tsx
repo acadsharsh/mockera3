@@ -419,7 +419,7 @@ export default function LibraryClient({
                             </svg>
                             Marking: +{test.markingCorrect ?? 4} / {test.markingIncorrect ?? -1}
                           </span>
-                          <span>Attempted by {formatCount(attemptsCount || 12000)} students</span>
+                          <span>Attempts: {formatCount(attemptsCount)}</span>
                         </div>
                         <a
                           className="mt-6 inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100"
