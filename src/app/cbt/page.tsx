@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import LottieLoader from "@/components/LottieLoader";
 import { safeJson } from "@/lib/safe-json";
 
 type Crop = {
@@ -355,6 +356,7 @@ export default function CBT() {
       setTimeSpent(finalTimeSpent);
     }
 
+    setShowConfirm(false);
     setSubmitting(true);
     const order = Object.entries(subjectFirstRef.current)
       .filter((entry) => entry[1] !== null)
@@ -381,7 +383,7 @@ export default function CBT() {
           sectionOrder: order,
         }),
       });
-      router.push("/test-analysis");
+      router.push(`/test-analysis?testId=${test.id}`);
     } finally {
       setSubmitting(false);
     }
@@ -804,6 +806,15 @@ export default function CBT() {
         </aside>
       </main>
 
+
+      {submitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur">
+          <div className="rounded-2xl border border-white/10 bg-[#0f172a] px-8 py-6 text-center text-white shadow-2xl">
+            <LottieLoader message="Submitting your test..." size={180} />
+            <p className="mt-2 text-sm text-white/60">Generating analysis from your answers.</p>
+          </div>
+        </div>
+      )}
       {focusLocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-rose-900/90 via-rose-800/80 to-black/90 backdrop-blur">
           <div className="rounded-3xl border border-rose-400/40 bg-rose-500/10 px-8 py-6 text-center text-white shadow-2xl">

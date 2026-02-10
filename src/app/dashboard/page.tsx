@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
+import LottieLoader from "@/components/LottieLoader";
 import { safeJson } from "@/lib/safe-json";
 
 type Crop = {
@@ -47,6 +48,7 @@ export default function Dashboard() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [authChecked, setAuthChecked] = useState(false);
   const [profileName, setProfileName] = useState<string>("");
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -64,18 +66,22 @@ export default function Dashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const [testResponse, attemptsResponse] = await Promise.all([
-        fetch("/api/tests"),
-        fetch("/api/attempts"),
-      ]);
+      try {
+        const [testResponse, attemptsResponse] = await Promise.all([
+          fetch("/api/tests"),
+          fetch("/api/attempts"),
+        ]);
 
-      const [testData, attemptsData] = await Promise.all([
-        safeJson<Test[]>(testResponse, []),
-        safeJson<Attempt[]>(attemptsResponse, []),
-      ]);
+        const [testData, attemptsData] = await Promise.all([
+          safeJson<Test[]>(testResponse, []),
+          safeJson<Attempt[]>(attemptsResponse, []),
+        ]);
 
-      setTests(Array.isArray(testData) ? testData : []);
-      setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
+        setTests(Array.isArray(testData) ? testData : []);
+        setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
+      } finally {
+        setLoadingData(false);
+      }
     };
     load();
   }, []);
@@ -159,8 +165,12 @@ export default function Dashboard() {
 
   const myTests = useMemo(() => tests.slice(0, 4), [tests]);
 
-  if (!authChecked) {
-    return <div className="min-h-screen bg-[#0f0f10]" />;
+  if (!authChecked || loadingData) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-[#0f0f10] text-white">
+        <LottieLoader message="Loading your dashboard..." />
+      </div>
+    );
   }
 
   return (

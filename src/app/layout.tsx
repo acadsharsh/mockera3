@@ -1,9 +1,10 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Geist_Mono, Inter, JetBrains_Mono, Marcellus, Space_Grotesk } from "next/font/google";
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -33,7 +34,6 @@ const marcellus = Marcellus({
   weight: ["400"],
 });
 
-
 export const metadata: Metadata = {
   title: "PDF to Mock Test Studio",
   description:
@@ -50,6 +50,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${marcellus.variable} antialiased`}
       >
+        <Script
+          src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.11/dist/dotlottie-wc.js"
+          type="module"
+          strategy="afterInteractive"
+        />
         <Providers>
           <PageTransition>{children}</PageTransition>
           <Toaster richColors />
