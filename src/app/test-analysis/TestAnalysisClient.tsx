@@ -128,6 +128,26 @@ const parseAnswerKeyTokens = (text: string) => {
     .replace(/\s+/g, " ")
     .trim()
     .split(" ");
+  const markerSet = new Set(["Q", "Q.", "QUE", "QUE.", "QUESTION", "A", "A.", "ANS", "ANS.", "ANSWER"]);
+  const upperTokens = rawTokens.map((token) => token.toUpperCase());
+  const aIndex = upperTokens.findIndex((token) => markerSet.has(token) && token.startsWith("A"));
+  if (aIndex > 0) {
+    const qIndex = upperTokens.findIndex((token) => markerSet.has(token) && token.startsWith("Q"));
+    const start = qIndex >= 0 ? qIndex + 1 : 0;
+    const numTokens = rawTokens.slice(start, aIndex).filter((token) => /^\d{1,4}$/.test(token));
+    const ansTokens = rawTokens
+      .slice(aIndex + 1)
+      .filter(
+        (token) =>
+          /^[A-Da-d]+$/.test(token) ||
+          /^[A-Da-d](?:[,A-Da-d]+)+$/.test(token) ||
+          /^[0-9.+-]+$/.test(token)
+      )
+      .map((token) => normalizeAnswer(token));
+    if (numTokens.length >= 3 && ansTokens.length >= numTokens.length) {
+      return numTokens.map((num, idx) => ({ index: Number(num), value: ansTokens[idx] }));
+    }
+  }
   const tokens = rawTokens.filter((token) => {
     const upper = token.toUpperCase();
     if (["Q", "Q.", "QUE", "QUE.", "QUESTION", "ANS", "ANS.", "A", "A."].includes(upper)) {
