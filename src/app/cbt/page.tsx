@@ -97,6 +97,7 @@ export default function CBT() {
   const [isPaused, setIsPaused] = useState(false);
   const [focusLocked, setFocusLocked] = useState(false);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [imageZoom, setImageZoom] = useState(1.2);
   const startRef = useRef<number>(Date.now());
   const prevIdRef = useRef<string | null>(null);
   const examStartRef = useRef<number>(Date.now());
@@ -310,6 +311,7 @@ export default function CBT() {
       next.add(activeQuestion.id);
       return next;
     });
+    setImageZoom(1.2);
   }, [activeQuestion?.id]);
 
   const toggleReview = (questionId: string) => {
@@ -509,8 +511,45 @@ export default function CBT() {
                   </div>
                 )}
             <div className="rounded border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Question Image</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="rounded border border-slate-200 px-2 py-1 text-[11px]"
+                    onClick={() => setImageZoom((prev) => Math.max(0.6, Number((prev - 0.1).toFixed(2))))}
+                    type="button"
+                  >
+                    -
+                  </button>
+                  <span className="w-12 text-center">{Math.round(imageZoom * 100)}%</span>
+                  <button
+                    className="rounded border border-slate-200 px-2 py-1 text-[11px]"
+                    onClick={() => setImageZoom((prev) => Math.min(2.4, Number((prev + 0.1).toFixed(2))))}
+                    type="button"
+                  >
+                    +
+                  </button>
+                  <button
+                    className="rounded border border-slate-200 px-2 py-1 text-[11px]"
+                    onClick={() => setImageZoom(1.2)}
+                    type="button"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
               {activeQuestion?.imageDataUrl ? (
-                <img src={activeQuestion.imageDataUrl} alt="Question" className="w-full" />
+                <div className="max-h-[65vh] overflow-auto rounded border border-slate-200 bg-white p-2">
+                  <img
+                    src={activeQuestion.imageDataUrl}
+                    alt="Question"
+                    className="max-w-none"
+                    style={{
+                      transform: `scale(${imageZoom})`,
+                      transformOrigin: "top left",
+                    }}
+                  />
+                </div>
               ) : (
                 <div className="flex h-64 items-center justify-center text-xs text-slate-500">
                   No crop image found.

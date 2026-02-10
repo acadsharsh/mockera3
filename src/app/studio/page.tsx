@@ -70,6 +70,10 @@ export default function CreatorStudio() {
   const [showSettings, setShowSettings] = useState(false);
   const [isEditingOptions, setIsEditingOptions] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
+  const [answerKeyStatus, setAnswerKeyStatus] = useState<{
+    message: string;
+    tone: "success" | "error" | "info";
+  } | null>(null);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
@@ -425,6 +429,128 @@ export default function CreatorStudio() {
     ctx.drawImage(top, (width - top.width) / 2, 0);
     ctx.drawImage(bottom, (width - bottom.width) / 2, top.height);
     return canvas.toDataURL("image/png");
+  };
+
+  const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
+
+  const parseAnswerKeyText = (text: string) => {
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const parsed: Array<{ index?: number; value: string }> = [];
+    for (const line of lines) {
+      const cleaned = line.replace(/\t+/g, " ").trim();
+      const match = cleaned.match(
+        /^(?:Q\s*)?(\d{1,4})[\)\.\-: ]+\s*([A-Da-d, ]+|[0-9.+-]+)$/i
+      );
+      if (match) {
+        const idx = Number(match[1]);
+        const value = normalizeAnswer(match[2].replace(/\s+/g, ""));
+        parsed.push({ index: Number.isFinite(idx) ? idx : undefined, value });
+        continue;
+      }
+      parsed.push({ value: normalizeAnswer(cleaned.replace(/\s+/g, "")) });
+    }
+    return parsed;
+  };
+
+  const getOrderedCrops = () =>
+    [...cropRects].sort((a, b) => {
+      if (a.pageNumber !== b.pageNumber) return a.pageNumber - b.pageNumber;
+      if (a.y !== b.y) return a.y - b.y;
+      return a.x - b.x;
+    });
+
+  const applyAnswerKey = (entries: Array<{ index?: number; value: string }>) => {
+    if (entries.length === 0 || cropRects.length === 0) {
+      setAnswerKeyStatus({
+        message: "No answers found to apply.",
+        tone: "error",
+      });
+      return;
+    }
+    const ordered = getOrderedCrops();
+    const updates = new Map<string, Partial<CropMeta>>();
+    let applied = 0;
+
+    const applyToCrop = (crop: CropMeta, rawValue: string) => {
+      if (!rawValue) return;
+      const value = normalizeAnswer(rawValue);
+      if (crop.questionType === "NUM") {
+        updates.set(crop.id, { correctNumeric: value });
+        applied += 1;
+        return;
+      }
+      const letters = value.split(",").join("").split("");
+      const cleaned = letters.filter((letter) => optionLetters.includes(letter as any)) as Array<
+        "A" | "B" | "C" | "D"
+      >;
+      if (cleaned.length === 0) return;
+      if (crop.questionType === "MSQ") {
+        updates.set(crop.id, { correctOptions: cleaned });
+      } else {
+        updates.set(crop.id, { correctOption: cleaned[0] });
+      }
+      applied += 1;
+    };
+
+    entries.forEach((entry, idx) => {
+      const targetIndex = entry.index ? entry.index - 1 : idx;
+      if (targetIndex < 0 || targetIndex >= ordered.length) return;
+      applyToCrop(ordered[targetIndex], entry.value);
+    });
+
+    if (updates.size === 0) {
+      setAnswerKeyStatus({
+        message: "Could not match answers to questions.",
+        tone: "error",
+      });
+      return;
+    }
+
+    setCropRects((prev) =>
+      prev.map((rect) => (updates.has(rect.id) ? { ...rect, ...updates.get(rect.id)! } : rect))
+    );
+
+    setAnswerKeyStatus({
+      message: `Applied ${applied} answers.`,
+      tone: "success",
+    });
+  };
+
+  const extractPdfText = async (file: File) => {
+    if (!pdfApi) return "";
+    const arrayBuffer = await file.arrayBuffer();
+    const doc = await pdfApi.getDocument({ data: arrayBuffer }).promise;
+    let all = "";
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const text = content.items.map((item: any) => item.str || "").join(" ");
+      all += `${text}\n`;
+    }
+    return all;
+  };
+
+  const handleAnswerKeyUpload = async (file: File | null) => {
+    if (!file) return;
+    setAnswerKeyStatus({ message: "Parsing answer key...", tone: "info" });
+    try {
+      let text = "";
+      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        text = await extractPdfText(file);
+      } else {
+        text = await file.text();
+      }
+      const entries = parseAnswerKeyText(text);
+      applyAnswerKey(entries);
+    } catch {
+      setAnswerKeyStatus({
+        message: "Failed to read answer key.",
+        tone: "error",
+      });
+    }
   };
 
   const mergeCrops = async (sourceId: string, targetId: string) => {
@@ -1120,6 +1246,31 @@ export default function CreatorStudio() {
                   className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
                   placeholder="Enter test title"
                 />
+              </div>
+              <div>
+                <label className="text-white/60">Answer Key Upload</label>
+                <input
+                  type="file"
+                  accept=".txt,.csv,.pdf"
+                  onChange={(event) => handleAnswerKeyUpload(event.target.files?.[0] ?? null)}
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-[11px] file:text-white"
+                />
+                <div className="mt-2 text-[11px] text-white/50">
+                  Format: `1 A` or `1: A` or `1 B,C` or `1 42`
+                </div>
+                {answerKeyStatus && (
+                  <div
+                    className={`mt-2 rounded-lg border px-3 py-2 text-[11px] ${
+                      answerKeyStatus.tone === "success"
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                        : answerKeyStatus.tone === "error"
+                        ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                        : "border-white/10 bg-white/5 text-white/70"
+                    }`}
+                  >
+                    {answerKeyStatus.message}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-white/60">Duration (minutes)</label>
