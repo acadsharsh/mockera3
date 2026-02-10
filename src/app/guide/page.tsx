@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 export default function GuidePage() {
   return (
@@ -55,6 +55,10 @@ export default function GuidePage() {
             </ul>
           </div>
         </section>
+
+        <footer className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/60">
+          Disclaimer: We do not own any tests. All tests are created by users.
+        </footer>
       </div>
     </div>
   );
