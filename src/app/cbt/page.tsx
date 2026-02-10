@@ -455,9 +455,9 @@ export default function CBT() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f3f3f3] text-[#1f2937]">
+    <div className="flex min-h-screen flex-col bg-[#f3f3f3] text-[#1f2937]">
       <header className="border-b border-slate-400 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2">
+        <div className="flex w-full items-center justify-between px-6 py-2">
           <div className="flex items-center gap-2">
             <span className="rounded-sm bg-[#7d00b3] px-3 py-1 text-sm font-semibold text-white">
               {test.title || "Mock Test"}
@@ -482,7 +482,7 @@ export default function CBT() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="w-full px-4">
         <div className="mt-3 flex items-center justify-between border border-slate-400 bg-white px-4 py-2">
           <span className="rounded-sm bg-[#7d00b3] px-3 py-1 text-sm font-semibold text-white">
             {activeQuestion?.subject ?? "Section"} Section {currentSectionIndex + 1}
@@ -498,12 +498,12 @@ export default function CBT() {
         </div>
       </div>
 
-      <main className="mx-auto grid max-w-6xl gap-4 px-6 py-4 lg:grid-cols-[1.7fr_1fr]">
-        <section className="rounded-lg border border-slate-200 bg-white">
+      <main className="grid w-full flex-1 gap-4 px-4 py-4 lg:grid-cols-[1.85fr_1fr]">
+        <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
           <div className="border-b border-slate-300 bg-[#7a1fa2] px-5 py-2 text-sm font-semibold text-white">
             Question No. {activeQuestion?.index}
           </div>
-          <div className="grid gap-4 p-5">
+          <div className="grid min-h-0 flex-1 gap-4 p-5">
                 {activeQuestion?.questionText && (
                   <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
                     {activeQuestion.questionText}
@@ -538,14 +538,15 @@ export default function CBT() {
                 </div>
               </div>
               {activeQuestion?.imageDataUrl ? (
-                <div className="max-h-[65vh] overflow-auto rounded border border-slate-200 bg-white p-2">
+                <div className="max-h-[62vh] overflow-auto rounded border border-slate-200 bg-white p-2">
                   <img
                     src={activeQuestion.imageDataUrl}
                     alt="Question"
-                    className="max-w-none"
+                    className="block max-w-none"
                     style={{
                       transform: `scale(${imageZoom})`,
                       transformOrigin: "top left",
+                      imageRendering: "auto",
                     }}
                   />
                 </div>
