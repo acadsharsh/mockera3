@@ -16,16 +16,11 @@ export async function GET() {
   const latestAttemptPromise = prisma.attempt.findFirst({
     where: { userId, status: "SUBMITTED" },
     orderBy: { createdAt: "desc" },
-    select: { score: true },
+    select: { score: true, accuracy: true },
   });
 
   const attemptsCountPromise = prisma.attempt.count({
     where: { userId, status: "SUBMITTED" },
-  });
-
-  const avgScorePromise = prisma.attempt.aggregate({
-    where: { userId, status: "SUBMITTED" },
-    _avg: { score: true },
   });
 
   const recentAttemptsPromise = prisma.attempt.findMany({
@@ -75,14 +70,14 @@ export async function GET() {
       })
     : [];
 
-  const [latestAttempt, attemptsCount, avgScoreResult, recentAttempts] = await Promise.all([
+  const [latestAttempt, attemptsCount, recentAttempts] = await Promise.all([
     latestAttemptPromise,
     attemptsCountPromise,
-    avgScorePromise,
     recentAttemptsPromise,
   ]);
 
-  const avgScore = Math.round(avgScoreResult._avg.score ?? 0);
+  const accuracyPercent = Math.round((latestAttempt?.accuracy ?? 0) * 100);
+  const percentile = Math.min(99.9, Math.max(1, 5 + accuracyPercent * 0.95));
 
   const trending = trendingGroups.map((group) => {
     const test = publicTests.find((t) => t.id === group.testId);
@@ -114,8 +109,9 @@ export async function GET() {
       user: { name: session.user?.name ?? "" },
       stats: {
         attemptsCount,
-        lastScore: latestAttempt?.score ?? 0,
-        avgScore,
+        score: latestAttempt?.score ?? 0,
+        accuracy: accuracyPercent,
+        percentile,
       },
       recentAttempts: recentAttempts.map((attempt) => ({
         id: attempt.id,
