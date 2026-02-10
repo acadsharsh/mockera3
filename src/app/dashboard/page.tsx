@@ -125,8 +125,10 @@ export default function Dashboard() {
         </header>
 
         <section className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#1d2233] via-[#1b1f2b] to-[#0d111a] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)] lg:col-span-2">
-            <p className="text-xs uppercase text-white/60">Average Score</p>
+          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f1624] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)] lg:col-span-2">
+            <div className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.35),transparent_70%)] blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 left-10 h-48 w-48 rounded-full bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.25),transparent_70%)] blur-3xl" />
+            <p className="relative text-xs uppercase text-white/60">Average Score</p>
             <p className="mt-5 text-5xl font-semibold">
               {stats ? stats.avgScore : 0}
             </p>
@@ -136,11 +138,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-[#202124] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+          <div className="rounded-3xl border border-white/10 bg-[#1a1f27] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
             <p className="text-xs uppercase text-white/60">Recent Attempts</p>
             <div className="mt-4 space-y-3 text-sm">
               {recentAttempts.slice(0, 4).map((attempt) => (
-                <div key={attempt.id} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+                <div key={attempt.id} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.25)]">
                   <p className="text-white/90">{attempt.testTitle}</p>
                   <p className="text-xs text-white/50">
                     Score {attempt.score} · {formatDate(attempt.createdAt)}
