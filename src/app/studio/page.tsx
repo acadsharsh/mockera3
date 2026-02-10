@@ -376,8 +376,7 @@ export default function CreatorStudio() {
       return "";
     }
     const tempCanvas = document.createElement("canvas");
-    // Export at higher resolution for CBT clarity.
-    const scale = (renderScaleRef.current || 1) * 2;
+    const scale = renderScaleRef.current || 1;
     tempCanvas.width = Math.max(1, Math.floor(rect.w * scale));
     tempCanvas.height = Math.max(1, Math.floor(rect.h * scale));
     const tempContext = tempCanvas.getContext("2d");
