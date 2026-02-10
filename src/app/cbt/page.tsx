@@ -456,55 +456,52 @@ export default function CBT() {
 
   return (
     <div className="min-h-screen bg-[#f3f3f3] text-[#1f2937]">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded border border-slate-300 bg-slate-100 text-slate-500">
-              <span className="text-xl">👤</span>
-            </div>
-            <div className="text-xs text-slate-600">
-              <div className="flex gap-2">
-                <span className="w-24 text-slate-500">Candidate Name</span>
-                <input
-                  value={candidateName}
-                  onChange={(event) => setCandidateName(event.target.value)}
-                  className="w-48 border-b border-dashed border-slate-300 bg-transparent text-xs font-semibold outline-none"
-                />
-              </div>
-              <div className="flex gap-2">
-                <span className="w-24 text-slate-500">Exam Name</span>
-                <span className="font-semibold text-orange-600">{test.title}</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="w-24 text-slate-500">Subject Name</span>
-                <span className="font-semibold text-orange-600">{activeQuestion?.subject ?? "—"}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-24 text-slate-500">Remaining Time</span>
-                <span className="rounded bg-blue-500 px-2 py-0.5 text-xs font-semibold text-white">
-                  {formatTime(secondsLeft)}
-                </span>
-                {solutionMode && (
-                  <span className="rounded bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-                    Solution Mode
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+      <header className="border-b border-slate-400 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2">
           <div className="flex items-center gap-2">
-            <select className="rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700">
-              <option>English</option>
-              <option>Hindi</option>
-            </select>
+            <span className="rounded-sm bg-[#7d00b3] px-3 py-1 text-sm font-semibold text-white">
+              {test.title || "Mock Test"}
+            </span>
+            <button
+              type="button"
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34a2ff] text-[11px] font-semibold text-white"
+              title="Test info"
+            >
+              i
+            </button>
+          </div>
+          <div className="flex items-center gap-5 text-sm text-slate-700">
+            <button className="flex items-center gap-2">
+              <span className="text-base">📄</span>
+              Question Paper
+            </button>
+            <div>
+              Time Left: <span className="font-semibold">{formatTime(secondsLeft)}</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl gap-4 px-6 py-6 lg:grid-cols-[1.7fr_1fr]">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mt-3 flex items-center justify-between border border-slate-400 bg-white px-4 py-2">
+          <span className="rounded-sm bg-[#7d00b3] px-3 py-1 text-sm font-semibold text-white">
+            {activeQuestion?.subject ?? "Section"} Section {currentSectionIndex + 1}
+          </span>
+          <span className="text-sm text-slate-700">Time Left: {formatTime(secondsLeft)}</span>
+        </div>
+        <div className="mt-2 flex items-center justify-between border border-slate-300 bg-white px-4 py-2 text-sm">
+          <span>Question Type: {activeQuestion?.questionType ?? "MCQ"}</span>
+          <span>
+            <span className="text-emerald-600">Correct: +{test.markingCorrect}</span>
+            <span className="ml-3 text-rose-600">Incorrect: {test.markingIncorrect}</span>
+          </span>
+        </div>
+      </div>
+
+      <main className="mx-auto grid max-w-6xl gap-4 px-6 py-4 lg:grid-cols-[1.7fr_1fr]">
         <section className="rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-5 py-3 text-sm font-semibold">
-            Question {activeQuestion?.index}
+          <div className="border-b border-slate-300 bg-[#7a1fa2] px-5 py-2 text-sm font-semibold text-white">
+            Question No. {activeQuestion?.index}
           </div>
           <div className="grid gap-4 p-5">
                 {activeQuestion?.questionText && (
@@ -743,46 +740,56 @@ export default function CBT() {
         </section>
 
         <aside className="space-y-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="rounded border border-dotted border-slate-400 bg-slate-50 p-3 text-[11px] text-slate-600">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-7 w-12 items-center justify-center rounded border border-slate-400 bg-slate-100 text-slate-700 shadow-inner">
-                    {notVisitedCount}
-                  </span>
-                  <span>Not Visited</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="relative inline-flex h-7 w-12 items-center justify-center rounded bg-orange-500 text-white shadow-inner">
-                    {notAnsweredCount}
-                    <span className="absolute -right-2 top-1/2 h-0 w-0 -translate-y-1/2 border-y-[7px] border-l-[10px] border-y-transparent border-l-orange-500" />
-                  </span>
-                  <span>Not Answered</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="relative inline-flex h-7 w-12 items-center justify-center rounded bg-emerald-500 text-white shadow-inner">
-                    {answeredOnlyCount}
-                    <span className="absolute -right-2 top-1/2 h-0 w-0 -translate-y-1/2 border-y-[7px] border-l-[10px] border-y-transparent border-l-emerald-500" />
-                  </span>
-                  <span>Answered</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-purple-600 text-white shadow-inner">
-                    {reviewOnlyCount}
-                  </span>
-                  <span>Marked for Review</span>
-                </div>
-                <div className="col-span-2 flex items-center gap-2 text-[11px] text-slate-600">
-                  <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-purple-600 text-white shadow-inner">
-                    {answeredMarkedCount}
-                    <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400" />
-                  </span>
-                  <span>Answered & Marked for Review</span>
-                </div>
+          <div className="rounded-lg border border-slate-300 bg-white">
+            <div className="flex items-center gap-4 border-b border-slate-300 px-4 py-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-2xl">
+                👤
+              </div>
+              <div>
+                <div className="text-sm text-slate-500">User Name</div>
+                <input
+                  value={candidateName}
+                  onChange={(event) => setCandidateName(event.target.value)}
+                  className="mt-1 w-40 border-b border-dashed border-slate-300 bg-transparent text-sm font-semibold outline-none"
+                />
               </div>
             </div>
-
-            <div className="mt-4 max-h-[420px] overflow-auto rounded border border-slate-200 bg-white p-3">
+            <div className="grid grid-cols-2 gap-3 px-4 py-4 text-[11px] text-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-8 w-10 items-center justify-center rounded bg-emerald-500 text-white">
+                  {answeredOnlyCount}
+                </span>
+                <span>Answered</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-8 w-10 items-center justify-center rounded bg-orange-500 text-white">
+                  {notAnsweredCount}
+                </span>
+                <span>Not Answered</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-8 w-10 items-center justify-center rounded bg-slate-300 text-slate-700">
+                  {notVisitedCount}
+                </span>
+                <span>Not Visited</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-8 w-10 items-center justify-center rounded bg-purple-600 text-white">
+                  {reviewOnlyCount}
+                </span>
+                <span>Marked for Review</span>
+              </div>
+              <div className="col-span-2 flex items-center gap-2 text-[11px]">
+                <span className="inline-flex h-8 w-10 items-center justify-center rounded bg-purple-600 text-white">
+                  {answeredMarkedCount}
+                </span>
+                <span>Answered & Marked for Review</span>
+              </div>
+            </div>
+            <div className="border-t border-slate-300 bg-[#7a1fa2] px-4 py-2 text-sm font-semibold text-white">
+              {activeQuestion?.subject ?? "Section"} Section {currentSectionIndex + 1}
+            </div>
+            <div className="max-h-[420px] overflow-auto bg-[#dfefff] p-3">
               <div className="grid grid-cols-5 gap-2 sm:grid-cols-6 md:grid-cols-8">
                 {sectionQuestions.map((question) => {
                   const index = questions.findIndex((item) => item.id === question.id);
@@ -802,7 +809,7 @@ export default function CBT() {
                     <button
                       key={question.id}
                       className={`relative flex h-8 w-8 items-center justify-center rounded border text-[11px] font-semibold shadow-sm ${baseClass} ${
-                        isActive ? "ring-2 ring-orange-400 ring-offset-1 ring-offset-white" : ""
+                        isActive ? "ring-2 ring-[#7a1fa2] ring-offset-1 ring-offset-[#dfefff]" : ""
                       }`}
                       onClick={() => {
                         if (test?.lockNavigation) return;
@@ -818,31 +825,7 @@ export default function CBT() {
                   );
                 })}
               </div>
-              {test?.lockNavigation && (
-                <div className="mt-3 rounded border border-orange-200 bg-orange-50 px-3 py-2 text-[11px] text-orange-600">
-                  Vault navigation lock enabled. Use Next/Back to move linearly.
-                </div>
-              )}
             </div>
-            {test?.lockNavigation && sectionList.length > 1 && (
-              <div className="mt-4 rounded border border-slate-200 bg-white p-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-600">
-                    Current Section: {currentSection}
-                  </span>
-                  <button
-                    className="rounded bg-orange-500 px-3 py-2 text-[11px] font-semibold text-white"
-                    onClick={submitSection}
-                    disabled={currentSectionIndex >= sectionList.length - 1 || solutionMode}
-                  >
-                    {currentSectionIndex >= sectionList.length - 1 ? "All Sections Unlocked" : "Submit Section"}
-                  </button>
-                </div>
-                <div className="mt-2 text-[11px] text-slate-500">
-                  Next section unlocks only after submit.
-                </div>
-              </div>
-            )}
           </div>
         </aside>
       </main>
