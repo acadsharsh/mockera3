@@ -1,4 +1,4 @@
-"use client";
+ï»¿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -143,7 +143,7 @@ export default function Dashboard() {
                 <div key={attempt.id} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
                   <p className="text-white/90">{attempt.testTitle}</p>
                   <p className="text-xs text-white/50">
-                    Score {attempt.score} · {formatDate(attempt.createdAt)}
+                    Score {attempt.score} Â· {formatDate(attempt.createdAt)}
                   </p>
                 </div>
               ))}
@@ -203,7 +203,7 @@ export default function Dashboard() {
                       <div>
                         <p className="text-sm font-semibold text-white/95">{testItem.title}</p>
                         <p className="mt-1 text-xs text-white/55">
-                          Last: {testItem.lastScore} | Best: {testItem.bestScore} · {formatDate(testItem.lastAttemptAt)}
+                          Last: {testItem.lastScore} | Best: {testItem.bestScore} Â· {formatDate(testItem.lastAttemptAt)}
                         </p>
                       </div>
                       <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-white/50">
