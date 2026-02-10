@@ -132,8 +132,9 @@ export default function Dashboard() {
             <p className="mt-5 text-5xl font-semibold">
               {stats ? stats.avgScore : 0}
             </p>
-            <div className="mt-4 flex flex-wrap gap-4 text-sm text-white/70">
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-white/70">
               <span>Attempts: {stats ? stats.attemptsCount : 0}</span>
+              <span className="text-white/40">•</span>
               <span>Last Score: {stats ? stats.lastScore : 0}</span>
             </div>
           </div>
