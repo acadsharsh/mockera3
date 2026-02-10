@@ -492,8 +492,12 @@ export default function CreatorStudio() {
     let letterLike = 0;
     let numericLike = 0;
     let shortNums = 0;
+    let indexed = 0;
     entries.forEach((entry) => {
       const value = entry.value.trim();
+      if (entry.index && entry.index > 0) {
+        indexed += 1;
+      }
       if (/^[A-D](,[A-D])*$/.test(value)) {
         letterLike += 1;
         return;
@@ -503,7 +507,7 @@ export default function CreatorStudio() {
         if (!value.includes(".") && value.length <= 2) shortNums += 1;
       }
     });
-    return letterLike * 5 + numericLike * 2 - shortNums;
+    return letterLike * 5 + numericLike * 2 + indexed * 2 - shortNums;
   };
 
   const pickBestEntries = (
@@ -561,28 +565,80 @@ export default function CreatorStudio() {
       .map((line) => line.trim())
       .filter(Boolean);
     const entries: Array<{ index?: number; value: string }> = [];
+    const qRegex = /\bQ(?:UE|UESTION)?\.?\b/i;
+    const aRegex = /\bA(?:NS|NSWER)?\.?\b/i;
     const extractNums = (line: string) => line.match(/\b\d{1,4}\b/g)?.map(Number) ?? [];
-    const extractAns = (line: string) =>
+    const extractAns = (line: string, allowNumeric: boolean) =>
       line
-        .replace(/[^A-Da-d0-9.+-]/g, " ")
+        .replace(qRegex, " ")
+        .replace(aRegex, " ")
+        .replace(/[^A-Da-d0-9.+-,]/g, " ")
         .trim()
         .split(/\s+/)
-        .filter((token) => /^[A-Da-d]+$/.test(token) || /^[0-9.+-]+$/.test(token))
-        .map((token) => normalizeAnswer(token));
+        .filter(Boolean)
+        .filter((token) => {
+          if (/^[A-Da-d]+$/.test(token) || /^[A-Da-d](?:[,A-Da-d]+)+$/.test(token)) {
+            return true;
+          }
+          if (allowNumeric && /^[0-9.+-]+$/.test(token)) {
+            return true;
+          }
+          return false;
+        })
+        .map((token) => normalizeAnswer(token.replace(/;+/, ",")));
 
     for (let i = 0; i < lines.length; i += 1) {
-      const nums = extractNums(lines[i]);
-      const ansSameLine = extractAns(lines[i]).filter((token) => !/^\d+$/.test(token));
-      if (nums.length >= 3 && ansSameLine.length === nums.length) {
-        nums.forEach((num, idx) => entries.push({ index: num, value: ansSameLine[idx] }));
+      const line = lines[i];
+      const hasQ = qRegex.test(line);
+      const hasA = aRegex.test(line);
+      if (hasQ && hasA) {
+        const splitIdx = line.search(aRegex);
+        if (splitIdx >= 0) {
+          const qPart = line.slice(0, splitIdx);
+          const aPart = line.slice(splitIdx);
+          const nums = extractNums(qPart);
+          const ans = extractAns(aPart, true);
+          if (nums.length >= 1 && ans.length >= nums.length) {
+            nums.forEach((num, idx) => entries.push({ index: num, value: ans[idx] }));
+            continue;
+          }
+        }
+      }
+
+      if (hasQ) {
+        const nums = extractNums(line);
+        if (nums.length >= 3) {
+          for (let j = i + 1; j < lines.length; j += 1) {
+            const nextHasA = aRegex.test(lines[j]);
+            const ans = extractAns(lines[j], nextHasA);
+            if (ans.length >= nums.length) {
+              nums.forEach((num, idx) => entries.push({ index: num, value: ans[idx] }));
+              i = j;
+              break;
+            }
+            if (nextHasA && ans.length > 0) {
+              break;
+            }
+          }
+        }
         continue;
       }
-      const nextLine = lines[i + 1];
-      if (!nextLine) continue;
-      const ansNext = extractAns(nextLine).filter((token) => !/^\d+$/.test(token));
-      if (nums.length >= 3 && ansNext.length === nums.length) {
-        nums.forEach((num, idx) => entries.push({ index: num, value: ansNext[idx] }));
-        i += 1;
+
+      const nums = extractNums(line);
+      if (nums.length >= 3) {
+        const ansSameLine = extractAns(line, hasA);
+        if (hasA && ansSameLine.length >= nums.length) {
+          nums.forEach((num, idx) => entries.push({ index: num, value: ansSameLine[idx] }));
+          continue;
+        }
+        const nextLine = lines[i + 1];
+        if (!nextLine) continue;
+        const nextHasA = aRegex.test(nextLine);
+        const ansNext = extractAns(nextLine, nextHasA);
+        if (ansNext.length >= nums.length) {
+          nums.forEach((num, idx) => entries.push({ index: num, value: ansNext[idx] }));
+          i += 1;
+        }
       }
     }
 

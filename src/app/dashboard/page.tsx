@@ -183,7 +183,7 @@ export default function Dashboard() {
                     </div>
                     <div className="mt-3 flex items-center gap-4 text-xs text-white/60">
                       <span>Avg time: {testItem.avgMinutes}m</span>
-                      <span>Attempts: {formatCount(testItem.attempts)}</span>
+                      <span>Global attempts: {formatCount(testItem.attempts)}</span>
                     </div>
                   </div>
                 ))
