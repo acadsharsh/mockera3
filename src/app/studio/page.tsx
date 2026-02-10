@@ -80,6 +80,8 @@ export default function CreatorStudio() {
   const [answerKeyPending, setAnswerKeyPending] = useState<
     Array<{ index?: number; value: string }>
   >([]);
+  const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
+  const [manualAnswerKey, setManualAnswerKey] = useState("");
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
@@ -382,8 +384,7 @@ export default function CreatorStudio() {
       return "";
     }
     const tempCanvas = document.createElement("canvas");
-    // Export at higher resolution for sharper CBT rendering.
-    const scale = (renderScaleRef.current || 1) * 2;
+    const scale = renderScaleRef.current || 1;
     tempCanvas.width = Math.max(1, Math.floor(rect.w * scale));
     tempCanvas.height = Math.max(1, Math.floor(rect.h * scale));
     const tempContext = tempCanvas.getContext("2d");
@@ -607,6 +608,32 @@ export default function CreatorStudio() {
         tone: "error",
       });
     }
+  };
+
+  const handleManualAnswerKey = () => {
+    const text = manualAnswerKey.trim();
+    if (!text) {
+      setAnswerKeyStatus({
+        message: "Paste the answer key first.",
+        tone: "error",
+      });
+      return;
+    }
+    const lineEntries = parseAnswerKeyText(text);
+    const tokenEntries = parseAnswerKeyTokens(text);
+    const entries = lineEntries.length >= tokenEntries.length ? lineEntries : tokenEntries;
+    setAnswerKeyPending(entries);
+    const preview = entries
+      .map((entry, idx) => ({
+        index: entry.index ?? idx + 1,
+        value: entry.value,
+      }))
+      .slice(0, 10);
+    setAnswerKeyPreview(preview);
+    setAnswerKeyStatus({
+      message: `Parsed ${entries.length} answers. Review and apply.`,
+      tone: "info",
+    });
   };
 
   const mergeCrops = async (sourceId: string, targetId: string) => {
@@ -1304,16 +1331,66 @@ export default function CreatorStudio() {
                 />
               </div>
               <div>
-                <label className="text-white/60">Answer Key Upload</label>
-                <input
-                  type="file"
-                  accept=".txt,.csv,.pdf"
-                  onChange={(event) => handleAnswerKeyUpload(event.target.files?.[0] ?? null)}
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-[11px] file:text-white"
-                />
-                <div className="mt-2 text-[11px] text-white/50">
-                  Format: `1 A` or `1: A` or `1 B,C` or `1 42`
+                <label className="text-white/60">Answer Key</label>
+                <div className="mt-2 flex items-center gap-2 text-[11px]">
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 ${
+                      answerKeyMode === "file"
+                        ? "bg-white/20 text-white"
+                        : "border border-white/10 text-white/70"
+                    }`}
+                    onClick={() => setAnswerKeyMode("file")}
+                  >
+                    PDF / File
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 ${
+                      answerKeyMode === "manual"
+                        ? "bg-white/20 text-white"
+                        : "border border-white/10 text-white/70"
+                    }`}
+                    onClick={() => setAnswerKeyMode("manual")}
+                  >
+                    Manual
+                  </button>
                 </div>
+                {answerKeyMode === "file" ? (
+                  <>
+                    <input
+                      type="file"
+                      accept=".txt,.csv,.pdf"
+                      onChange={(event) => handleAnswerKeyUpload(event.target.files?.[0] ?? null)}
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-[11px] file:text-white"
+                    />
+                    <div className="mt-2 text-[11px] text-white/50">
+                      Format: `1 A` or `1: A` or `1 B,C` or `1 42`
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <textarea
+                      value={manualAnswerKey}
+                      onChange={(event) => setManualAnswerKey(event.target.value)}
+                      rows={5}
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
+                      placeholder={"1 A\n2 C\n3 42\n4 B,C"}
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="rounded-full bg-white/10 px-3 py-1 text-[11px] text-white/80"
+                        onClick={handleManualAnswerKey}
+                      >
+                        Parse Manual Key
+                      </button>
+                      <span className="text-[11px] text-white/50">
+                        Same format as file.
+                      </span>
+                    </div>
+                  </>
+                )}
                 {answerKeyStatus && (
                   <div
                     className={`mt-2 rounded-lg border px-3 py-2 text-[11px] ${
