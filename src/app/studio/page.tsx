@@ -70,6 +70,8 @@ export default function CreatorStudio() {
   const [showSettings, setShowSettings] = useState(false);
   const [isEditingOptions, setIsEditingOptions] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
+  const [showAnswerKeyPrompt, setShowAnswerKeyPrompt] = useState(false);
+  const [showAnswerKeyConfirm, setShowAnswerKeyConfirm] = useState(false);
   const [answerKeyStatus, setAnswerKeyStatus] = useState<{
     message: string;
     tone: "success" | "error" | "info";
@@ -160,7 +162,23 @@ export default function CreatorStudio() {
     );
   }, [lastSubject, lastDifficulty, markingCorrect, markingIncorrect]);
 
-  const saveTest = useCallback(async () => {
+  const hasAnswerKey = useCallback(() => {
+    return cropRects.some((crop) => {
+      if (crop.questionType === "NUM") {
+        return Boolean(crop.correctNumeric && crop.correctNumeric.trim().length > 0);
+      }
+      if (crop.questionType === "MSQ") {
+        return Boolean(
+          crop.correctOptions &&
+            crop.correctOptions.length > 0 &&
+            crop.correctOptions.some((letter) => letter !== "A")
+        );
+      }
+      return crop.correctOption !== "A";
+    });
+  }, [cropRects]);
+
+  const runSaveTest = useCallback(async () => {
     if (!title.trim() || cropRects.length === 0) {
       alert("Please enter a title and create at least one crop.");
       return;
@@ -202,6 +220,14 @@ export default function CreatorStudio() {
     title,
     visibility,
   ]);
+
+  const saveTest = useCallback(() => {
+    if (!hasAnswerKey()) {
+      setShowAnswerKeyConfirm(true);
+      return;
+    }
+    runSaveTest();
+  }, [hasAnswerKey, runSaveTest]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -1296,7 +1322,7 @@ export default function CreatorStudio() {
               />
               <button
                 className="rounded-full bg-white px-6 py-3 text-xs font-semibold text-black shadow-lg shadow-white/10"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowAnswerKeyPrompt(true)}
                 type="button"
               >
                 Browse PDF
@@ -1477,6 +1503,93 @@ export default function CreatorStudio() {
                 onClick={() => setShowSettings(false)}
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAnswerKeyPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
+            <h2 className="text-lg font-semibold">Add an answer key?</h2>
+            <p className="mt-2 text-sm text-white/70">
+              Adding the answer key now saves time later. You can enter it manually or upload a PDF/file.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 text-xs">
+              <button
+                type="button"
+                className="rounded-full bg-white/10 px-4 py-2 text-white"
+                onClick={() => {
+                  setAnswerKeyMode("manual");
+                  setShowSettings(true);
+                  setShowAnswerKeyPrompt(false);
+                  fileInputRef.current?.click();
+                }}
+              >
+                Enter manually
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-white/10 px-4 py-2 text-white"
+                onClick={() => {
+                  setAnswerKeyMode("file");
+                  setShowSettings(true);
+                  setShowAnswerKeyPrompt(false);
+                  fileInputRef.current?.click();
+                }}
+              >
+                Upload answer key PDF / file
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-4 py-2 text-white/70"
+                onClick={() => {
+                  setShowAnswerKeyPrompt(false);
+                  fileInputRef.current?.click();
+                }}
+              >
+                Later, just upload the question PDF
+              </button>
+            </div>
+            <button
+              type="button"
+              className="mt-4 w-full rounded-full border border-white/10 px-4 py-2 text-xs text-white/70"
+              onClick={() => setShowAnswerKeyPrompt(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showAnswerKeyConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
+            <h2 className="text-lg font-semibold">Answer key missing</h2>
+            <p className="mt-2 text-sm text-white/70">
+              Your test still has the default answers. Add an answer key now to avoid manual editing later.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 text-xs">
+              <button
+                type="button"
+                className="rounded-full bg-emerald-400/20 px-4 py-2 text-emerald-100"
+                onClick={() => {
+                  setShowAnswerKeyConfirm(false);
+                  setShowSettings(true);
+                }}
+              >
+                Add answer key now
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-4 py-2 text-white/70"
+                onClick={() => {
+                  setShowAnswerKeyConfirm(false);
+                  runSaveTest();
+                }}
+              >
+                Submit without answer key
               </button>
             </div>
           </div>
