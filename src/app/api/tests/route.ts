@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 type Crop = {
   id: string;
@@ -205,7 +206,7 @@ export async function PATCH(request: Request) {
   }
 
   const ordered = test.questions;
-  const updates: Array<Promise<any>> = [];
+  const updates: Prisma.PrismaPromise<any>[] = [];
 
   const normalize = (value: string) => value.trim().toUpperCase();
 
