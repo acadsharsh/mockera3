@@ -83,12 +83,6 @@ export default function CreatorStudio() {
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
   const [manualAnswerKey, setManualAnswerKey] = useState("");
-  const [autoSplitRunning, setAutoSplitRunning] = useState(false);
-  const [autoSplitTab, setAutoSplitTab] = useState<"auto" | "manual">("auto");
-  const [autoSplitResults, setAutoSplitResults] = useState<{
-    auto: number[];
-    manual: number[];
-  }>({ auto: [], manual: [] });
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
@@ -470,108 +464,6 @@ export default function CreatorStudio() {
   };
 
   const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
-
-  const autoSplitPdf = async () => {
-    if (!pdfDoc) return;
-    setAutoSplitRunning(true);
-    const prevPage = currentPage;
-    const newCrops: CropMeta[] = [];
-    const autoList: number[] = [];
-    const manualList: number[] = [];
-    const seen = new Set<number>();
-    const keywordRegex = /\b(figure|diagram|graph|shown below|refer to|as shown)\b/i;
-    const optionRegex = /\([A-D]\)|\b[A-D]\./g;
-
-    try {
-      for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
-        const page = await pdfDoc.getPage(pageNumber);
-        const viewport = page.getViewport({ scale: pageScale });
-        await renderPdfPage(pageNumber);
-
-        const content = await page.getTextContent();
-        const lineMap = new Map<number, { top: number; text: string }>();
-        content.items.forEach((item: any) => {
-          if (!item?.str) return;
-          const y = item.transform?.[5] ?? 0;
-          const top = viewport.height - y;
-          const key = Math.round(top);
-          const existing = lineMap.get(key);
-          if (existing) {
-            existing.text += ` ${item.str}`;
-          } else {
-            lineMap.set(key, { top, text: item.str });
-          }
-        });
-        const lines = Array.from(lineMap.values())
-          .map((line) => ({ top: line.top, text: line.text.trim() }))
-          .sort((a, b) => a.top - b.top);
-
-        const starts = lines
-          .map((line) => {
-            const match = line.text.match(/^\s*(?:Q\.?\s*)?(\d{1,3})[\)\.\: ]/i);
-            if (!match) return null;
-            const num = Number(match[1]);
-            if (!Number.isFinite(num)) return null;
-            return { num, top: line.top };
-          })
-          .filter(Boolean) as Array<{ num: number; top: number }>;
-
-        for (let i = 0; i < starts.length; i += 1) {
-          const current = starts[i];
-          if (seen.has(current.num)) continue;
-          seen.add(current.num);
-          const next = starts[i + 1];
-          const top = Math.max(0, current.top - 6);
-          const bottom = Math.min(
-            viewport.height - 8,
-            next ? next.top - 8 : viewport.height - 8
-          );
-          const height = Math.max(32, bottom - top);
-          const rect = { x: 0, y: top, w: viewport.width, h: height };
-
-          const blockText = lines
-            .filter((line) => line.top >= top && line.top <= bottom)
-            .map((line) => line.text)
-            .join(" ");
-          const isManual =
-            keywordRegex.test(blockText) || (blockText.match(optionRegex)?.length ?? 0) < 2;
-
-          if (isManual) {
-            manualList.push(current.num);
-            continue;
-          }
-
-          const imageDataUrl = createImageDataUrl(rect);
-          newCrops.push({
-            id: makeId("crop"),
-            pageNumber,
-            parts: 1,
-            ...rect,
-            subject: lastSubject,
-            questionType: "MCQ",
-            correctOption: "",
-            correctOptions: [],
-            correctNumeric: "",
-            marks: "+4/-1",
-            difficulty: lastDifficulty,
-            imageDataUrl,
-            questionText: "",
-            options: ["Option A", "Option B", "Option C", "Option D"],
-          });
-          autoList.push(current.num);
-        }
-      }
-
-      if (newCrops.length > 0) {
-        setCropRects((prev) => [...prev, ...newCrops]);
-      }
-      setAutoSplitResults({ auto: autoList, manual: manualList });
-      setAutoSplitTab(autoList.length ? "auto" : "manual");
-    } finally {
-      await renderPdfPage(prevPage);
-      setAutoSplitRunning(false);
-    }
-  };
 
   const parseAnswerKeyText = (text: string) => {
     const lines = text
@@ -1262,14 +1154,6 @@ export default function CreatorStudio() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="rounded-lg border border-white/10 px-3 py-1 text-xs text-white/70 hover:border-white/30"
-                  onClick={autoSplitPdf}
-                  disabled={autoSplitRunning}
-                >
-                  {autoSplitRunning ? "Auto-splitting..." : "Auto-split"}
-                </button>
                 <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1 text-[11px]">
                   <button
                     type="button"
@@ -1391,56 +1275,6 @@ export default function CreatorStudio() {
             style={{ boxShadow: `0 0 40px ${activeAccent.glow}` }}
           >
             <div className="space-y-4 text-xs">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] uppercase text-white/60">Auto Split</p>
-                  <div className="text-[10px] text-white/50">
-                    Auto {autoSplitResults.auto.length} · Manual {autoSplitResults.manual.length}
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-2 text-[11px]">
-                  <button
-                    type="button"
-                    className={`rounded-full px-3 py-1 ${
-                      autoSplitTab === "auto"
-                        ? "bg-white/20 text-white"
-                        : "border border-white/10 text-white/70"
-                    }`}
-                    onClick={() => setAutoSplitTab("auto")}
-                  >
-                    Auto
-                  </button>
-                  <button
-                    type="button"
-                    className={`rounded-full px-3 py-1 ${
-                      autoSplitTab === "manual"
-                        ? "bg-white/20 text-white"
-                        : "border border-white/10 text-white/70"
-                    }`}
-                    onClick={() => setAutoSplitTab("manual")}
-                  >
-                    Manual
-                  </button>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(autoSplitTab === "auto" ? autoSplitResults.auto : autoSplitResults.manual).map(
-                    (num) => (
-                      <span
-                        key={`${autoSplitTab}-${num}`}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-white/70"
-                      >
-                        Q {num}
-                      </span>
-                    )
-                  )}
-                  {(autoSplitTab === "auto" ? autoSplitResults.auto : autoSplitResults.manual)
-                    .length === 0 && (
-                    <span className="text-[11px] text-white/40">
-                      Run auto-split to see results.
-                    </span>
-                  )}
-                </div>
-              </div>
               <div
                 ref={editorRef}
                 className="rounded-xl border border-white/10 bg-white/5 p-3"
