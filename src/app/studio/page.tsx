@@ -533,9 +533,31 @@ export default function CreatorStudio() {
         } as CropMeta;
       });
       setCropRects((prev) => [...prev, ...mapped]);
+      const nums = parsed.questions
+        .map((q) => (typeof q.number === "number" ? q.number : null))
+        .filter((n): n is number => Number.isFinite(n));
+      const uniqueNums = Array.from(new Set(nums)).sort((a, b) => a - b);
+      let missingCount = 0;
+      let missingPreview = "";
+      if (uniqueNums.length >= 2) {
+        const min = uniqueNums[0];
+        const max = uniqueNums[uniqueNums.length - 1];
+        const missing = [];
+        for (let n = min; n <= max; n += 1) {
+          if (!uniqueNums.includes(n)) missing.push(n);
+        }
+        missingCount = missing.length;
+        if (missingCount > 0) {
+          missingPreview = missing.slice(0, 6).join(", ");
+        }
+      }
+      const missingText =
+        missingCount > 0
+          ? ` Missing ${missingCount} based on numbering${missingPreview ? ` (e.g., ${missingPreview})` : ""}.`
+          : "";
       setAiImportStatus({
-        message: `Imported ${mapped.length} questions. Manual crop needed for diagram questions.`,
-        tone: "success",
+        message: `Imported ${mapped.length} questions.${missingText} Manual crop needed for diagram questions.`,
+        tone: missingCount > 0 ? "info" : "success",
       });
       setShowAiPrompt(false);
       setShowAiChoice(false);
@@ -996,6 +1018,33 @@ export default function CreatorStudio() {
     }
 
     const imageDataUrl = createImageDataUrl(draftRect);
+
+    if (activeCrop && activeCrop.hasDiagram && !activeCrop.imageDataUrl) {
+      setCropRects((prev) =>
+        prev.map((rect) =>
+          rect.id === activeCrop.id
+            ? {
+                ...rect,
+                pageNumber: currentPage,
+                x: draftRect.x,
+                y: draftRect.y,
+                w: draftRect.w,
+                h: draftRect.h,
+                imageDataUrl,
+              }
+            : rect
+        )
+      );
+      setDraftRect(null);
+      setIsDrawing(false);
+      if (viewerRef.current) {
+        viewerRef.current.scrollBy({
+          top: Math.max(120, draftRect.h + 48),
+          behavior: "smooth",
+        });
+      }
+      return;
+    }
 
     const newRect: CropMeta = {
       id: makeId("crop"),
