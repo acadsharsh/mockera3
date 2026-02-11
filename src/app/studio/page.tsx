@@ -481,7 +481,13 @@ export default function CreatorStudio() {
       return;
     }
     try {
-      const parsed = JSON.parse(raw) as {
+      const cleaned = raw
+        .replace(/\[cite_start\]/gi, "")
+        .replace(/\[cite:[^\]]+\]/gi, "")
+        .replace(/\s+\n/g, "\n")
+        .replace(/\n\s+/g, "\n")
+        .trim();
+      const parsed = JSON.parse(cleaned) as {
         questions?: Array<{
           number?: number;
           text?: string;
