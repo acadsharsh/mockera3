@@ -505,7 +505,7 @@ export default function CBT() {
           </div>
           <div className="grid min-h-0 flex-1 gap-4 p-5">
                 {activeQuestion?.questionText && (
-                  <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+                  <div className="rounded border border-slate-200 bg-slate-50 p-3 text-[16px] leading-7">
                     {activeQuestion.questionText}
                   </div>
                 )}
@@ -550,11 +550,7 @@ export default function CBT() {
                     }}
                   />
                 </div>
-              ) : (
-                <div className="flex h-64 items-center justify-center text-xs text-slate-500">
-                  No crop image found.
-                </div>
-              )}
+              ) : null}
             </div>
 
             <div className="grid gap-2">
