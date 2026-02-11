@@ -23,6 +23,7 @@ type CropMeta = {
   imageDataUrl: string;
   questionText: string;
   options: string[];
+  hasDiagram?: boolean;
 };
 
 const subjects = ["Physics", "Chemistry", "Maths"] as const;
@@ -83,6 +84,13 @@ export default function CreatorStudio() {
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
   const [manualAnswerKey, setManualAnswerKey] = useState("");
+  const [showAiChoice, setShowAiChoice] = useState(false);
+  const [showAiPrompt, setShowAiPrompt] = useState(false);
+  const [aiJsonInput, setAiJsonInput] = useState("");
+  const [aiImportStatus, setAiImportStatus] = useState<{
+    message: string;
+    tone: "success" | "error" | "info";
+  } | null>(null);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
@@ -363,6 +371,7 @@ export default function CreatorStudio() {
     setCurrentPage(1);
     setCropRects([]);
     setActiveCropId(null);
+    setShowAiChoice(true);
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -464,6 +473,76 @@ export default function CreatorStudio() {
   };
 
   const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
+
+  const applyAiJson = () => {
+    const raw = aiJsonInput.trim();
+    if (!raw) {
+      setAiImportStatus({ message: "Paste the AI JSON first.", tone: "error" });
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw) as {
+        questions?: Array<{
+          number?: number;
+          text?: string;
+          options?: string[];
+          answer?: string;
+          hasDiagram?: boolean;
+          subject?: CropMeta["subject"];
+        }>;
+      };
+      if (!parsed.questions || parsed.questions.length === 0) {
+        setAiImportStatus({ message: "No questions found in JSON.", tone: "error" });
+        return;
+      }
+      const mapped = parsed.questions.map((q, index) => {
+        const answer = q.answer ? normalizeAnswer(q.answer) : "";
+        const isNumeric = answer.length > 0 && /^[0-9.+-]+$/.test(answer);
+        const isMulti = answer.includes(",");
+        const correctOptions = isMulti
+          ? answer
+              .split(",")
+              .map((v) => v.trim())
+              .filter((v) => ["A", "B", "C", "D"].includes(v as any)) as Array<
+              "A" | "B" | "C" | "D"
+            >
+          : [];
+        const correctOption =
+          !isNumeric && !isMulti && ["A", "B", "C", "D"].includes(answer as any)
+            ? (answer as "A" | "B" | "C" | "D")
+            : "";
+        return {
+          id: makeId("crop"),
+          pageNumber: 1,
+          parts: 1,
+          x: 0,
+          y: 0,
+          w: 0,
+          h: 0,
+          subject: q.subject ?? lastSubject,
+          questionType: isNumeric ? "NUM" : isMulti ? "MSQ" : "MCQ",
+          correctOption,
+          correctOptions,
+          correctNumeric: isNumeric ? answer : "",
+          marks: "+4/-1",
+          difficulty: lastDifficulty,
+          imageDataUrl: "",
+          questionText: q.text ?? "",
+          options: q.options?.length ? q.options : ["Option A", "Option B", "Option C", "Option D"],
+          hasDiagram: Boolean(q.hasDiagram),
+        } as CropMeta;
+      });
+      setCropRects((prev) => [...prev, ...mapped]);
+      setAiImportStatus({
+        message: `Imported ${mapped.length} questions. Manual crop needed for diagram questions.`,
+        tone: "success",
+      });
+      setShowAiPrompt(false);
+      setShowAiChoice(false);
+    } catch (error) {
+      setAiImportStatus({ message: "Invalid JSON. Please check the format.", tone: "error" });
+    }
+  };
 
   const parseAnswerKeyText = (text: string) => {
     const lines = text
@@ -1309,11 +1388,11 @@ export default function CreatorStudio() {
                   </div>
                     <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
                       <div className="mb-2 text-[10px] uppercase text-white/50">Select Question</div>
-                      <div className="flex max-h-32 flex-wrap gap-2 overflow-auto">
-                        {cropRects.map((crop, index) => (
-                          <button
-                            key={crop.id}
-                            type="button"
+                <div className="flex max-h-32 flex-wrap gap-2 overflow-auto">
+                  {cropRects.map((crop, index) => (
+                    <button
+                      key={crop.id}
+                      type="button"
                             onClick={() => {
                               focusCrop(crop.id);
                             }}
@@ -1329,18 +1408,23 @@ export default function CreatorStudio() {
                               const sourceId = event.dataTransfer.getData("text/plain");
                               mergeCrops(sourceId, crop.id);
                             }}
-                            className={`rounded-full px-3 py-1 text-[11px] ${
-                              crop.id === activeCropId
-                                ? "bg-white text-black"
-                                : "border border-white/10 text-white/70 hover:border-white/30"
-                            }`}
-                          >
-                            <span>Q{index + 1}</span>
-                            {crop.parts > 1 && (
-                              <span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] text-amber-100">
-                                Merged {crop.parts}
-                              </span>
-                            )}
+                      className={`rounded-full px-3 py-1 text-[11px] ${
+                        crop.id === activeCropId
+                          ? "bg-white text-black"
+                          : "border border-white/10 text-white/70 hover:border-white/30"
+                      }`}
+                    >
+                      <span>Q{index + 1}</span>
+                      {crop.hasDiagram && !crop.imageDataUrl && (
+                        <span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] text-amber-100">
+                          Diagram
+                        </span>
+                      )}
+                      {crop.parts > 1 && (
+                        <span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] text-amber-100">
+                          Merged {crop.parts}
+                        </span>
+                      )}
                           </button>
                         ))}
                         {cropRects.length === 0 && (
@@ -1468,6 +1552,11 @@ export default function CreatorStudio() {
                               {activeCrop.questionType}
                             </div>
                           </div>
+                          {activeCrop.hasDiagram && !activeCrop.imageDataUrl && (
+                            <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100">
+                              Diagram detected. Add a manual crop for this question.
+                            </div>
+                          )}
                           <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
                             <div className="text-[11px] uppercase text-white/50">Subject</div>
                             <div className="mt-1 font-semibold text-white">
@@ -1593,7 +1682,7 @@ export default function CreatorStudio() {
         </div>
       )}
 
-            {showAnswerKeyConfirm && (
+      {showAnswerKeyConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
             <h2 className="text-lg font-semibold">Answer key missing</h2>
@@ -1620,6 +1709,112 @@ export default function CreatorStudio() {
                 }}
               >
                 Submit without answer key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAiChoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
+            <h2 className="text-lg font-semibold">How do you want to create this test?</h2>
+            <p className="mt-2 text-sm text-white/70">
+              You can use AI to extract text questions and mark diagram questions for manual crop,
+              or build fully manual.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 text-xs">
+              <button
+                type="button"
+                className="rounded-full bg-white/20 px-4 py-2 text-white"
+                onClick={() => {
+                  setShowAiPrompt(true);
+                  setAiImportStatus(null);
+                }}
+              >
+                Use AI (paste JSON)
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-4 py-2 text-white/70"
+                onClick={() => setShowAiChoice(false)}
+              >
+                Manual only
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAiPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">AI Extraction Prompt</h2>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                onClick={() => setShowAiPrompt(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-4 text-[11px] text-white/70">
+              Paste this prompt into your AI along with the PDF, then paste the JSON output below.
+              <div className="mt-3 rounded-lg border border-white/10 bg-black/40 p-3 text-[11px] text-white/80">
+                {`You are extracting questions from a PDF. Return ONLY valid JSON in this exact schema:
+{
+  "questions": [
+    {
+      "number": 1,
+      "text": "Question text",
+      "options": ["A ...","B ...","C ...","D ..."],
+      "answer": "B",
+      "hasDiagram": false
+    }
+  ]
+}
+Rules:
+- If a question references a diagram/figure/graph or contains an image, set "hasDiagram": true.
+- If numeric answer, set "answer" to the number as a string.
+- If multiple correct, use "answer": "A,C".
+- No extra keys or commentary.`}
+              </div>
+            </div>
+            <textarea
+              value={aiJsonInput}
+              onChange={(event) => setAiJsonInput(event.target.value)}
+              rows={8}
+              className="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80"
+              placeholder='{"questions":[...]}'
+            />
+            {aiImportStatus && (
+              <div
+                className={`mt-3 rounded-lg border px-3 py-2 text-[11px] ${
+                  aiImportStatus.tone === "success"
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                    : aiImportStatus.tone === "error"
+                    ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                    : "border-white/10 bg-white/5 text-white/70"
+                }`}
+              >
+                {aiImportStatus.message}
+              </div>
+            )}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/70"
+                onClick={() => setShowAiPrompt(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-emerald-400/20 px-4 py-2 text-xs font-semibold text-emerald-100"
+                onClick={applyAiJson}
+              >
+                Apply JSON
               </button>
             </div>
           </div>
