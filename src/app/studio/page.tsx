@@ -322,7 +322,7 @@ export default function CreatorStudio() {
     setSelectionRect(null);
     setIsDrawing(false);
     setIsSelecting(false);
-    if (pageChanged || cropChanged) {
+    if (cropChanged) {
       setIsEditingOptions(false);
     }
     if (activeCropId) {
@@ -1603,7 +1603,7 @@ export default function CreatorStudio() {
                           </div>
                           {activeCrop.hasDiagram && !activeCrop.imageDataUrl && (
                             <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100">
-                              Diagram detected. Add a manual crop for this question.
+                              Diagram detected. Crop only the diagram area (not the full question).
                             </div>
                           )}
                           <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
@@ -1824,6 +1824,7 @@ export default function CreatorStudio() {
   ]
 }
 Rules:
+- Include every question in order; do not skip numbers. If something is unreadable, still include the question with empty text/options.
 - If a question references a diagram/figure/graph or contains an image, set "hasDiagram": true.
 - If numeric answer, set "answer" to the number as a string.
 - If multiple correct, use "answer": "A,C".
