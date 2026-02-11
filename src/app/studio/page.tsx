@@ -325,12 +325,7 @@ export default function CreatorStudio() {
     if (cropChanged) {
       setIsEditingOptions(false);
     }
-    if (activeCropId) {
-      const activeCrop = cropRects.find((rect) => rect.id === activeCropId);
-      if (activeCrop && activeCrop.pageNumber !== currentPage) {
-        setActiveCropId(null);
-      }
-    }
+    // Keep the active crop selected even when page changes so edit mode doesn't close.
   }, [currentPage, activeCropId, cropRects]);
 
   useEffect(() => {
@@ -495,6 +490,7 @@ export default function CreatorStudio() {
           answer?: string;
           hasDiagram?: boolean;
           subject?: CropMeta["subject"];
+          section?: string;
         }>;
       };
       if (!parsed.questions || parsed.questions.length === 0) {
@@ -517,6 +513,10 @@ export default function CreatorStudio() {
           !isNumeric && !isMulti && ["A", "B", "C", "D"].includes(answer as any)
             ? (answer as "A" | "B" | "C" | "D")
             : "";
+        const sectionLabel = q.section?.trim();
+        const questionText = sectionLabel
+          ? `[${sectionLabel}] ${q.text ?? ""}`.trim()
+          : q.text ?? "";
         return {
           id: makeId("crop"),
           pageNumber: 1,
@@ -533,7 +533,7 @@ export default function CreatorStudio() {
           marks: "+4/-1",
           difficulty: lastDifficulty,
           imageDataUrl: "",
-          questionText: q.text ?? "",
+          questionText,
           options: q.options?.length ? q.options : ["Option A", "Option B", "Option C", "Option D"],
           hasDiagram: Boolean(q.hasDiagram),
         } as CropMeta;
@@ -1822,6 +1822,8 @@ export default function CreatorStudio() {
   "questions": [
     {
       "number": 1,
+      "subject": "Physics",
+      "section": "Section 1",
       "text": "Question text",
       "options": ["A ...","B ...","C ...","D ..."],
       "answer": "B",
@@ -1831,6 +1833,7 @@ export default function CreatorStudio() {
 }
 Rules:
 - Include every question in order; do not skip numbers. If something is unreadable, still include the question with empty text/options.
+- Always set "subject" and "section" for each question so we can categorize them.
 - If a question references a diagram/figure/graph or contains an image, set "hasDiagram": true.
 - If numeric answer, set "answer" to the number as a string.
 - If multiple correct, use "answer": "A,C".
