@@ -467,7 +467,29 @@ export default function CreatorStudio() {
     return canvas.toDataURL("image/png");
   };
 
-  const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
+const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
+const superscriptMap: Record<string, string> = {
+  "0": "⁰",
+  "1": "¹",
+  "2": "²",
+  "3": "³",
+  "4": "⁴",
+  "5": "⁵",
+  "6": "⁶",
+  "7": "⁷",
+  "8": "⁸",
+  "9": "⁹",
+  "-": "⁻",
+};
+const formatSuperscripts = (value: string) =>
+  value.replace(/\^\{(-?\d+)\}|\^\((-?\d+)\)|\^(-?\d+)/g, (_, g1, g2, g3) => {
+    const raw = g1 ?? g2 ?? g3 ?? "";
+    const mapped = raw
+      .split("")
+      .map((ch: string) => superscriptMap[ch] ?? ch)
+      .join("");
+    return mapped;
+  });
 
   const applyAiJson = () => {
     const raw = aiJsonInput.trim();
@@ -514,9 +536,14 @@ export default function CreatorStudio() {
             ? (answer as "A" | "B" | "C" | "D")
             : "";
         const sectionLabel = q.section?.trim();
-        const questionText = sectionLabel
-          ? `[${sectionLabel}] ${q.text ?? ""}`.trim()
-          : q.text ?? "";
+        const rawText = sectionLabel ? `[${sectionLabel}] ${q.text ?? ""}`.trim() : q.text ?? "";
+        const questionText = formatSuperscripts(rawText);
+        const formattedOptions = (q.options?.length ? q.options : [
+          "Option A",
+          "Option B",
+          "Option C",
+          "Option D",
+        ]).map((opt) => formatSuperscripts(opt));
         return {
           id: makeId("crop"),
           pageNumber: 1,
@@ -534,7 +561,7 @@ export default function CreatorStudio() {
           difficulty: lastDifficulty,
           imageDataUrl: "",
           questionText,
-          options: q.options?.length ? q.options : ["Option A", "Option B", "Option C", "Option D"],
+          options: formattedOptions,
           hasDiagram: Boolean(q.hasDiagram),
         } as CropMeta;
       });
