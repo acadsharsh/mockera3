@@ -535,9 +535,7 @@ const formatSuperscripts = (value: string) =>
           !isNumeric && !isMulti && ["A", "B", "C", "D"].includes(answer as any)
             ? (answer as "A" | "B" | "C" | "D")
             : "";
-        const sectionLabel = q.section?.trim();
-        const rawText = sectionLabel ? `[${sectionLabel}] ${q.text ?? ""}`.trim() : q.text ?? "";
-        const questionText = formatSuperscripts(rawText);
+        const questionText = formatSuperscripts(q.text ?? "");
         const formattedOptions = (q.options?.length ? q.options : [
           "Option A",
           "Option B",
@@ -1843,6 +1841,39 @@ const formatSuperscripts = (value: string) =>
             </div>
             <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-4 text-[11px] text-white/70">
               Paste this prompt into your AI along with the PDF, then paste the JSON output below.
+              <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-white/60">
+                <span>Prompt</span>
+                <button
+                  type="button"
+                  className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70"
+                  onClick={() => {
+                    const promptText = `You are extracting questions from a PDF. Return ONLY valid JSON in this exact schema:
+{
+  "questions": [
+    {
+      "number": 1,
+      "subject": "Physics",
+      "section": "Section 1",
+      "text": "Question text",
+      "options": ["A ...","B ...","C ...","D ..."],
+      "answer": "B",
+      "hasDiagram": false
+    }
+  ]
+}
+Rules:
+- Include every question in order; do not skip numbers. If something is unreadable, still include the question with empty text/options.
+- Always set "subject" and "section" for each question so we can categorize them.
+- If a question references a diagram/figure/graph or contains an image, set "hasDiagram": true.
+- If numeric answer, set "answer" to the number as a string.
+- If multiple correct, use "answer": "A,C".
+- No extra keys or commentary.`;
+                    navigator.clipboard?.writeText(promptText);
+                  }}
+                >
+                  Copy Prompt
+                </button>
+              </div>
               <div className="mt-3 rounded-lg border border-white/10 bg-black/40 p-3 text-[11px] text-white/80">
                 {`You are extracting questions from a PDF. Return ONLY valid JSON in this exact schema:
 {
