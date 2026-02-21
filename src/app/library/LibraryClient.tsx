@@ -339,7 +339,6 @@ export default function LibraryClient({
                   return (
                     <div
                       key={test.id}
-                      custom={index}
                                             className={`rounded-xl border border-white/10 bg-white/5 p-4 ${style.border} ${style.glow}`}
                     >
                       
