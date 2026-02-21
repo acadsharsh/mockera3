@@ -277,7 +277,7 @@ export default function CreatorStudio() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [saveTest, clearSelection, deleteActiveCrop]);
+  }, [saveTest]);
 
   const activeCrop = cropRects.find((rect) => rect.id === activeCropId) || null;
   const activeAccent = activeCrop ? subjectAccents[activeCrop.subject] : subjectAccents.Physics;
