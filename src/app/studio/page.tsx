@@ -1722,7 +1722,6 @@ const formatSuperscripts = (value: string) =>
                               />
                             </div>
                           )}
-                          </div>
                           {activeCrop.questionType !== "NUM" && (
                             <div>
                               <label className="text-white/60">Options</label>
