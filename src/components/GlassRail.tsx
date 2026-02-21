@@ -84,7 +84,6 @@ export default function GlassRail() {
       <header className="fixed left-0 right-0 top-0 z-40 border-b border-white/10 bg-black">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-md bg-white" />
             <div className="text-sm font-semibold text-white">CBTCORE</div>
           </div>
 

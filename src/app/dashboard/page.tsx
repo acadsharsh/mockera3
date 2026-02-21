@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
+import BroadcastPopup from "@/components/BroadcastPopup";
 import LottieLoader from "@/components/LottieLoader";
 import { safeJson } from "@/lib/safe-json";
 
@@ -111,6 +112,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#0f0f10] text-white">
       <GlassRail />
+      <BroadcastPopup />
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 pt-24 pb-12">
         <header className="flex flex-wrap items-center justify-between gap-4">

@@ -29,6 +29,7 @@ model User {
   sessions           Session[]
   tests              Test[]
   attempts           Attempt[]
+  broadcasts         BroadcastMessage[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -79,6 +80,7 @@ model Test {
   title            String
   pdfUrl           String?
   visibility       String
+  hidden          Boolean   @default(false)
   accessCode       String?
   durationMinutes  Int
   markingCorrect   Int
@@ -148,4 +150,18 @@ model TestPercentileBand {
 
   @@index([testId])
   @@unique([testId, minScore])
+}
+
+
+model BroadcastMessage {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  active      Boolean  @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import GlassRail from "@/components/GlassRail";
+import BroadcastPopup from "@/components/BroadcastPopup";
 
 type Crop = {
   id: string;
@@ -248,6 +249,7 @@ export default function LibraryClient({
   return (
     <div className="min-h-screen bg-[#0f0f10] text-white">
       <GlassRail />
+      <BroadcastPopup />
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 pt-24 pb-10">
         <header className="flex flex-wrap items-center justify-between gap-4">

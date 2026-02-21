@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
+
+const parseAdminEmails = () =>
+  (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
@@ -25,6 +31,7 @@ const mapTest = (test: any) => ({
   id: test.id,
   title: test.title,
   visibility: test.visibility as "Public" | "Private",
+  hidden: Boolean(test.hidden),
   ownerId: test.ownerId,
   accessCode: test.accessCode ?? undefined,
   durationMinutes: test.durationMinutes,
@@ -56,6 +63,8 @@ export async function GET(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const adminEmails = parseAdminEmails();
+  const isAdmin = session.user.email ? adminEmails.includes(session.user.email.toLowerCase()) : false;
   const cacheHeaders = { "Cache-Control": "private, max-age=30" };
   const url = new URL(request.url);
   const latest = url.searchParams.get("latest");
@@ -65,7 +74,7 @@ export async function GET(request: Request) {
     const test = await prisma.test.findFirst({
       where: {
         id: testId,
-        OR: [{ visibility: "Public" }, { ownerId: session.user.id }],
+        OR: [{ visibility: "Public", hidden: false }, { ownerId: session.user.id }],
       },
       include: { questions: true },
     });
@@ -75,7 +84,7 @@ export async function GET(request: Request) {
   if (latest) {
     const latestTest = await prisma.test.findFirst({
       where: {
-        OR: [{ visibility: "Public" }, { ownerId: session.user.id }],
+        OR: [{ visibility: "Public", hidden: false }, { ownerId: session.user.id }],
       },
       include: { questions: true },
       orderBy: { createdAt: "desc" },
@@ -85,7 +94,7 @@ export async function GET(request: Request) {
 
   const tests = await prisma.test.findMany({
     where: {
-      OR: [{ visibility: "Public" }, { ownerId: session.user.id }],
+      OR: [{ visibility: "Public", hidden: false }, { ownerId: session.user.id }],
     },
     include: { questions: true },
     orderBy: { createdAt: "desc" },
