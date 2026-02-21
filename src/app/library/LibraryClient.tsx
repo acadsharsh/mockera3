@@ -326,7 +326,7 @@ export default function LibraryClient({
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {searchedTests.map((test, index) => {
                   const subject = test.crops?.[0]?.subject ?? "Physics";
-                  const style = subjectStyles[subject];
+                  const style = subjectStyles[subject] ?? subjectStyles.Physics;
                   const attemptsCount = attemptsByTest[test.id]?.length ?? 0;
                   const totalQuestions = test.crops?.length ?? 0;
                   const latestAttempt = attemptsByTest[test.id]?.[0];
