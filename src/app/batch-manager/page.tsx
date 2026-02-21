@@ -163,8 +163,7 @@ export default function BatchManagerPage() {
           <>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <div
-                initial={{ opacity: 0, y: 20 }}
-                                className="glass-card col-span-2 rounded-[28px] border border-white/10 bg-white/5 p-6"
+                className="glass-card col-span-2 rounded-[28px] border border-white/10 bg-white/5 p-6"
               >
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Analytics Overview</p>
                 <div className="mt-5 flex flex-wrap items-end gap-6">
@@ -199,8 +198,7 @@ export default function BatchManagerPage() {
               </div>
 
               <div
-                initial={{ opacity: 0, y: 20 }}
-                                className="glass-card col-span-1 rounded-[28px] border border-white/10 bg-white/5 p-6"
+                className="glass-card col-span-1 rounded-[28px] border border-white/10 bg-white/5 p-6"
               >
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Live Monitor</p>
                 <div className="mt-5 h-32 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/20 to-transparent p-4 text-xs text-slate-300">
