@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import GlassRail from "@/components/GlassRail";
 
@@ -163,11 +162,9 @@ export default function BatchManagerPage() {
         ) : (
           <>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <motion.div
+              <div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="glass-card col-span-2 rounded-[28px] border border-white/10 bg-white/5 p-6"
+                                className="glass-card col-span-2 rounded-[28px] border border-white/10 bg-white/5 p-6"
               >
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Analytics Overview</p>
                 <div className="mt-5 flex flex-wrap items-end gap-6">
@@ -199,13 +196,11 @@ export default function BatchManagerPage() {
                     ))}
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
-              <motion.div
+              <div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="glass-card col-span-1 rounded-[28px] border border-white/10 bg-white/5 p-6"
+                                className="glass-card col-span-1 rounded-[28px] border border-white/10 bg-white/5 p-6"
               >
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Live Monitor</p>
                 <div className="mt-5 h-32 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/20 to-transparent p-4 text-xs text-slate-300">
@@ -226,7 +221,7 @@ export default function BatchManagerPage() {
                 >
                   Open Library
                 </a>
-              </motion.div>
+              </div>
             </div>
 
             <div className="glass-card rounded-[28px] border border-white/10 bg-white/5 p-6">

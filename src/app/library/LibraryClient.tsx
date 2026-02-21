@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import GlassRail from "@/components/GlassRail";
-import { motion } from "framer-motion";
 
 type Crop = {
   id: string;
@@ -48,19 +47,19 @@ const tabs = ["All Tests", "Public", "My Batches", "Starred"] as const;
 const subjectStyles = {
   Physics: {
     border: "border-[#3b82f6]/60",
-    glow: "shadow-[0_0_24px_rgba(59,130,246,0.25)]",
+    glow: "",
     chip: "bg-[#1d4ed8]/40 text-[#93c5fd]",
     label: "Physics",
   },
   Chemistry: {
     border: "border-[#22c55e]/60",
-    glow: "shadow-[0_0_24px_rgba(34,197,94,0.25)]",
+    glow: "",
     chip: "bg-[#16a34a]/40 text-[#86efac]",
     label: "Chemistry",
   },
   Maths: {
     border: "border-[#a855f7]/60",
-    glow: "shadow-[0_0_24px_rgba(168,85,247,0.25)]",
+    glow: "",
     chip: "bg-[#7e22ce]/40 text-[#e9d5ff]",
     label: "Mathematics",
   },
@@ -94,15 +93,6 @@ const formatCount = (value: number) => {
     return `${Math.round(value / 100) / 10}k`;
   }
   return `${value}`;
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.05, duration: 0.4, ease: "easeOut" },
-  }),
 };
 
 export default function LibraryClient({
@@ -265,8 +255,7 @@ export default function LibraryClient({
             <h1 className="text-3xl font-semibold">CBTCORE</h1>
           </div>
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60">Cmd + K</div>
-            <a className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20" href="/studio">
+                        <a className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20" href="/studio">
               + Create Test
             </a>
           </div>
@@ -348,17 +337,12 @@ export default function LibraryClient({
                   }
 
                   return (
-                    <motion.div
+                    <div
                       key={test.id}
                       custom={index}
-                      initial="hidden"
-                      animate="visible"
-                      variants={cardVariants}
-                      className={`group relative overflow-hidden rounded-[28px] border bg-white/5 p-5 backdrop-blur transition hover:-translate-y-1 ${style.border} ${style.glow}`}
+                                            className={`rounded-xl border border-white/10 bg-white/5 p-4 ${style.border} ${style.glow}`}
                     >
-                      <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent blur-2xl" />
-                      </div>
+                      
 
                       <div className="relative">
                         <div className="flex items-center justify-between">
@@ -421,7 +405,7 @@ export default function LibraryClient({
                           <span>Global attempts: {formatCount(attemptsCount)}</span>
                         </div>
                         <a
-                          className="mt-6 inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100"
+                          className="mt-6 inline-flex rounded-md border border-white/20 px-3 py-2 text-xs text-white/80"
                           href={
                             isCompleted ? `/test-analysis?testId=${test.id}` : `/cbt?testId=${test.id}`
                           }
@@ -429,7 +413,7 @@ export default function LibraryClient({
                           {isCompleted ? "View Insights" : "Enter Arena"}
                         </a>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
