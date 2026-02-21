@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import "katex/dist/katex.min.css";
+import katex from "katex";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
