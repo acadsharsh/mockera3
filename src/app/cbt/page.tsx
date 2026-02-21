@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import "katex/dist/katex.min.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
@@ -40,6 +41,33 @@ type Attempt = {
 };
 
 const optionLetters = ["A", "B", "C", "D"] as const;
+
+const LatexText = ({ text }: { text: string }) => {
+  if (!text) return null;
+  const parts = text.split(/(\$[^$]+\$)/g);
+  return (
+    <>
+      {parts.map((part, idx) => {
+        if (part.startsWith("$") && part.endsWith("$")) {
+          const expr = part.slice(1, -1);
+          const html = katex.renderToString(expr, { throwOnError: false });
+          return (
+            <span
+              key={`katex-${idx}`}
+              className="inline-block align-middle"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          );
+        }
+        return (
+          <span key={`text-${idx}`} className="whitespace-pre-wrap">
+            {part}
+          </span>
+        );
+      })}
+    </>
+  );
+};
 
 const formatTime = (seconds: number) => {
   const hrs = Math.floor(seconds / 3600);
@@ -506,7 +534,7 @@ export default function CBT() {
           <div className="grid min-h-0 flex-1 gap-4 p-5">
                 {activeQuestion?.questionText && (
                   <div className="rounded border border-slate-200 bg-slate-50 p-3 text-[16px] leading-7">
-                    {activeQuestion.questionText}
+                    <LatexText text={activeQuestion.questionText} />
                   </div>
                 )}
             <div className="rounded border border-slate-200 bg-slate-50 p-3">
@@ -666,7 +694,7 @@ export default function CBT() {
                         disabled={solutionMode}
                       />
                       <span>
-                        {option}
+                        <LatexText text={option} />
                         {solutionMode && isCorrect ? " (Correct)" : ""}
                       </span>
                     </label>

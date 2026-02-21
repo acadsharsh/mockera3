@@ -271,6 +271,9 @@ export default function CreatorStudio() {
     if (!pdfDoc || !canvasRef.current) {
       return;
     }
+    if (pageNumber < 1 || pageNumber > pdfDoc.numPages) {
+      return;
+    }
 
     const page = await pdfDoc.getPage(pageNumber);
     const viewport = page.getViewport({ scale: pageScale });
@@ -1191,6 +1194,12 @@ const formatSuperscripts = (value: string) =>
     const rect = cropRects.find((item) => item.id === id);
     if (!rect) return;
     setActiveCropId(id);
+    if (rect.hasDiagram && !rect.imageDataUrl) {
+      return;
+    }
+    if (rect.pageNumber < 1 || (pdfDoc && rect.pageNumber > pdfDoc.numPages)) {
+      return;
+    }
     if (rect.pageNumber !== currentPage) {
       pendingFocusIdRef.current = id;
       setCurrentPage(rect.pageNumber);
