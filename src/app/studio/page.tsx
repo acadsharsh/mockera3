@@ -97,6 +97,7 @@ export default function CreatorStudio() {
     w: number;
     h: number;
   } | null>(null);
+  const [resizeHandle, setResizeHandle] = useState<"nw" | "ne" | "sw" | "se" | null>(null);
   const cropTool: "rect" = "rect";
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -104,6 +105,11 @@ export default function CreatorStudio() {
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
+  const resizeStartRef = useRef<{
+    x: number;
+    y: number;
+    rect: CropMeta;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingFocusIdRef = useRef<string | null>(null);
   const renderScaleRef = useRef(1);
@@ -191,6 +197,10 @@ export default function CreatorStudio() {
       return;
     }
     setSaving(true);
+    setDraftRect(null);
+    setSelectionRect(null);
+    setIsDrawing(false);
+    setIsSelecting(false);
     try {
       const response = await fetch("/api/tests", {
         method: "POST",
@@ -250,10 +260,15 @@ export default function CreatorStudio() {
       }
       if (key === "c") {
         event.preventDefault();
-        setActiveCropId(null);
+        clearSelection();
         if (viewerRef.current) {
           viewerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
         }
+      }
+      if (key === "delete" || key === "backspace") {
+        event.preventDefault();
+        deleteActiveCrop();
+        return;
       }
       if (key === "s") {
         event.preventDefault();
@@ -262,7 +277,7 @@ export default function CreatorStudio() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [saveTest]);
+  }, [saveTest, clearSelection, deleteActiveCrop]);
 
   const activeCrop = cropRects.find((rect) => rect.id === activeCropId) || null;
   const activeAccent = activeCrop ? subjectAccents[activeCrop.subject] : subjectAccents.Physics;
@@ -372,8 +387,30 @@ export default function CreatorStudio() {
     setShowAiChoice(true);
   };
 
+  const startResize = (
+    handle: "nw" | "ne" | "sw" | "se",
+    rect: CropMeta,
+    event: React.PointerEvent
+  ) => {
+    if (!overlayRef.current) return;
+    event.stopPropagation();
+    const bounds = overlayRef.current.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    resizeStartRef.current = { x, y, rect: { ...rect } };
+    setResizeHandle(handle);
+    setIsDrawing(false);
+    setIsSelecting(false);
+    setDraftRect(null);
+    setSelectionRect(null);
+  };
+
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!overlayRef.current) {
+      return;
+    }
+
+    if (resizeHandle) {
       return;
     }
 
@@ -392,6 +429,39 @@ export default function CreatorStudio() {
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (resizeHandle && resizeStartRef.current && overlayRef.current) {
+      const bounds = overlayRef.current.getBoundingClientRect();
+      const currentX = event.clientX - bounds.left;
+      const currentY = event.clientY - bounds.top;
+      const start = resizeStartRef.current;
+      const dx = currentX - start.x;
+      const dy = currentY - start.y;
+      const minSize = 12;
+      let newX = start.rect.x;
+      let newY = start.rect.y;
+      let newW = start.rect.w;
+      let newH = start.rect.h;
+      if (resizeHandle.includes("e")) {
+        newW = Math.max(minSize, start.rect.w + dx);
+      }
+      if (resizeHandle.includes("s")) {
+        newH = Math.max(minSize, start.rect.h + dy);
+      }
+      if (resizeHandle.includes("w")) {
+        newW = Math.max(minSize, start.rect.w - dx);
+        newX = start.rect.x + (start.rect.w - newW);
+      }
+      if (resizeHandle.includes("n")) {
+        newH = Math.max(minSize, start.rect.h - dy);
+        newY = start.rect.y + (start.rect.h - newH);
+      }
+      setCropRects((prev) =>
+        prev.map((rect) =>
+          rect.id === start.rect.id ? { ...rect, x: newX, y: newY, w: newW, h: newH } : rect
+        )
+      );
+      return;
+    }
     if ((!isDrawing && !isSelecting) || !startRef.current || !overlayRef.current) {
       return;
     }
@@ -1017,6 +1087,11 @@ const formatSuperscripts = (value: string) =>
 
 
   const handlePointerUp = () => {
+    if (resizeHandle) {
+      setResizeHandle(null);
+      resizeStartRef.current = null;
+      return;
+    }
     if (isSelecting && selectionRect) {
       const sx = selectionRect.x;
       const sy = selectionRect.y;
@@ -1188,6 +1263,20 @@ const formatSuperscripts = (value: string) =>
       setActiveCropId(null);
     }
     setSelectedCropIds(new Set());
+  };
+
+  const deleteActiveCrop = () => {
+    if (!activeCropId) return;
+    setCropRects((prev) => prev.filter((rect) => rect.id != activeCropId));
+    setActiveCropId(null);
+  };
+
+  const clearSelection = () => {
+    setActiveCropId(null);
+    setDraftRect(null);
+    setSelectionRect(null);
+    setIsDrawing(false);
+    setIsSelecting(false);
   };
 
   const focusCrop = (id: string) => {
@@ -1386,6 +1475,25 @@ const formatSuperscripts = (value: string) =>
                         border: `2px solid ${activeAccent.accent}`,
                       }}
                     />
+                  )}
+                  {activeCrop && activeCrop.pageNumber === currentPage && activeCrop.w > 0 && activeCrop.h > 0 && (
+                    <>
+                      {(["nw","ne","sw","se"] as const).map((handle) => {
+                        const size = 10;
+                        const left = handle.includes("w") ? activeCrop.x - size / 2 : activeCrop.x + activeCrop.w - size / 2;
+                        const top = handle.includes("n") ? activeCrop.y - size / 2 : activeCrop.y + activeCrop.h - size / 2;
+                        return (
+                          <button
+                            key={handle}
+                            type="button"
+                            data-resize-handle
+                            className="absolute rounded-sm border border-white/80 bg-white/80"
+                            style={{ left, top, width: size, height: size, cursor: `${handle}-resize` }}
+                            onPointerDown={(event) => startResize(handle, activeCrop, event)}
+                          />
+                        );
+                      })}
+                    </>
                   )}
                   {selectionRect && (
                     <div
@@ -1614,6 +1722,7 @@ const formatSuperscripts = (value: string) =>
                               />
                             </div>
                           )}
+                          </div>
                           {activeCrop.questionType !== "NUM" && (
                             <div>
                               <label className="text-white/60">Options</label>

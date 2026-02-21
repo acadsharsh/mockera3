@@ -109,32 +109,34 @@ export default function GlassRail() {
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur">
+      <header className="fixed left-0 right-0 top-0 z-40 border-b border-white/10 bg-[#0a0b0f]/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500/80 to-indigo-900/60" />
-            <div className="text-xs text-white/70">
-              {breadcrumbs.map((crumb, index) => (
-                <span key={`${crumb}-${index}`} className="flex items-center gap-2">
-                  <span>{crumb}</span>
-                  {index < breadcrumbs.length - 1 && <span className="text-white/30">/</span>}
-                </span>
-              ))}
+            <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-[#2b64ff] via-[#2e2bd9] to-[#101826] shadow-[0_8px_20px_rgba(46,43,217,0.35)]" />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-white">CBT Core</span>
+              <span className="text-[11px] text-white/40">
+                {breadcrumbs.join(" / ")}
+              </span>
             </div>
           </div>
-          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70 md:flex">
-            {NAV_ITEMS.slice(0, 5).map((item) => {
+
+          <nav className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70 md:flex">
+            {NAV_ITEMS.slice(0, 4).map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 rounded-full px-3 py-2 transition ${
-                    active ? "bg-white/15 text-white" : "hover:bg-white/10"
+                  className={`relative flex items-center gap-2 rounded-full px-4 py-2 transition ${
+                    active ? "text-white" : "hover:text-white"
                   }`}
                 >
                   <span className={`${iconClass} ${navIcon(item.label)}`} />
                   {item.label}
+                  {active && (
+                    <span className="absolute -bottom-1 left-4 right-4 h-[2px] rounded-full bg-white/70" />
+                  )}
                 </Link>
               );
             })}
@@ -153,13 +155,13 @@ export default function GlassRail() {
               <button
                 type="button"
                 onClick={() => setMoreOpen((prev) => !prev)}
-                className="rounded-full px-3 py-2 transition hover:bg-white/10"
+                className="rounded-full px-4 py-2 transition hover:text-white"
               >
                 More
               </button>
               {moreOpen && (
                 <div
-                  className="absolute right-0 top-10 z-50 w-52 rounded-2xl border border-white/10 bg-black/80 p-2 text-xs text-white shadow-xl backdrop-blur"
+                  className="absolute right-0 top-10 z-50 w-52 rounded-2xl border border-white/10 bg-[#0b0d14]/95 p-2 text-xs text-white shadow-2xl backdrop-blur"
                   onMouseEnter={() => {
                     if (closeTimerRef.current) {
                       clearTimeout(closeTimerRef.current);
@@ -168,7 +170,7 @@ export default function GlassRail() {
                   }}
                   onMouseLeave={() => setMoreOpen(false)}
                 >
-                  {NAV_ITEMS.slice(5).map((item) => (
+                  {NAV_ITEMS.slice(4).map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
@@ -184,6 +186,7 @@ export default function GlassRail() {
               )}
             </div>
           </nav>
+
           <div className="flex items-center gap-2">
             <button
               type="button"
