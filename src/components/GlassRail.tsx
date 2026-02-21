@@ -114,10 +114,7 @@ export default function GlassRail() {
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-[#2b64ff] via-[#2e2bd9] to-[#101826] shadow-[0_8px_20px_rgba(46,43,217,0.35)]" />
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white">CBT Core</span>
-              <span className="text-[11px] text-white/40">
-                {breadcrumbs.join(" / ")}
-              </span>
+              <span className="text-sm font-semibold text-white">CBTCORE</span>
             </div>
           </div>
 

@@ -262,8 +262,7 @@ export default function LibraryClient({
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 pt-24 pb-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Digital Vault</p>
-            <h1 className="mt-2 text-3xl font-semibold">Test Library</h1>
+            <h1 className="text-3xl font-semibold">CBTCORE</h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60">Cmd + K</div>
