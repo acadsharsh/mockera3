@@ -16,6 +16,8 @@ type Crop = {
 type Test = {
   id: string;
   title: string;
+  description?: string;
+  tags?: string[];
   visibility: "Public" | "Private";
   ownerId?: string;
   accessCode?: string;

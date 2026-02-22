@@ -78,6 +78,8 @@ model Verification {
 model Test {
   id               String     @id @default(cuid())
   title            String
+  description      String?
+  tags             String[]  @default([])
   pdfUrl           String?
   visibility       String
   hidden          Boolean   @default(false)

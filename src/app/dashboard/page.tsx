@@ -18,6 +18,8 @@ type RecentAttempt = {
 type TrendingTest = {
   id: string;
   title: string;
+  description?: string;
+  tags?: string[];
   attempts: number;
   avgMinutes: number;
 };
@@ -25,6 +27,8 @@ type TrendingTest = {
 type MyTest = {
   id: string;
   title: string;
+  description?: string;
+  tags?: string[];
   attempts: number;
   lastScore: number;
   bestScore: number;

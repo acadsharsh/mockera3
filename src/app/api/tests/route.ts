@@ -30,6 +30,8 @@ type Crop = {
 const mapTest = (test: any) => ({
   id: test.id,
   title: test.title,
+  description: test.description ?? "",
+  tags: test.tags ?? [],
   visibility: test.visibility as "Public" | "Private",
   hidden: Boolean(test.hidden),
   ownerId: test.ownerId,
@@ -110,6 +112,8 @@ export async function POST(request: Request) {
 
   const payload = (await request.json()) as {
     title: string;
+    description?: string;
+    tags?: string[];
     visibility: "Public" | "Private";
     accessCode?: string;
     durationMinutes: number;
@@ -122,6 +126,8 @@ export async function POST(request: Request) {
   const created = await prisma.test.create({
     data: {
       title: payload.title,
+      description: payload.description ?? null,
+      tags: payload.tags ?? [],
       visibility: payload.visibility,
       accessCode: payload.visibility === "Private" ? payload.accessCode : null,
       durationMinutes: payload.durationMinutes,

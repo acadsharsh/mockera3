@@ -42,6 +42,9 @@ const SETTINGS_KEY = "creatorStudioSettings";
 export default function CreatorStudio() {
   const router = useRouter();
   const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [testDescription, setTestDescription] = useState("");
+  const [testTags, setTestTags] = useState<string[]>([]);
   const [pdfApi, setPdfApi] = useState<{ getDocument: any } | null>(null);
   const [pageScale, setPageScale] = useState(1.7);
   const [currentPage, setCurrentPage] = useState(1);
@@ -212,6 +215,8 @@ export default function CreatorStudio() {
           durationMinutes,
           markingCorrect,
           markingIncorrect,
+          description: testDescription,
+          tags: testTags,
           crops: cropRects,
           lockNavigation,
         }),
@@ -378,6 +383,7 @@ export default function CreatorStudio() {
       return;
     }
 
+    setUploadedFile(file);
     const arrayBuffer = await file.arrayBuffer();
     const doc = await pdfApi.getDocument({ data: arrayBuffer }).promise;
     setPdfDoc(doc);
@@ -980,6 +986,7 @@ const formatSuperscripts = (value: string) =>
 
   const extractPdfText = async (file: File) => {
     if (!pdfApi) return "";
+    setUploadedFile(file);
     const arrayBuffer = await file.arrayBuffer();
     const doc = await pdfApi.getDocument({ data: arrayBuffer }).promise;
     let all = "";
@@ -1324,7 +1331,25 @@ const formatSuperscripts = (value: string) =>
             <p className="mt-2 text-[11px] text-white/50">Shortcuts: C = Crop · S = Save</p>
             <p className="mt-1 text-[11px] text-white/40">Shift + drag = multi-select</p>
           </div>
-          <div className="flex items-center gap-3">
+                    <button
+              type="button"
+              onClick={async () => {
+                if (!uploadedFile) return;
+                const textContent = await extractPdfText(uploadedFile).catch(() => "");
+                const response = await fetch("/api/ai/test-metadata", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ text: textContent }),
+                });
+                const data = await response.json().catch(() => null);
+                if (data?.description) setTestDescription(data.description);
+                if (Array.isArray(data?.tags)) setTestTags(data.tags);
+              }}
+              className="rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 hover:border-white/30"
+            >
+              AI Metadata
+            </button>
+<div className="flex items-center gap-3">
             <div className="glass-card flex items-center gap-2 rounded-full px-2 py-1 text-xs">
               <span className="px-2 text-[11px] text-white/60">Visibility</span>
               <button

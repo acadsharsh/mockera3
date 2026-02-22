@@ -20,6 +20,8 @@ type Crop = {
 type Test = {
   id: string;
   title: string;
+  description?: string;
+  tags?: string[];
   visibility: "Public" | "Private";
   accessCode?: string;
   durationMinutes?: number;
@@ -949,6 +951,19 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
         </aside>
 
         <main className="flex-1 space-y-6">
+          {(aiSummary || aiMistakes.length > 0) && (
+            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
+              <div className="text-[11px] uppercase text-white/50">AI Summary</div>
+              {aiSummary && <p className="mt-2 text-white/80">{aiSummary}</p>}
+              {aiMistakes.length > 0 && (
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-white/60">
+                  {aiMistakes.map((m, i) => (
+                    <li key={`mistake-${i}`}>{m}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <header className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-white/40">Test Analysis</p>

@@ -24,6 +24,8 @@ type Crop = {
 type Test = {
   id: string;
   title: string;
+  description?: string;
+  tags?: string[];
   visibility: "Public" | "Private";
   accessCode?: string;
   durationMinutes: number;

@@ -14,6 +14,8 @@ type Crop = {
 type Test = {
   id: string;
   title: string;
+  description?: string;
+  tags?: string[];
   crops: Crop[];
 };
 
