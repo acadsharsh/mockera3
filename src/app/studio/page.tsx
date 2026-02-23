@@ -94,6 +94,8 @@ export default function CreatorStudio() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
+
+  const [promptCopied, setPromptCopied] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
@@ -612,6 +614,39 @@ export default function CreatorStudio() {
       setJsonImportStatus({ message: "Invalid JSON. Please check the format.", tone: "error" });
     }
   };
+
+  const jsonPrompt = `Extract questions into strict JSON with this shape:
+
+{
+  "questions": [
+    {
+      "number": 1,
+      "text": "Question text only (remove Section labels like [Section 1])",
+      "options": ["A", "B", "C", "D"],
+      "answer": "A",
+      "subject": "Physics|Chemistry|Maths",
+      "hasDiagram": true|false
+    }
+  ]
+}
+
+Rules:
+- Keep math in plain text (use ^ for exponents).
+- If a question has a diagram, set hasDiagram: true.
+- Do NOT include section labels in the question text.
+- One JSON object only, no extra commentary.`;
+
+  const handleCopyJsonPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(jsonPrompt);
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 1500);
+    } catch {
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 1500);
+    }
+  };
+
   const parseAnswerKeyText = (text: string) => {
     const lines = text
       .split(/\r?\n/)
@@ -1850,12 +1885,32 @@ export default function CreatorStudio() {
             <p className="mt-2 text-xs text-white/60">
               Paste your questions JSON and we will add them as draft questions. You can still crop diagrams manually.
             </p>
+
+            <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-white/60">AI Prompt</div>
+                <button
+                  type="button"
+                  className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70"
+                  onClick={handleCopyJsonPrompt}
+                >
+                  Copy Prompt
+                </button>
+              </div>
+              <pre className="mt-2 whitespace-pre-wrap text-[11px] text-white/70">{jsonPrompt}</pre>
+            </div>
             <textarea
               value={jsonImportText}
               onChange={(event) => setJsonImportText(event.target.value)}
               className="mt-3 h-56 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white/80 outline-none"
               placeholder='{"questions": [{"number": 1, "text": "...", "options": ["A", "B", "C", "D"], "answer": "A", "subject": "Physics"}]}'
             />
+
+            {promptCopied && (
+              <div className="mt-3 rounded-lg bg-emerald-500/15 px-3 py-2 text-xs text-emerald-200">
+                Prompt copied.
+              </div>
+            )}
             {jsonImportStatus && (
               <div
                 className={
