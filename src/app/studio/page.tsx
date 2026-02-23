@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -86,7 +86,11 @@ export default function CreatorStudio() {
     Array<{ index?: number; value: string }>
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
-  const [manualAnswerKey, setManualAnswerKey] = useState("");  const [selectionRect, setSelectionRect] = useState<{
+  const [manualAnswerKey, setManualAnswerKey] = useState("");
+    message: string;
+    tone: "success" | "error" | "info";
+  } | null>(null);
+  const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
     w: number;
@@ -131,6 +135,508 @@ export default function CreatorStudio() {
     if (typeof window === "undefined") return;
     const raw = window.localStorage.getItem(SETTINGS_KEY);
     if (!raw) return;
+    try {
+      const saved = JSON.parse(raw) as Partial<{
+        subject: CropMeta["subject"];
+        difficulty: CropMeta["difficulty"];
+        markingCorrect: number;
+        markingIncorrect: number;
+      }>;
+      if (saved.subject) {
+        setLastSubject(saved.subject);
+        setBulkSubject(saved.subject);
+      }
+      if (saved.difficulty) {
+        setLastDifficulty(saved.difficulty);
+        setBulkDifficulty(saved.difficulty);
+      }
+      if (typeof saved.markingCorrect === "number") {
+        setMarkingCorrect(saved.markingCorrect);
+      }
+      if (typeof saved.markingIncorrect === "number") {
+        setMarkingIncorrect(saved.markingIncorrect);
+      }
+    } catch {
+      // ignore corrupted storage
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({
+        subject: lastSubject,
+        difficulty: lastDifficulty,
+        markingCorrect,
+        markingIncorrect,
+      })
+    );
+  }, [lastSubject, lastDifficulty, markingCorrect, markingIncorrect]);
+
+  const hasAnswerKey = useCallback(() => {
+    return cropRects.some((crop) => {
+      if (crop.questionType === "NUM") {
+        return Boolean(crop.correctNumeric && crop.correctNumeric.trim().length > 0);
+      }
+      if (crop.questionType === "MSQ") {
+        return Boolean(
+          crop.correctOptions &&
+            crop.correctOptions.length > 0 &&
+            crop.correctOptions.some((letter) => letter !== "A")
+        );
+      }
+      return crop.correctOption !== "A";
+    });
+  }, [cropRects]);
+
+  const runSaveTest = useCallback(async () => {
+    if (!title.trim() || cropRects.length === 0) {
+      alert("Please enter a title and create at least one crop.");
+      return;
+    }
+    setSaving(true);
+    setDraftRect(null);
+    setSelectionRect(null);
+    setIsDrawing(false);
+    setIsSelecting(false);
+    try {
+      const response = await fetch("/api/tests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          visibility,
+          accessCode: visibility === "Private" ? accessCode : undefined,
+          durationMinutes,
+          markingCorrect,
+          markingIncorrect,
+          description: testDescription,
+          tags: testTags,
+          crops: cropRects,
+          lockNavigation,
+        }),
+      });
+      const saved = await safeJson<{ id?: string } | null>(response, null);
+      if (!saved?.id) {
+        throw new Error("Test creation failed.");
+      }
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 2200);
+      router.push(`/test-created?testId=${saved.id}`);
+    } finally {
+      setSaving(false);
+    }
+  }, [
+    accessCode,
+    cropRects,
+    durationMinutes,
+    lockNavigation,
+    markingCorrect,
+    markingIncorrect,
+    router,
+    title,
+    visibility,
+  ]);
+
+  const saveTest = useCallback(() => {
+    if (!hasAnswerKey()) {
+      setShowAnswerKeyConfirm(true);
+      return;
+    }
+    runSaveTest();
+  }, [hasAnswerKey, runSaveTest]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if ((event.metaKey || event.ctrlKey) && key === "s") {
+        event.preventDefault();
+        saveTest();
+        return;
+      }
+      if (key === "c") {
+        event.preventDefault();
+        clearSelection();
+        if (viewerRef.current) {
+          viewerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+      if (key === "delete" || key === "backspace") {
+        event.preventDefault();
+        deleteActiveCrop();
+        return;
+      }
+      if (key === "s") {
+        event.preventDefault();
+        saveTest();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [saveTest]);
+
+  const activeCrop = cropRects.find((rect) => rect.id === activeCropId) || null;
+  const activeAccent = activeCrop ? subjectAccents[activeCrop.subject] : subjectAccents.Physics;
+
+  const renderPdfPage = async (pageNumber: number) => {
+    if (!pdfDoc || !canvasRef.current) {
+      return;
+    }
+    if (pageNumber < 1 || pageNumber > pdfDoc.numPages) {
+      return;
+    }
+
+    const page = await pdfDoc.getPage(pageNumber);
+    const viewport = page.getViewport({ scale: pageScale });
+    const outputScale = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    renderScaleRef.current = outputScale;
+    canvas.width = Math.floor(viewport.width * outputScale);
+    canvas.height = Math.floor(viewport.height * outputScale);
+    canvas.style.width = `${viewport.width}px`;
+    canvas.style.height = `${viewport.height}px`;
+
+    if (overlayRef.current) {
+      overlayRef.current.style.width = `${viewport.width}px`;
+      overlayRef.current.style.height = `${viewport.height}px`;
+    }
+
+    if (context) {
+      context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+      const renderTask = page.render({ canvasContext: context, viewport });
+      renderTaskRef.current = renderTask;
+      try {
+        await renderTask.promise;
+      } catch (error: any) {
+        if (!error || error.name !== "RenderingCancelledException") {
+          throw error;
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (pdfDoc) {
+      renderPdfPage(currentPage);
+    }
+  }, [pdfDoc, currentPage, pageScale]);
+
+  useEffect(() => {
+    const pageChanged = prevPageRef.current !== currentPage;
+    const cropChanged = prevActiveIdRef.current !== activeCropId;
+    prevPageRef.current = currentPage;
+    prevActiveIdRef.current = activeCropId;
+
+    setDraftRect(null);
+    setSelectionRect(null);
+    setIsDrawing(false);
+    setIsSelecting(false);
+    if (cropChanged) {
+      setIsEditingOptions(false);
+    }
+    // Keep the active crop selected even when page changes so edit mode doesn't close.
+  }, [currentPage, activeCropId, cropRects]);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (!editorRef.current) return;
+      if (!editorRef.current.contains(event.target as Node)) {
+        // Keep edit mode active until user clicks Save.
+      }
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  useEffect(() => {
+    if (!pendingFocusIdRef.current) return;
+    const target = cropRects.find((rect) => rect.id === pendingFocusIdRef.current);
+    if (!target || target.pageNumber !== currentPage) return;
+    if (viewerRef.current) {
+      viewerRef.current.scrollTo({
+        top: Math.max(0, target.y - 40),
+        behavior: "smooth",
+      });
+    }
+    pendingFocusIdRef.current = null;
+  }, [currentPage, cropRects]);
+
+  const handleUpload = async (file: File | null) => {
+    if (!file) {
+      return;
+    }
+    if (!pdfApi) {
+      return;
+    }
+
+    setUploadedFile(file);
+    const arrayBuffer = await file.arrayBuffer();
+    const doc = await pdfApi.getDocument({ data: arrayBuffer }).promise;
+    setPdfDoc(doc);
+    setCurrentPage(1);
+    setCropRects([]);
+    setActiveCropId(null);
+  };
+
+  const startResize = (
+    handle: "nw" | "ne" | "sw" | "se",
+    rect: CropMeta,
+    event: React.PointerEvent
+  ) => {
+    if (!overlayRef.current) return;
+    event.stopPropagation();
+    const bounds = overlayRef.current.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    resizeStartRef.current = { x, y, rect: { ...rect } };
+    setResizeHandle(handle);
+    setIsDrawing(false);
+    setIsSelecting(false);
+    setDraftRect(null);
+    setSelectionRect(null);
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!overlayRef.current) {
+      return;
+    }
+
+    if (resizeHandle) {
+      return;
+    }
+
+    const rect = overlayRef.current.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    startRef.current = { x, y };
+    if (event.shiftKey) {
+      setSelectionRect({ x, y, w: 0, h: 0 });
+      setIsSelecting(true);
+      setIsDrawing(false);
+      return;
+    }
+    setDraftRect({ x, y, w: 0, h: 0 });
+    setIsDrawing(true);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (resizeHandle && resizeStartRef.current && overlayRef.current) {
+      const bounds = overlayRef.current.getBoundingClientRect();
+      const currentX = event.clientX - bounds.left;
+      const currentY = event.clientY - bounds.top;
+      const start = resizeStartRef.current;
+      const dx = currentX - start.x;
+      const dy = currentY - start.y;
+      const minSize = 12;
+      let newX = start.rect.x;
+      let newY = start.rect.y;
+      let newW = start.rect.w;
+      let newH = start.rect.h;
+      if (resizeHandle.includes("e")) {
+        newW = Math.max(minSize, start.rect.w + dx);
+      }
+      if (resizeHandle.includes("s")) {
+        newH = Math.max(minSize, start.rect.h + dy);
+      }
+      if (resizeHandle.includes("w")) {
+        newW = Math.max(minSize, start.rect.w - dx);
+        newX = start.rect.x + (start.rect.w - newW);
+      }
+      if (resizeHandle.includes("n")) {
+        newH = Math.max(minSize, start.rect.h - dy);
+        newY = start.rect.y + (start.rect.h - newH);
+      }
+      setCropRects((prev) =>
+        prev.map((rect) =>
+          rect.id === start.rect.id ? { ...rect, x: newX, y: newY, w: newW, h: newH } : rect
+        )
+      );
+      return;
+    }
+    if ((!isDrawing && !isSelecting) || !startRef.current || !overlayRef.current) {
+      return;
+    }
+
+    const rect = overlayRef.current.getBoundingClientRect();
+    const currentX = event.clientX - rect.left;
+    const currentY = event.clientY - rect.top;
+    let x = Math.min(startRef.current.x, currentX);
+    let y = Math.min(startRef.current.y, currentY);
+    let w = Math.abs(currentX - startRef.current.x);
+    let h = Math.abs(currentY - startRef.current.y);
+    if (isSelecting) {
+      setSelectionRect({ x, y, w, h });
+      return;
+    }
+    setDraftRect({ x, y, w, h });
+  };
+
+  const createImageDataUrl = (rect: { x: number; y: number; w: number; h: number }) => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return "";
+    }
+    const tempCanvas = document.createElement("canvas");
+    const scale = renderScaleRef.current || 1;
+    tempCanvas.width = Math.max(1, Math.floor(rect.w * scale));
+    tempCanvas.height = Math.max(1, Math.floor(rect.h * scale));
+    const tempContext = tempCanvas.getContext("2d");
+    if (!tempContext) {
+      return "";
+    }
+    tempContext.drawImage(
+      canvas,
+      rect.x * scale,
+      rect.y * scale,
+      rect.w * scale,
+      rect.h * scale,
+      0,
+      0,
+      rect.w * scale,
+      rect.h * scale
+    );
+    return tempCanvas.toDataURL("image/png");
+  };
+
+  const loadImage = (src: string) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Failed to load image"));
+      image.src = src;
+    });
+
+  const makeId = (prefix: string) => {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return `${prefix}-${crypto.randomUUID()}`;
+    }
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  };
+
+  const stitchImages = async (topSrc: string, bottomSrc: string) => {
+    const [top, bottom] = await Promise.all([loadImage(topSrc), loadImage(bottomSrc)]);
+    const width = Math.max(top.width, bottom.width);
+    const height = top.height + bottom.height;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return topSrc;
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(top, (width - top.width) / 2, 0);
+    ctx.drawImage(bottom, (width - bottom.width) / 2, top.height);
+    return canvas.toDataURL("image/png");
+  };
+
+const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
+const superscriptMap: Record<string, string> = {
+  "0": "",
+  "1": "",
+  "2": "",
+  "3": "",
+  "4": "4",
+  "5": "5",
+  "6": "6",
+  "7": "7",
+  "8": "8",
+  "9": "?",
+  "-": "?",
+};
+const formatSuperscripts = (value: string) =>
+  value.replace(/\^\{(-?\d+)\}|\^\((-?\d+)\)|\^(-?\d+)/g, (_, g1, g2, g3) => {
+    const raw = g1 ?? g2 ?? g3 ?? "";
+    const mapped = raw
+      .split("")
+      .map((ch: string) => superscriptMap[ch] ?? ch)
+      .join("");
+    return mapped;
+  });
+      if (!parsed.questions || parsed.questions.length === 0) {
+        return;
+      }
+      const mapped = parsed.questions.map((q, index) => {
+        const answer = q.answer ? normalizeAnswer(q.answer) : "";
+        const isNumeric = answer.length > 0 && /^[0-9.+-]+$/.test(answer);
+        const isMulti = answer.includes(",");
+        const correctOptions = isMulti
+          ? answer
+              .split(",")
+              .map((v) => v.trim())
+              .filter((v) => ["A", "B", "C", "D"].includes(v as any)) as Array<
+              "A" | "B" | "C" | "D"
+            >
+          : [];
+        const correctOption =
+          !isNumeric && !isMulti && ["A", "B", "C", "D"].includes(answer as any)
+            ? (answer as "A" | "B" | "C" | "D")
+            : "";
+        const questionText = formatSuperscripts(q.text ?? "");
+        const formattedOptions = (q.options?.length ? q.options : [
+          "Option A",
+          "Option B",
+          "Option C",
+          "Option D",
+        ]).map((opt) => formatSuperscripts(opt));
+        return {
+          id: makeId("crop"),
+          pageNumber: 1,
+          parts: 1,
+          x: 0,
+          y: 0,
+          w: 0,
+          h: 0,
+          subject: q.subject ?? lastSubject,
+          questionType: isNumeric ? "NUM" : isMulti ? "MSQ" : "MCQ",
+          correctOption,
+          correctOptions,
+          correctNumeric: isNumeric ? answer : "",
+          marks: "+4/-1",
+          difficulty: lastDifficulty,
+          imageDataUrl: "",
+          questionText,
+          options: formattedOptions,
+          hasDiagram: Boolean(q.hasDiagram),
+        } as CropMeta;
+      });
+      setCropRects((prev) => [...prev, ...mapped]);
+      const nums = parsed.questions
+        .map((q) => (typeof q.number === "number" ? q.number : null))
+        .filter((n): n is number => Number.isFinite(n));
+      const uniqueNums = Array.from(new Set(nums)).sort((a, b) => a - b);
+      let missingCount = 0;
+      let missingPreview = "";
+      if (uniqueNums.length >= 2) {
+        const min = uniqueNums[0];
+        const max = uniqueNums[uniqueNums.length - 1];
+        const missing = [];
+        for (let n = min; n <= max; n += 1) {
+          if (!uniqueNums.includes(n)) missing.push(n);
+        }
+        missingCount = missing.length;
+        if (missingCount > 0) {
+          missingPreview = missing.slice(0, 6).join(", ");
+        }
+      }
+      const missingText =
+        missingCount > 0
+          ? ` Missing ${missingCount} based on numbering${missingPreview ? ` (e.g., ${missingPreview})` : ""}.`
+          : "";
+    } catch (error) {
+    }
+  };
 
   const parseAnswerKeyText = (text: string) => {
     const lines = text
@@ -784,7 +1290,7 @@ export default function CreatorStudio() {
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">Precision Workbench</p>
             <h1 className="mt-2 text-3xl font-semibold">Creator Studio</h1>
             <p className="mt-2 text-sm text-white/60">Turn any PDF into a CBT-ready test in minutes.</p>
-            <p className="mt-2 text-[11px] text-white/50">Shortcuts: C = Crop · S = Save</p>
+            <p className="mt-2 text-[11px] text-white/50">Shortcuts: C = Crop  S = Save</p>
             <p className="mt-1 text-[11px] text-white/40">Shift + drag = multi-select</p>
           </div>
 <div className="flex items-center gap-3">
@@ -793,77 +1299,8 @@ export default function CreatorStudio() {
               <button
                 className={`rounded-full px-3 py-1 ${visibility === "Public" ? "bg-white text-black" : "text-white/60"}`}
                 onClick={() => setVisibility("Public")}
-                type="button"
-              >
-                Public
-              </button>
-              <button
-                className={`rounded-full px-3 py-1 ${visibility === "Private" ? "bg-white text-black" : "text-white/60"}`}
-                onClick={() => setVisibility("Private")}
-                type="button"
-              >
-                Private
-              </button>
-            </div>
-            {visibility === "Private" && (
-              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs">
-                <input
-                  value={accessCode}
-                  onChange={(event) => setAccessCode(event.target.value)}
-                  className="w-28 bg-transparent text-xs text-white outline-none placeholder:text-white/40"
-                />
-                <button
-                  className="rounded-full border border-white/10 px-2 py-1 text-[11px] text-white/70"
-                  onClick={() => setAccessCode(makeAccessCode())}
-                  type="button"
-                >
-                  Generate
-                </button>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowSettings(true)}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
-            >
-              Settings
-            </button>
-            <button
-              onClick={saveTest}
-              className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-black"
-              disabled={saving}
-            >
-              {saving ? "Saving..." : "Publish Test"}
-            </button>
-          </div>
-        </header>
 
-        <div
-          className={`pointer-events-none fixed right-6 top-6 z-50 rounded-xl bg-emerald-500 px-4 py-3 text-xs font-semibold text-white shadow-lg transition-all duration-300 ${
-            toastVisible ? "translate-y-0 scale-100 opacity-100" : "-translate-y-2 scale-95 opacity-0"
-          }`}
-        >
-          Test saved successfully
-        </div>
-
-        {pdfDoc ? (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <main className="glass-card p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
-              <div>
-                <p className="text-sm font-semibold">{title}</p>
-                <p className="text-xs text-white/60">
-                  {pdfDoc ? `Page ${currentPage} of ${pdfDoc.numPages}` : "Upload a PDF"}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-white/70">
-                <span>Total: {cropRects.length}</span>
-                <span className="text-white/30">•</span>
-                <span>Current: {activeCropId ? cropRects.findIndex((crop) => crop.id === activeCropId) + 1 : "--"}</span>
-                <span className="text-white/30">•</span>
-                <span>Selected: {selectedCropIds.size}</span>
-                <span className="text-white/30">•</span>
-                {selectedCropIds.size > 0 && (
+{selectedCropIds.size > 0 && (
                   <button
                     type="button"
                     onClick={() => setSelectedCropIds(new Set())}
@@ -999,7 +1436,7 @@ export default function CreatorStudio() {
                           type="button"
                         >
                           <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/70 px-2 py-1 text-[10px] text-white">
-                            {rect.subject} · {markingCorrect >= 0 ? `+${markingCorrect}` : markingCorrect}
+                            {rect.subject}  {markingCorrect >= 0 ? `+${markingCorrect}` : markingCorrect}
                             /{markingIncorrect}
                           </span>
                         </button>
@@ -1042,7 +1479,7 @@ export default function CreatorStudio() {
                           }
                         }}
                       >
-                        {isEditingOptions ? "✓ Save" : "Edit"}
+                        {isEditingOptions ? "? Save" : "Edit"}
                       </button>
                     )}
                   </div>
@@ -1229,7 +1666,7 @@ export default function CreatorStudio() {
                                 Correct Answer
                               </div>
                               <div className="mt-1 font-semibold text-white">
-                                {activeCrop.correctNumeric || "—"}
+                                {activeCrop.correctNumeric || ""}
                               </div>
                             </div>
                           ) : (
@@ -1239,7 +1676,7 @@ export default function CreatorStudio() {
                               </div>
                               <div className="mt-1 font-semibold text-white">
                                 {activeCrop.questionType === "MSQ"
-                                  ? (activeCrop.correctOptions ?? []).join(", ") || "—"
+                                  ? (activeCrop.correctOptions ?? []).join(", ") || ""
                                   : activeCrop.correctOption}
                               </div>
                             </div>
@@ -1375,7 +1812,6 @@ export default function CreatorStudio() {
         </div>
       )}
               >
-
 {selectedCropIds.size > 0 && (
         <div className="fixed bottom-6 right-6 z-40 w-72 rounded-2xl border border-white/10 bg-black/70 p-4 text-white shadow-2xl backdrop-blur">
           <div className="flex items-center justify-between">
