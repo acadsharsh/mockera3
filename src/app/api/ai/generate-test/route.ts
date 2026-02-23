@@ -5,8 +5,16 @@ import { groqChat } from "@/lib/groq";
 export async function POST(request: Request) {
   await requireUser();
   const payload = await request.json();
-  const questionText = String(payload?.questionText ?? "");
-  const answerKeyText = String(payload?.answerKeyText ?? "");
+  const questionTextRaw = String(payload?.questionText ?? "");
+  const answerKeyTextRaw = String(payload?.answerKeyText ?? "");
+
+  
+  const clampText = (value: string, maxChars: number) =>
+    value.replace(/\s+/g, " ").trim().slice(0, maxChars);
+  // Keep prompts well under Groq TPM on free/on_demand tier.
+  const questionText = clampText(questionTextRaw, 2500);
+  const answerKeyText = clampText(answerKeyTextRaw, 1500);
+
 
   const prompt = `You are extracting a CBT test from PDFs. Return ONLY valid JSON in this exact schema:
 {
@@ -32,10 +40,10 @@ Rules:
 - Do not include any extra keys or commentary.
 
 QUESTION_PDF_TEXT:
-${questionText.slice(0, 12000)}
+${questionText}
 
 ANSWER_KEY_TEXT:
-${answerKeyText.slice(0, 12000)}`;
+${answerKeyText}`;
 
   const content = await groqChat([
     { role: "system", content: "Return JSON only." },
