@@ -1781,7 +1781,6 @@ export default function CreatorStudio() {
           </div>
         </div>
       )}
-              >
 {selectedCropIds.size > 0 && (
         <div className="fixed bottom-6 right-6 z-40 w-72 rounded-2xl border border-white/10 bg-black/70 p-4 text-white shadow-2xl backdrop-blur">
           <div className="flex items-center justify-between">
