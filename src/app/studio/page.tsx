@@ -1871,7 +1871,7 @@ Rules:
 
       {showJsonImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
+          <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Paste JSON</h2>
               <button
@@ -1897,12 +1897,12 @@ Rules:
                   Copy Prompt
                 </button>
               </div>
-              <pre className="mt-2 whitespace-pre-wrap text-[11px] leading-5 text-white/75">{jsonPrompt}</pre>
+              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap text-[11px] leading-5 text-white/75">{jsonPrompt}</pre>
             </div>
             <textarea
               value={jsonImportText}
               onChange={(event) => setJsonImportText(event.target.value)}
-              className="mt-3 h-56 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white/80 outline-none"
+              className="mt-3 h-40 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white/80 outline-none"
               placeholder='{"questions": [{"number": 1, "text": "...", "options": ["A", "B", "C", "D"], "answer": "A", "subject": "Physics"}]}'
             />
 
