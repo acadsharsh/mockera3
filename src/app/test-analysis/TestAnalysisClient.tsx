@@ -1071,7 +1071,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1081,7 +1081,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1116,7 +1116,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1126,7 +1126,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1263,7 +1263,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1273,7 +1273,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1319,7 +1319,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1329,7 +1329,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1398,7 +1398,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1408,7 +1408,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1443,7 +1443,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1453,7 +1453,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1563,7 +1563,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1573,7 +1573,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1640,7 +1640,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1650,7 +1650,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1725,7 +1725,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1735,7 +1735,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1884,7 +1884,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1894,7 +1894,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1957,7 +1957,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -1967,7 +1967,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2024,7 +2024,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2034,7 +2034,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2081,7 +2081,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2091,7 +2091,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2155,7 +2155,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2165,7 +2165,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2202,7 +2202,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2212,7 +2212,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2247,7 +2247,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2257,7 +2257,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2334,7 +2334,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2344,7 +2344,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2381,7 +2381,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2391,7 +2391,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2427,7 +2427,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2437,7 +2437,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2512,7 +2512,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2522,7 +2522,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2557,7 +2557,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.weakTopics.map((t: string, i: number) => (
+                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
                       <li key={`weak-${i}`}>{t}</li>
                     ))}
                   </ul>
@@ -2567,7 +2567,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {aiInsights.mistakePatterns.map((t: string, i: number) => (
+                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
                       <li key={`pattern-${i}`}>{t}</li>
                     ))}
                   </ul>
