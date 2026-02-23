@@ -86,17 +86,7 @@ export default function CreatorStudio() {
     Array<{ index?: number; value: string }>
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
-  const [manualAnswerKey, setManualAnswerKey] = useState("");
-  const [showAiChoice, setShowAiChoice] = useState(false);
-  const [showAiPrompt, setShowAiPrompt] = useState(false);
-  const [aiJsonInput, setAiJsonInput] = useState("");
-  const [aiQuestionFile, setAiQuestionFile] = useState<File | null>(null);
-  const [aiAnswerKeyFile, setAiAnswerKeyFile] = useState<File | null>(null);
-  const [aiImportStatus, setAiImportStatus] = useState<{
-    message: string;
-    tone: "success" | "error" | "info";
-  } | null>(null);
-  const [selectionRect, setSelectionRect] = useState<{
+  const [manualAnswerKey, setManualAnswerKey] = useState("");  const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
     w: number;
@@ -571,71 +561,6 @@ const formatSuperscripts = (value: string) =>
       .join("");
     return mapped;
   });
-
-  
-
-  const runAiFromPdf = async () => {
-    if (!aiQuestionFile) {
-      setAiImportStatus({ message: "Upload the question PDF first.", tone: "error" });
-      return;
-    }
-    if (!aiAnswerKeyFile) {
-      setAiImportStatus({ message: "Upload the answer key PDF first.", tone: "error" });
-      return;
-    }
-    if (!pdfApi) {
-      setAiImportStatus({ message: "PDF engine not ready yet.", tone: "error" });
-      return;
-    }
-    setAiImportStatus({ message: "Extracting PDFs and generating JSON...", tone: "info" });
-    try {
-      const [questionText, answerKeyText] = await Promise.all([
-        extractPdfText(aiQuestionFile),
-        extractPdfText(aiAnswerKeyFile),
-      ]);
-      const response = await fetch("/api/ai/generate-test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ questionText, answerKeyText }),
-      });
-      const data = await safeJson<any>(response, null);
-      if (!response.ok || !data) {
-        setAiImportStatus({ message: "AI generation failed.", tone: "error" });
-        return;
-      }
-      const jsonString = JSON.stringify(data, null, 2);
-      setAiJsonInput(jsonString);
-      setAiImportStatus({ message: "AI JSON generated. Applying...", tone: "success" });
-      setTimeout(() => applyAiJson(), 0);
-    } catch {
-      setAiImportStatus({ message: "AI generation failed.", tone: "error" });
-    }
-  };
-
-const applyAiJson = () => {
-    const raw = aiJsonInput.trim();
-    if (!raw) {
-      setAiImportStatus({ message: "Paste the AI JSON first.", tone: "error" });
-      return;
-    }
-    try {
-      const cleaned = raw
-        .replace(/\[cite_start\]/gi, "")
-        .replace(/\[cite:[^\]]+\]/gi, "")
-        .replace(/\s+\n/g, "\n")
-        .replace(/\n\s+/g, "\n")
-        .trim();
-      const parsed = JSON.parse(cleaned) as {
-        questions?: Array<{
-          number?: number;
-          text?: string;
-          options?: string[];
-          answer?: string;
-          hasDiagram?: boolean;
-          subject?: CropMeta["subject"];
-          section?: string;
-        }>;
-      };
       if (!parsed.questions || parsed.questions.length === 0) {
         setAiImportStatus({ message: "No questions found in JSON.", tone: "error" });
         return;
@@ -1373,24 +1298,6 @@ const applyAiJson = () => {
             <p className="mt-2 text-[11px] text-white/50">Shortcuts: C = Crop · S = Save</p>
             <p className="mt-1 text-[11px] text-white/40">Shift + drag = multi-select</p>
           </div>
-                    <button
-              type="button"
-              onClick={async () => {
-                if (!uploadedFile) return;
-                const textContent = await extractPdfText(uploadedFile).catch(() => "");
-                const response = await fetch("/api/ai/test-metadata", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ text: textContent }),
-                });
-                const data = await response.json().catch(() => null);
-                if (data?.description) setTestDescription(data.description);
-                if (Array.isArray(data?.tags)) setTestTags(data.tags);
-              }}
-              className="rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 hover:border-white/30"
-            >
-              AI Metadata
-            </button>
 <div className="flex items-center gap-3">
             <div className="glass-card flex items-center gap-2 rounded-full px-2 py-1 text-xs">
               <span className="px-2 text-[11px] text-white/60">Visibility</span>
@@ -1978,180 +1885,9 @@ const applyAiJson = () => {
           </div>
         </div>
       )}
+              >
 
-      {showAiChoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
-            <h2 className="text-lg font-semibold">How do you want to create this test?</h2>
-            <p className="mt-2 text-sm text-white/70">
-              You can use AI to extract text questions and mark diagram questions for manual crop,
-              or build fully manual.
-            </p>
-            <div className="mt-4 flex flex-col gap-2 text-xs">
-              <button
-                type="button"
-                className="rounded-full bg-white/20 px-4 py-2 text-white"
-                onClick={() => {
-                  setShowAiPrompt(true);
-                  setAiImportStatus(null);
-                }}
-              >
-                Use AI (paste JSON)
-              </button>
-              <button
-                type="button"
-                className="rounded-full border border-white/10 px-4 py-2 text-white/70"
-                onClick={() => setShowAiChoice(false)}
-              >
-                Manual only
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showAiPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">AI Extraction Prompt</h2>
-              <button
-                type="button"
-                className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
-                onClick={() => setShowAiPrompt(false)}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-4 grid gap-3 text-xs">
-              <div>
-                <div className="text-[11px] text-white/60">Question PDF</div>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
-                  onChange={(event) => setAiQuestionFile(event.target.files?.[0] ?? null)}
-                />
-              </div>
-              <div>
-                <div className="text-[11px] text-white/60">Answer Key PDF</div>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
-                  onChange={(event) => setAiAnswerKeyFile(event.target.files?.[0] ?? null)}
-                />
-              </div>
-              <button
-                type="button"
-                className="rounded-full bg-emerald-400/20 px-4 py-2 text-emerald-100"
-                onClick={runAiFromPdf}
-              >
-                AI Generate from PDFs
-              </button>
-            </div>
-
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-4 text-[11px] text-white/70">
-              Paste this prompt into your AI along with the PDF, then paste the JSON output below.
-              <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-white/60">
-                <span>Prompt</span>
-                <button
-                  type="button"
-                  className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70"
-                  onClick={() => {
-                    const promptText = `You are extracting questions from a PDF. Return ONLY valid JSON in this exact schema:
-{
-  "questions": [
-    {
-      "number": 1,
-      "subject": "Physics",
-      "section": "Section 1",
-      "text": "Question text",
-      "options": ["A ...","B ...","C ...","D ..."],
-      "answer": "B",
-      "hasDiagram": false
-    }
-  ]
-}
-Rules:
-- Include every question in order; do not skip numbers. If something is unreadable, still include the question with empty text/options.
-- Always set "subject" and "section" for each question so we can categorize them.
-- If a question references a diagram/figure/graph or contains an image, set "hasDiagram": true.
-- If numeric answer, set "answer" to the number as a string.
-- If multiple correct, use "answer": "A,C".
-- No extra keys or commentary.`;
-                    navigator.clipboard?.writeText(promptText);
-                  }}
-                >
-                  Copy Prompt
-                </button>
-              </div>
-              <div className="mt-3 rounded-lg border border-white/10 bg-black/40 p-3 text-[11px] text-white/80">
-                {`You are extracting questions from a PDF. Return ONLY valid JSON in this exact schema:
-{
-  "questions": [
-    {
-      "number": 1,
-      "subject": "Physics",
-      "section": "Section 1",
-      "text": "Question text",
-      "options": ["A ...","B ...","C ...","D ..."],
-      "answer": "B",
-      "hasDiagram": false
-    }
-  ]
-}
-Rules:
-- Include every question in order; do not skip numbers. If something is unreadable, still include the question with empty text/options.
-- Always set "subject" and "section" for each question so we can categorize them.
-- If a question references a diagram/figure/graph or contains an image, set "hasDiagram": true.
-- If numeric answer, set "answer" to the number as a string.
-- If multiple correct, use "answer": "A,C".
-- No extra keys or commentary.`}
-              </div>
-            </div>
-            <textarea
-              value={aiJsonInput}
-              onChange={(event) => setAiJsonInput(event.target.value)}
-              rows={8}
-              className="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80"
-              placeholder='{"questions":[...]}'
-            />
-            {aiImportStatus && (
-              <div
-                className={`mt-3 rounded-lg border px-3 py-2 text-[11px] ${
-                  aiImportStatus.tone === "success"
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-                    : aiImportStatus.tone === "error"
-                    ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-                    : "border-white/10 bg-white/5 text-white/70"
-                }`}
-              >
-                {aiImportStatus.message}
-              </div>
-            )}
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/70"
-                onClick={() => setShowAiPrompt(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="rounded-full bg-emerald-400/20 px-4 py-2 text-xs font-semibold text-emerald-100"
-                onClick={applyAiJson}
-              >
-                Apply JSON
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedCropIds.size > 0 && (
+{selectedCropIds.size > 0 && (
         <div className="fixed bottom-6 right-6 z-40 w-72 rounded-2xl border border-white/10 bg-black/70 p-4 text-white shadow-2xl backdrop-blur">
           <div className="flex items-center justify-between">
             <div className="text-xs uppercase tracking-[0.2em] text-white/60">Selected Crops</div>

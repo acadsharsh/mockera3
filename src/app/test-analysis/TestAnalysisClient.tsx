@@ -60,16 +60,6 @@ type PercentileBand = {
   percentileLabel: string;
 };
 
-type AiInsights = {
-  percentilePrediction?: string;
-  weakTopics?: string[];
-  mistakePatterns?: string[];
-  revisionPlan?: string[];
-  strategy?: string;
-  forecast?: string;
-  rankProbability?: string;
-};
-
 const SECTIONS = [
   { id: "overview", label: "Overview" },
   { id: "performance", label: "Performance Analysis" },
@@ -364,186 +354,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
   const [manualAnswerKey, setManualAnswerKey] = useState("");
-  const [aiSummary, setAiSummary] = useState<string>("");
-  const [aiMistakes, setAiMistakes] = useState<string[]>([]);
-  const [aiInsights, setAiInsights] = useState<AiInsights | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      const testsResponse = await fetch("/api/tests");
-      const testsData = await safeJson<Test[]>(testsResponse, []);
-      if (!cancelled) {
-        setTests(Array.isArray(testsData) ? testsData : []);
-      }
-
-      const attemptsResponse = await fetch("/api/attempts");
-      const attemptsData = await safeJson<Attempt[]>(attemptsResponse, []);
-      if (!cancelled) {
-        setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    const loadSession = async () => {
-      const response = await fetch("/api/auth/get-session");
-      const data = await safeJson<{ user?: { id?: string } } | null>(response, null);
-      if (data?.user?.id) {
-        setSessionUserId(data.user.id);
-      }
-    };
-    loadSession();
-  }, []);
-
-
-  useEffect(() => {
-    if (!activeTestId) return;
-    const loadBands = async () => {
-      const response = await fetch(`/api/percentile-bands?testId=${activeTestId}`);
-      const data = await safeJson<any[]>(response, []);
-      setPercentileBands(
-        Array.isArray(data)
-          ? data.map((band) => ({
-              minScore: Number(band.minScore),
-              maxScore: band.maxScore === null ? null : Number(band.maxScore),
-              percentileLabel: String(band.percentileLabel ?? ""),
-            }))
-          : []
-      );
-    };
-    loadBands();
-  }, [activeTestId]);
-
-  useEffect(() => {
-    const queryTestId = searchParams.get("testId");
-    if (queryTestId) {
-      setActiveTestId(queryTestId);
-      return;
-    }
-    if (!activeTestId && tests.length > 0) {
-      setActiveTestId(tests[0].id);
-    }
-  }, [activeTestId, searchParams, tests]);
-
-  useEffect(() => {
-    const queryAttemptId = searchParams.get("attemptId");
-    if (!queryAttemptId) return;
-    setActiveAttemptId(queryAttemptId);
-  }, [searchParams]);
-
-  const activeTest = useMemo(
-    () => tests.find((test) => test.id === activeTestId) ?? null,
-    [activeTestId, tests]
-  );
-  const isOwner = Boolean(activeTest?.ownerId && sessionUserId && activeTest.ownerId === sessionUserId);
-
-  const attemptsForTest = useMemo(() => {
-    if (!activeTestId) return [];
-    return attempts
-      .filter((attempt) => attempt.testId === activeTestId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [activeTestId, attempts]);
-
-  useEffect(() => {
-    if (attemptsForTest.length === 0) {
-      setActiveAttemptId("");
-      return;
-    }
-    setActiveAttemptId((prev) =>
-      attemptsForTest.some((attempt) => attempt.id === prev) ? prev : attemptsForTest[0].id
-    );
-  }, [attemptsForTest]);
-
-  const selectedAttempt = useMemo(() => {
-    if (attemptsForTest.length === 0) return null;
-    if (!activeAttemptId) return attemptsForTest[0];
-    return attemptsForTest.find((attempt) => attempt.id === activeAttemptId) ?? attemptsForTest[0];
-  }, [activeAttemptId, attemptsForTest]);
-
-
-  useEffect(() => {
-    if (!activeTest || !selectedAttempt) {
-      setAiSummary("");
-      setAiMistakes([]);
-      setAiInsights(null);
-      return;
-    }
-    let cancelled = false;
-    const payload = {
-      test: {
-        id: activeTest.id,
-        title: activeTest.title,
-        description: activeTest.description ?? "",
-        tags: activeTest.tags ?? [],
-        durationMinutes: activeTest.durationMinutes ?? null,
-        markingCorrect: activeTest.markingCorrect ?? null,
-        markingIncorrect: activeTest.markingIncorrect ?? null,
-        crops: activeTest.crops.map((crop) => ({
-          id: crop.id,
-          subject: crop.subject,
-          questionType: crop.questionType,
-          correctOption: crop.correctOption,
-          correctOptions: crop.correctOptions ?? [],
-          correctNumeric: crop.correctNumeric ?? "",
-          marks: crop.marks,
-          difficulty: crop.difficulty,
-        })),
-      },
-      attempt: {
-        id: selectedAttempt.id,
-        testId: selectedAttempt.testId,
-        createdAt: selectedAttempt.createdAt,
-        score: selectedAttempt.score ?? null,
-        accuracy: selectedAttempt.accuracy ?? null,
-        timeTaken: selectedAttempt.timeTaken ?? null,
-        answers: selectedAttempt.answers,
-        timeSpent: selectedAttempt.timeSpent,
-        events: selectedAttempt.events ?? {},
-      },
-    };
-
-    const load = async () => {
-      const summaryResponse = await fetch("/api/ai/analysis-summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const summaryData = await safeJson<{ summary?: string; mistakes?: string[] } | null>(
-        summaryResponse,
-        null
-      );
-      if (!cancelled) {
-        setAiSummary(typeof summaryData?.summary === "string" ? summaryData.summary : "");
-        setAiMistakes(Array.isArray(summaryData?.mistakes) ? summaryData!.mistakes : []);
-      }
-
-      const insightsResponse = await fetch("/api/ai/insights", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const insightsData = await safeJson<AiInsights | null>(insightsResponse, null);
-      if (!cancelled) {
-        setAiInsights(insightsData && typeof insightsData === "object" ? insightsData : null);
-      }
-    };
-
-    load().catch(() => {
-      if (!cancelled) {
-        setAiSummary("");
-        setAiMistakes([]);
-        setAiInsights(null);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTest, selectedAttempt]);
 
 
   const questionStats = useMemo(() => {
@@ -1047,440 +857,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
         </aside>
 
         <main className="flex-1 space-y-6">
-          {(aiSummary || aiMistakes.length > 0) && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Summary</div>
-              {aiSummary && <p className="mt-2 text-white/80">{aiSummary}</p>}
-              {aiMistakes.length > 0 && (
-                <ul className="mt-3 list-disc space-y-1 pl-5 text-white/60">
-                  {aiMistakes.map((m, i) => (
-                    <li key={`mistake-${i}`}>{m}</li>
-                  ))}
-                </ul>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
-              {aiInsights.strategy && (
-                <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
-              )}
-              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
-                </div>
-              )}
-              {aiInsights.forecast && (
-                <p className="mt-3 text-white/80">Forecast: {aiInsights.forecast}</p>
-              )}
-              {aiInsights.rankProbability && (
-                <p className="mt-2 text-white/80">Rank probability: {aiInsights.rankProbability}</p>
-              )}
-            </div>
-          )}
-            </div>
-          )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
-              {aiInsights.strategy && (
-                <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
-              )}
-              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
-                </div>
-              )}
-              {aiInsights.forecast && (
-                <p className="mt-3 text-white/80">Forecast: {aiInsights.forecast}</p>
-              )}
-              {aiInsights.rankProbability && (
-                <p className="mt-2 text-white/80">Rank probability: {aiInsights.rankProbability}</p>
-              )}
-            </div>
-          )}
-          <header className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/40">Test Analysis</p>
-              <h1 className="mt-2 text-2xl font-semibold">{activeSectionLabel}</h1>
-              <p className="text-sm text-white/60">{activeTest?.title ?? "Pick a test"}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <select
-                value={activeTestId}
-                onChange={(event) => {
-                  const nextId = event.target.value;
-                  setActiveTestId(nextId);
-                  router.push(`/test-analysis?testId=${nextId}`);
-                }}
-                className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-xs text-white"
-              >
-                {tests.map((test) => (
-                  <option key={test.id} value={test.id}>
-                    {test.title}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={activeAttemptId}
-                onChange={(event) => setActiveAttemptId(event.target.value)}
-                className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-xs text-white"
-              >
-                {attemptsForTest.map((attempt, index) => (
-                  <option key={attempt.id} value={attempt.id}>
-                    {index === 0 ? "Latest" : `Attempt ${attemptsForTest.length - index}`} -{" "}
-                    {new Date(attempt.createdAt).toLocaleString()}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/80 hover:border-white/30"
-                onClick={handleDownload}
-              >
-                Download Analysis
-              </button>
-              <button
-                className="rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold text-white shadow-sm"
-                onClick={handleViewSolution}
-              >
-                View Solution &gt;
-              </button>
-            </div>
-          </header>
-
-          {isOwner && !hasAnswerKey && (
-            <section className={cardClass}>
-              <p className="text-sm font-semibold">Add Answer Key</p>
-              <p className="mt-2 text-sm text-white/60">
-                Upload or paste the answer key to score this attempt accurately.
-              </p>
-              <div className="mt-4 flex items-center gap-2 text-[11px]">
-                <button
-                  type="button"
-                  className={`rounded-full px-3 py-1 ${
-                    answerKeyMode === "file"
-                      ? "bg-white/20 text-white"
-                      : "border border-white/10 text-white/70"
-                  }`}
-                  onClick={() => setAnswerKeyMode("file")}
-                >
-                  PDF / File
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-full px-3 py-1 ${
-                    answerKeyMode === "manual"
-                      ? "bg-white/20 text-white"
-                      : "border border-white/10 text-white/70"
-                  }`}
-                  onClick={() => setAnswerKeyMode("manual")}
-                >
-                  Manual
-                </button>
-              </div>
-              {answerKeyMode === "file" ? (
-                <input
-                  type="file"
-                  accept=".txt,.csv,.pdf"
-                  onChange={(event) => handleAnswerKeyUpload(event.target.files?.[0] ?? null)}
-                  className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-[11px] file:text-white"
-                />
-              ) : (
-                <div className="mt-3">
-                  <textarea
-                    value={manualAnswerKey}
-                    onChange={(event) => setManualAnswerKey(event.target.value)}
-                    rows={5}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
-                    placeholder={"1 A\n2 C\n3 42\n4 B,C"}
-                  />
-                  <button
-                    type="button"
-                    className="mt-2 rounded-full bg-white/10 px-3 py-1 text-[11px] text-white/80"
-                    onClick={() => handleAnswerKeyInput(manualAnswerKey)}
-                  >
-                    Parse Manual Key
-                  </button>
-                </div>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
-              {aiInsights.strategy && (
-                <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
-              )}
-              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
-                </div>
-              )}
-              {aiInsights.forecast && (
-                <p className="mt-3 text-white/80">Forecast: {aiInsights.forecast}</p>
-              )}
-              {aiInsights.rankProbability && (
-                <p className="mt-2 text-white/80">Rank probability: {aiInsights.rankProbability}</p>
-              )}
-            </div>
-          )}
-              {answerKeyStatus && (
-                <div
-                  className={`mt-3 rounded-lg border px-3 py-2 text-[11px] ${
-                    answerKeyStatus.tone === "success"
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-                      : answerKeyStatus.tone === "error"
-                      ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-                      : "border-white/10 bg-white/5 text-white/70"
-                  }`}
-                >
-                  {answerKeyStatus.message}
-                </div>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
-              {aiInsights.strategy && (
-                <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
-              )}
-              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
-                </div>
-              )}
-              {aiInsights.forecast && (
-                <p className="mt-3 text-white/80">Forecast: {aiInsights.forecast}</p>
-              )}
-              {aiInsights.rankProbability && (
-                <p className="mt-2 text-white/80">Rank probability: {aiInsights.rankProbability}</p>
-              )}
-            </div>
-          )}
-              {answerKeyPreview.length > 0 && (
-                <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-white/70">
-                  <div className="text-[10px] uppercase text-white/50">Preview (first 10)</div>
-                  <div className="mt-2 space-y-1">
-                    {answerKeyPreview.map((entry) => (
-                      <div
-                        key={`${entry.index}-${entry.value}`}
-                        className="flex items-center justify-between rounded-md bg-white/5 px-2 py-1"
-                      >
-                        <span className="text-white/70">Q {entry.index}</span>
-                        <span className="font-semibold">{entry.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-semibold text-emerald-100"
-                      onClick={applyAnswerKey}
-                    >
-                      Apply Answer Key
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70"
-                      onClick={() => {
-                        setAnswerKeyPreview([]);
-                        setAnswerKeyPending([]);
-                        setAnswerKeyStatus(null);
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
-              {aiInsights.strategy && (
-                <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
-              )}
-              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
-                </div>
-              )}
-              {aiInsights.forecast && (
-                <p className="mt-3 text-white/80">Forecast: {aiInsights.forecast}</p>
-              )}
-              {aiInsights.rankProbability && (
-                <p className="mt-2 text-white/80">Rank probability: {aiInsights.rankProbability}</p>
-              )}
-            </div>
-          )}
-            </section>
-          )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
-              {aiInsights.strategy && (
-                <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
-              )}
-              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.weakTopics ?? []).map((t: string, i: number) => (
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                    {(aiInsights.mistakePatterns ?? []).map((t: string, i: number) => (
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
-                </div>
-              )}
-              {aiInsights.forecast && (
-                <p className="mt-3 text-white/80">Forecast: {aiInsights.forecast}</p>
-              )}
-              {aiInsights.rankProbability && (
-                <p className="mt-2 text-white/80">Rank probability: {aiInsights.rankProbability}</p>
-              )}
-            </div>
-          )}
-
-          {!activeTest || !selectedAttempt ? (
-            <div className={`${cardClass} text-sm text-white/70`}>
-              No attempts found for this test yet.
-            </div>
-          ) : (
-            <>
-              {activeSection === "overview" && questionStats && (
+{activeSection === "overview" && questionStats && (
                 <>
                   <section className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
                     <div className="rounded-[28px] border border-white/10 bg-[#121a2b] p-6 shadow-[0_20px_50px_rgba(7,10,18,0.5)]">
@@ -1550,12 +927,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                           0,
                           questionStats.wrong * Math.abs(activeTest?.markingIncorrect ?? -1)
                         )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -1626,12 +997,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                     </div>
                   </section>
                 </>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
               )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
@@ -1711,12 +1076,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                     </table>
                   </div>
                 </section>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
               )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
@@ -1871,12 +1230,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                       ) : (
                         <div className="mt-4 text-xs text-white/60">No time data yet.</div>
                       )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -1944,12 +1297,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </div>
                 </section>
               )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -2011,12 +1358,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </div>
                 </section>
               )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -2067,12 +1408,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                     ))}
                   </div>
                 </section>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
               )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
@@ -2142,12 +1477,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                           {index < subjectMovement.length - 1 && (
                             <div className="h-[2px] w-12 bg-white/10" />
                           )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -2189,12 +1518,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                       ))}
                     </div>
                   )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -2233,12 +1556,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
             </div>
           )}
                 </section>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
               )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
@@ -2321,12 +1638,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                                 </span>
                               ))
                             )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -2368,12 +1679,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                         </div>
                       ))
                     )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -2413,12 +1718,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
           )}
                   </div>
                 </section>
-              )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
               )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
@@ -2499,12 +1798,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </div>
                 </section>
               )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
@@ -2544,12 +1837,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
           )}
             </>
           )}
-          {aiInsights && (
-            <div className="rounded-2xl border border-white/10 bg-[#101624] p-4 text-sm">
-              <div className="text-[11px] uppercase text-white/50">AI Insights</div>
-              {aiInsights.percentilePrediction && (
-                <p className="mt-2 text-white/80">Predicted percentile: {aiInsights.percentilePrediction}</p>
-              )}
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
