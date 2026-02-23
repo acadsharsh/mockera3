@@ -1067,7 +1067,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1077,7 +1077,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1087,7 +1087,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1112,7 +1112,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1122,7 +1122,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1132,7 +1132,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1259,7 +1259,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1269,7 +1269,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1279,7 +1279,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1315,7 +1315,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1325,7 +1325,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1335,7 +1335,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1394,7 +1394,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1404,7 +1404,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1414,7 +1414,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1439,7 +1439,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1449,7 +1449,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1459,7 +1459,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1559,7 +1559,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1569,7 +1569,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1579,7 +1579,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1636,7 +1636,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1646,7 +1646,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1656,7 +1656,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1721,7 +1721,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1731,7 +1731,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1741,7 +1741,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1880,7 +1880,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1890,7 +1890,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1900,7 +1900,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -1953,7 +1953,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1963,7 +1963,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -1973,7 +1973,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2020,7 +2020,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2030,7 +2030,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2040,7 +2040,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2077,7 +2077,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2087,7 +2087,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2097,7 +2097,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2151,7 +2151,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2161,7 +2161,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2171,7 +2171,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2198,7 +2198,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2208,7 +2208,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2218,7 +2218,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2243,7 +2243,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2253,7 +2253,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2263,7 +2263,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2330,7 +2330,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2340,7 +2340,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2350,7 +2350,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2377,7 +2377,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2387,7 +2387,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2397,7 +2397,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2423,7 +2423,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2433,7 +2433,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2443,7 +2443,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2508,7 +2508,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2518,7 +2518,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2528,7 +2528,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
@@ -2553,7 +2553,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {aiInsights.strategy && (
                 <p className="mt-2 text-white/80">Strategy: {aiInsights.strategy}</p>
               )}
-              {aiInsights.weakTopics?.length > 0 && (
+              {(aiInsights.weakTopics?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Weak Topics</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2563,7 +2563,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.mistakePatterns?.length > 0 && (
+              {(aiInsights.mistakePatterns?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Mistake Patterns</div>
                   <ul className="mt-1 list-disc pl-5 text-white/70">
@@ -2573,7 +2573,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </ul>
                 </div>
               )}
-              {aiInsights.revisionPlan?.length > 0 && (
+              {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
                   <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
