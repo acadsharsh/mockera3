@@ -11,12 +11,8 @@ export async function GET() {
   const item = await prisma.broadcastMessage.findFirst({
     where: {
       active: true,
-      OR: [
-        { startsAt: null, endsAt: null },
-        { startsAt: null, endsAt: { gte: now } },
-        { startsAt: { lte: now }, endsAt: null },
-        { startsAt: { lte: now }, endsAt: { gte: now } },
-      ],
+      OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+      AND: [{ endsAt: null }, { endsAt: { gte: now } }],
     },
     orderBy: { createdAt: "desc" },
   });
