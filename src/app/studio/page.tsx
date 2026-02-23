@@ -87,6 +87,13 @@ export default function CreatorStudio() {
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
   const [manualAnswerKey, setManualAnswerKey] = useState("");
+
+  const [showJsonImport, setShowJsonImport] = useState(false);
+  const [jsonImportText, setJsonImportText] = useState("");
+  const [jsonImportStatus, setJsonImportStatus] = useState<{
+    message: string;
+    tone: "success" | "error" | "info";
+  } | null>(null);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
@@ -539,6 +546,72 @@ export default function CreatorStudio() {
   };
 
   const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
+
+
+  const handleJsonImport = () => {
+    try {
+      const parsed = JSON.parse(jsonImportText || "{}") as {
+        questions?: Array<{
+          number?: number;
+          text?: string;
+          options?: string[];
+          answer?: string;
+          subject?: CropMeta["subject"];
+          hasDiagram?: boolean;
+        }>;
+      };
+      if (!parsed.questions || parsed.questions.length === 0) {
+        setJsonImportStatus({ message: "No questions found in JSON.", tone: "error" });
+        return;
+      }
+      const mapped = parsed.questions.map((q) => {
+        const answer = q.answer ? normalizeAnswer(q.answer) : "";
+        const isNumeric = answer.length > 0 && /^[0-9.+-]+$/.test(answer);
+        const isMulti = answer.includes(",");
+        const correctOptions = isMulti
+          ? answer
+              .split(",")
+              .map((v) => v.trim())
+              .filter((v) => ["A", "B", "C", "D"].includes(v as any)) as Array<
+              "A" | "B" | "C" | "D"
+            >
+          : [];
+        const correctOption =
+          !isNumeric && !isMulti && ["A", "B", "C", "D"].includes(answer as any)
+            ? (answer as "A" | "B" | "C" | "D")
+            : "";
+        const options = q.options?.length
+          ? q.options.map((opt) => String(opt))
+          : ["Option A", "Option B", "Option C", "Option D"];
+        return {
+          id: makeId("crop"),
+          pageNumber: currentPage || 1,
+          parts: 1,
+          x: 0,
+          y: 0,
+          w: 0,
+          h: 0,
+          subject: q.subject ?? lastSubject,
+          questionType: isNumeric ? "NUM" : isMulti ? "MSQ" : "MCQ",
+          correctOption,
+          correctOptions,
+          correctNumeric: isNumeric ? answer : "",
+          marks: "+4/-1",
+          difficulty: lastDifficulty,
+          imageDataUrl: "",
+          questionText: String(q.text ?? ""),
+          options,
+          hasDiagram: Boolean(q.hasDiagram),
+        } as CropMeta;
+      });
+      setCropRects((prev) => [...prev, ...mapped]);
+      setJsonImportStatus({ message: `Imported ${mapped.length} questions.`, tone: "success" });
+      setShowJsonImport(false);
+      setJsonImportText("");
+    } catch (error) {
+      setJsonImportStatus({ message: "Invalid JSON. Please check the format.", tone: "error" });
+    }
+  };
   const parseAnswerKeyText = (text: string) => {
     const lines = text
       .split(/\r?\n/)
@@ -1228,6 +1301,17 @@ export default function CreatorStudio() {
                 </button>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setJsonImportStatus(null);
+                setShowJsonImport(true);
+              }}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
+            >
+              Paste JSON
+            </button>
             <button
               type="button"
               onClick={() => setShowSettings(true)}
@@ -1743,6 +1827,63 @@ export default function CreatorStudio() {
                 onClick={() => setShowSettings(false)}
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {showJsonImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Paste JSON</h2>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                onClick={() => setShowJsonImport(false)}
+              >
+                Close
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-white/60">
+              Paste your questions JSON and we will add them as draft questions. You can still crop diagrams manually.
+            </p>
+            <textarea
+              value={jsonImportText}
+              onChange={(event) => setJsonImportText(event.target.value)}
+              className="mt-3 h-56 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white/80 outline-none"
+              placeholder='{"questions": [{"number": 1, "text": "...", "options": ["A", "B", "C", "D"], "answer": "A", "subject": "Physics"}]}'
+            />
+            {jsonImportStatus && (
+              <div
+                className={
+                  "mt-3 rounded-lg px-3 py-2 text-xs " +
+                  (jsonImportStatus.tone === "success"
+                    ? "bg-emerald-500/15 text-emerald-200"
+                    : jsonImportStatus.tone === "error"
+                    ? "bg-rose-500/15 text-rose-200"
+                    : "bg-slate-500/15 text-slate-200")
+                }
+              >
+                {jsonImportStatus.message}
+              </div>
+            )}
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/70"
+                onClick={() => setShowJsonImport(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-emerald-400/20 px-4 py-2 text-xs font-semibold text-emerald-100"
+                onClick={handleJsonImport}
+              >
+                Import
               </button>
             </div>
           </div>
