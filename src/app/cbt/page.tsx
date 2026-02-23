@@ -49,7 +49,9 @@ const normalizeMathToken = (value: string) =>
   value
     .replace(/\u00b7/g, "\\cdot")
     .replace(/\u00d7/g, "\\times")
-    .replace(/\b([A-Za-z])x([A-Za-z])\b/g, "$1\\times $2");
+    .replace(/\b([A-Za-z])x([A-Za-z])\b/g, "$1\\times $2")
+    .replace(/\\times(?=[A-Za-z0-9])/g, "\\times ")
+    .replace(/\\cdot(?=[A-Za-z0-9])/g, "\\cdot ");
 
 const LatexText = ({ text }: { text: string }) => {
   if (!text) return null;
