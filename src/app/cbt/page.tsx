@@ -45,27 +45,74 @@ type Attempt = {
 
 const optionLetters = ["A", "B", "C", "D"] as const;
 
+const normalizeMathToken = (value: string) =>
+  value
+    .replace(/\u00b7/g, "\\cdot")
+    .replace(/\u00d7/g, "\\times")
+    .replace(/\b([A-Za-z])x([A-Za-z])\b/g, "$1\\times $2");
+
 const LatexText = ({ text }: { text: string }) => {
   if (!text) return null;
-  const parts = text.split(/(\$[^$]+\$)/g);
+  const segments = text.match(/\s+|\S+/g) ?? [];
+  const hasInlineLatex = text.includes("$");
+  if (hasInlineLatex) {
+    const parts = text.split(/(\$[^$]+\$)/g);
+    return (
+      <>
+        {parts.map((part, idx) => {
+          if (part.startsWith("$") && part.endsWith("$")) {
+            const expr = part.slice(1, -1);
+            const html = katex.renderToString(expr, { throwOnError: false });
+            return (
+              <span
+                key={`katex-${idx}`}
+                className="inline-block align-middle"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+            );
+          }
+          return (
+            <span key={`text-${idx}`} className="whitespace-pre-wrap">
+              {part}
+            </span>
+          );
+        })}
+      </>
+    );
+  }
   return (
     <>
-      {parts.map((part, idx) => {
-        if (part.startsWith("$") && part.endsWith("$")) {
-          const expr = part.slice(1, -1);
-          const html = katex.renderToString(expr, { throwOnError: false });
+      {segments.map((part, idx) => {
+        if (part.trim().length === 0) {
           return (
-            <span
-              key={`katex-${idx}`}
-              className="inline-block align-middle"
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
+            <span key={`ws-${idx}`} className="whitespace-pre-wrap">
+              {part}
+            </span>
+          );
+        }
+        const isMathy = /[\^_??=|/]/.test(part);
+        if (!isMathy) {
+          return (
+            <span key={`txt-${idx}`} className="whitespace-pre-wrap">
+              {part}
+            </span>
+          );
+        }
+        const normalized = normalizeMathToken(part);
+        const html = katex.renderToString(normalized, { throwOnError: false });
+        if (html.includes("katex-error")) {
+          return (
+            <span key={`txt-${idx}`} className="whitespace-pre-wrap">
+              {part}
+            </span>
           );
         }
         return (
-          <span key={`text-${idx}`} className="whitespace-pre-wrap">
-            {part}
-          </span>
+          <span
+            key={`katex-${idx}`}
+            className="inline-block align-middle"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         );
       })}
     </>
