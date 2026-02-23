@@ -1090,7 +1090,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1135,7 +1135,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1282,7 +1282,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1338,7 +1338,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1417,7 +1417,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1462,7 +1462,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1582,7 +1582,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1659,7 +1659,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1744,7 +1744,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1903,7 +1903,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -1976,7 +1976,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2043,7 +2043,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2100,7 +2100,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2174,7 +2174,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2221,7 +2221,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2266,7 +2266,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2353,7 +2353,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2400,7 +2400,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2446,7 +2446,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2531,7 +2531,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
@@ -2576,7 +2576,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
               {(aiInsights.revisionPlan?.length ?? 0) > 0 && (
                 <div className="mt-3">
                   <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                  <p className="mt-1 text-white/70">{aiInsights.revisionPlan.join(", ")}</p>
+                  <p className="mt-1 text-white/70">{(aiInsights.revisionPlan ?? []).join(", ")}</p>
                 </div>
               )}
               {aiInsights.forecast && (
