@@ -60,6 +60,16 @@ type PercentileBand = {
   percentileLabel: string;
 };
 
+type AiInsights = {
+  percentilePrediction?: string;
+  weakTopics?: string[];
+  mistakePatterns?: string[];
+  revisionPlan?: string[];
+  strategy?: string;
+  forecast?: string;
+  rankProbability?: string;
+};
+
 const SECTIONS = [
   { id: "overview", label: "Overview" },
   { id: "performance", label: "Performance Analysis" },
@@ -451,6 +461,86 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
     if (!activeAttemptId) return attemptsForTest[0];
     return attemptsForTest.find((attempt) => attempt.id === activeAttemptId) ?? attemptsForTest[0];
   }, [activeAttemptId, attemptsForTest]);
+
+
+  useEffect(() => {
+    if (!activeTest || !selectedAttempt) {
+      setAiSummary("");
+      setAiMistakes([]);
+      setAiInsights(null);
+      return;
+    }
+    let cancelled = false;
+    const payload = {
+      test: {
+        id: activeTest.id,
+        title: activeTest.title,
+        description: activeTest.description ?? "",
+        tags: activeTest.tags ?? [],
+        durationMinutes: activeTest.durationMinutes ?? null,
+        markingCorrect: activeTest.markingCorrect ?? null,
+        markingIncorrect: activeTest.markingIncorrect ?? null,
+        crops: activeTest.crops.map((crop) => ({
+          id: crop.id,
+          subject: crop.subject,
+          questionType: crop.questionType,
+          correctOption: crop.correctOption,
+          correctOptions: crop.correctOptions ?? [],
+          correctNumeric: crop.correctNumeric ?? "",
+          marks: crop.marks,
+          difficulty: crop.difficulty,
+        })),
+      },
+      attempt: {
+        id: selectedAttempt.id,
+        testId: selectedAttempt.testId,
+        createdAt: selectedAttempt.createdAt,
+        score: selectedAttempt.score ?? null,
+        accuracy: selectedAttempt.accuracy ?? null,
+        timeTaken: selectedAttempt.timeTaken ?? null,
+        answers: selectedAttempt.answers,
+        timeSpent: selectedAttempt.timeSpent,
+        events: selectedAttempt.events ?? {},
+      },
+    };
+
+    const load = async () => {
+      const summaryResponse = await fetch("/api/ai/analysis-summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const summaryData = await safeJson<{ summary?: string; mistakes?: string[] } | null>(
+        summaryResponse,
+        null
+      );
+      if (!cancelled) {
+        setAiSummary(typeof summaryData?.summary === "string" ? summaryData.summary : "");
+        setAiMistakes(Array.isArray(summaryData?.mistakes) ? summaryData!.mistakes : []);
+      }
+
+      const insightsResponse = await fetch("/api/ai/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const insightsData = await safeJson<AiInsights | null>(insightsResponse, null);
+      if (!cancelled) {
+        setAiInsights(insightsData && typeof insightsData === "object" ? insightsData : null);
+      }
+    };
+
+    load().catch(() => {
+      if (!cancelled) {
+        setAiSummary("");
+        setAiMistakes([]);
+        setAiInsights(null);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTest, selectedAttempt]);
 
 
   const questionStats = useMemo(() => {
