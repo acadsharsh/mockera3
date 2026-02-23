@@ -48,9 +48,6 @@ type Attempt = {
     idleGaps?: number;
     idleSeconds?: number;
     sectionOrder?: Array<"Physics" | "Chemistry" | "Maths">;
-    questionOrder?: string[];
-    questionFirstSeen?: Record<string, number>;
-    questionTimeline?: Array<{ id: string; enteredAt: number; exitedAt: number }>;
   };
 };
 
@@ -354,10 +351,103 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
   const [manualAnswerKey, setManualAnswerKey] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const testsResponse = await fetch("/api/tests");
+      const testsData = await safeJson<Test[]>(testsResponse, []);
+      if (!cancelled) {
+        setTests(Array.isArray(testsData) ? testsData : []);
+      }
+
+      const attemptsResponse = await fetch("/api/attempts");
+      const attemptsData = await safeJson<Attempt[]>(attemptsResponse, []);
+      if (!cancelled) {
+        setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const response = await fetch("/api/auth/get-session");
+      const data = await safeJson<{ user?: { id?: string } } | null>(response, null);
+      if (data?.user?.id) {
+        setSessionUserId(data.user.id);
+      }
+    };
+    loadSession();
+  }, []);
+
+
+  useEffect(() => {
+    if (!activeTestId) return;
+    const loadBands = async () => {
+      const response = await fetch(`/api/percentile-bands?testId=${activeTestId}`);
+      const data = await safeJson<any[]>(response, []);
+      setPercentileBands(
+        Array.isArray(data)
+          ? data.map((band) => ({
+              minScore: Number(band.minScore),
+              maxScore: band.maxScore === null ? null : Number(band.maxScore),
+              percentileLabel: String(band.percentileLabel ?? ""),
+            }))
+          : []
+      );
+    };
+    loadBands();
+  }, [activeTestId]);
+
+  useEffect(() => {
+    const queryTestId = searchParams.get("testId");
+    if (queryTestId) {
+      setActiveTestId(queryTestId);
+      return;
+    }
+    if (!activeTestId && tests.length > 0) {
+      setActiveTestId(tests[0].id);
+    }
+  }, [activeTestId, searchParams, tests]);
+
+  useEffect(() => {
+    const queryAttemptId = searchParams.get("attemptId");
+    if (!queryAttemptId) return;
+    setActiveAttemptId(queryAttemptId);
+  }, [searchParams]);
+
+  const activeTest = useMemo(
+    () => tests.find((test) => test.id === activeTestId) ?? null,
+    [activeTestId, tests]
+  );
+  const isOwner = Boolean(activeTest?.ownerId && sessionUserId && activeTest.ownerId === sessionUserId);
+
+  const attemptsForTest = useMemo(() => {
+    if (!activeTestId) return [];
     return attempts
       .filter((attempt) => attempt.testId === activeTestId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [activeTestId, attempts]);
+
+  useEffect(() => {
+    if (attemptsForTest.length === 0) {
+      setActiveAttemptId("");
+      return;
+    }
+    setActiveAttemptId((prev) =>
+      attemptsForTest.some((attempt) => attempt.id === prev) ? prev : attemptsForTest[0].id
+    );
+  }, [attemptsForTest]);
+
+  const selectedAttempt = useMemo(() => {
+    if (attemptsForTest.length === 0) return null;
+    if (!activeAttemptId) return attemptsForTest[0];
+    return attemptsForTest.find((attempt) => attempt.id === activeAttemptId) ?? attemptsForTest[0];
+  }, [activeAttemptId, attemptsForTest]);
 
 
   const questionStats = useMemo(() => {
@@ -861,7 +951,171 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
         </aside>
 
         <main className="flex-1 space-y-6">
-{activeSection === "overview" && questionStats && (
+            </div>
+          )}
+          <header className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/40">Test Analysis</p>
+              <h1 className="mt-2 text-2xl font-semibold">{activeSectionLabel}</h1>
+              <p className="text-sm text-white/60">{activeTest?.title ?? "Pick a test"}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={activeTestId}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  setActiveTestId(nextId);
+                  router.push(`/test-analysis?testId=${nextId}`);
+                }}
+                className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-xs text-white"
+              >
+                {tests.map((test) => (
+                  <option key={test.id} value={test.id}>
+                    {test.title}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={activeAttemptId}
+                onChange={(event) => setActiveAttemptId(event.target.value)}
+                className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-xs text-white"
+              >
+                {attemptsForTest.map((attempt, index) => (
+                  <option key={attempt.id} value={attempt.id}>
+                    {index === 0 ? "Latest" : `Attempt ${attemptsForTest.length - index}`} -{" "}
+                    {new Date(attempt.createdAt).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/80 hover:border-white/30"
+                onClick={handleDownload}
+              >
+                Download Analysis
+              </button>
+              <button
+                className="rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold text-white shadow-sm"
+                onClick={handleViewSolution}
+              >
+                View Solution &gt;
+              </button>
+            </div>
+          </header>
+
+          {isOwner && !hasAnswerKey && (
+            <section className={cardClass}>
+              <p className="text-sm font-semibold">Add Answer Key</p>
+              <p className="mt-2 text-sm text-white/60">
+                Upload or paste the answer key to score this attempt accurately.
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-[11px]">
+                <button
+                  type="button"
+                  className={`rounded-full px-3 py-1 ${
+                    answerKeyMode === "file"
+                      ? "bg-white/20 text-white"
+                      : "border border-white/10 text-white/70"
+                  }`}
+                  onClick={() => setAnswerKeyMode("file")}
+                >
+                  PDF / File
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-full px-3 py-1 ${
+                    answerKeyMode === "manual"
+                      ? "bg-white/20 text-white"
+                      : "border border-white/10 text-white/70"
+                  }`}
+                  onClick={() => setAnswerKeyMode("manual")}
+                >
+                  Manual
+                </button>
+              </div>
+              {answerKeyMode === "file" ? (
+                <input
+                  type="file"
+                  accept=".txt,.csv,.pdf"
+                  onChange={(event) => handleAnswerKeyUpload(event.target.files?.[0] ?? null)}
+                  className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-[11px] file:text-white"
+                />
+              ) : (
+                <div className="mt-3">
+                  <textarea
+                    value={manualAnswerKey}
+                    onChange={(event) => setManualAnswerKey(event.target.value)}
+                    rows={5}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
+                    placeholder={"1 A\n2 C\n3 42\n4 B,C"}
+                  />
+                  <button
+                    type="button"
+                    className="mt-2 rounded-full bg-white/10 px-3 py-1 text-[11px] text-white/80"
+                    onClick={() => handleAnswerKeyInput(manualAnswerKey)}
+                  >
+                    Parse Manual Key
+                  </button>
+                </div>
+              )}
+              {answerKeyStatus && (
+                <div
+                  className={`mt-3 rounded-lg border px-3 py-2 text-[11px] ${
+                    answerKeyStatus.tone === "success"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                      : answerKeyStatus.tone === "error"
+                      ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                      : "border-white/10 bg-white/5 text-white/70"
+                  }`}
+                >
+                  {answerKeyStatus.message}
+                </div>
+              )}
+              {answerKeyPreview.length > 0 && (
+                <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-white/70">
+                  <div className="text-[10px] uppercase text-white/50">Preview (first 10)</div>
+                  <div className="mt-2 space-y-1">
+                    {answerKeyPreview.map((entry) => (
+                      <div
+                        key={`${entry.index}-${entry.value}`}
+                        className="flex items-center justify-between rounded-md bg-white/5 px-2 py-1"
+                      >
+                        <span className="text-white/70">Q {entry.index}</span>
+                        <span className="font-semibold">{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-semibold text-emerald-100"
+                      onClick={applyAnswerKey}
+                    >
+                      Apply Answer Key
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70"
+                      onClick={() => {
+                        setAnswerKeyPreview([]);
+                        setAnswerKeyPending([]);
+                        setAnswerKeyStatus(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {!activeTest || !selectedAttempt ? (
+            <div className={`${cardClass} text-sm text-white/70`}>
+              No attempts found for this test yet.
+            </div>
+          ) : (
+            <>
+              {activeSection === "overview" && questionStats && (
                 <>
                   <section className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
                     <div className="rounded-[28px] border border-white/10 bg-[#121a2b] p-6 shadow-[0_20px_50px_rgba(7,10,18,0.5)]">
@@ -931,31 +1185,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                           0,
                           questionStats.wrong * Math.abs(activeTest?.markingIncorrect ?? -1)
                         )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-[#101624] p-4">
@@ -990,31 +1219,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </section>
                 </>
               )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
 
               {activeSection === "performance" && questionStats && (
                 <section className={cardClass}>
@@ -1057,31 +1261,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </div>
                 </section>
               )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
 
               {activeSection === "time" && questionStats && (
                 <section className={cardClass}>
@@ -1198,31 +1377,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                       ) : (
                         <div className="mt-4 text-xs text-white/60">No time data yet.</div>
                       )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
                     </div>
                   </div>
 
@@ -1253,31 +1407,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </div>
                 </section>
               )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
 
               {activeSection === "attempt" && attemptQuality && (
                 <section className={cardClass}>
@@ -1302,31 +1431,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </div>
                 </section>
               )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
 
               {activeSection === "difficulty" && difficultyStats && (
                 <section className={cardClass}>
@@ -1341,31 +1445,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </div>
                 </section>
               )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
 
               {activeSection === "movement" && (
                 <section className={cardClass}>
@@ -1397,87 +1476,12 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                           {index < subjectMovement.length - 1 && (
                             <div className="h-[2px] w-12 bg-white/10" />
                           )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
                         </div>
                       ))}
                     </div>
                   )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
                 </section>
               )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
 
               {activeSection === "journey" && (
                 <section className={cardClass}>
@@ -1522,88 +1526,13 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                                 </span>
                               ))
                             )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
                           </div>
                         </div>
                       ))
                     )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
                   </div>
                 </section>
               )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
 
               {activeSection === "qs" && questionStats && activeTest && selectedAttempt && (
                 <section className={cardClass}>
@@ -1646,57 +1575,7 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                   </div>
                 </section>
               )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
-          )}
             </>
-          )}
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Weak Topics</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`weak-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Mistake Patterns</div>
-                  <ul className="mt-1 list-disc pl-5 text-white/70">
-                      <li key={`pattern-${i}`}>{t}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                <div className="mt-3">
-                  <div className="text-xs text-white/50">Revision Plan (20 Qs)</div>
-                </div>
-              )}
-              )}
-              )}
-            </div>
           )}
         </main>
       </div>

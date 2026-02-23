@@ -87,9 +87,6 @@ export default function CreatorStudio() {
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
   const [manualAnswerKey, setManualAnswerKey] = useState("");
-    message: string;
-    tone: "success" | "error" | "info";
-  } | null>(null);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
     y: number;
@@ -565,6 +562,7 @@ const formatSuperscripts = (value: string) =>
     return mapped;
   });
       if (!parsed.questions || parsed.questions.length === 0) {
+        setAiImportStatus({ message: "No questions found in JSON.", tone: "error" });
         return;
       }
       const mapped = parsed.questions.map((q, index) => {
@@ -634,7 +632,14 @@ const formatSuperscripts = (value: string) =>
         missingCount > 0
           ? ` Missing ${missingCount} based on numbering${missingPreview ? ` (e.g., ${missingPreview})` : ""}.`
           : "";
+      setAiImportStatus({
+        message: `Imported ${mapped.length} questions.${missingText} Manual crop needed for diagram questions.`,
+        tone: missingCount > 0 ? "info" : "success",
+      });
+      setShowAiPrompt(false);
+      setShowAiChoice(false);
     } catch (error) {
+      setAiImportStatus({ message: "Invalid JSON. Please check the format.", tone: "error" });
     }
   };
 
@@ -1299,8 +1304,77 @@ const formatSuperscripts = (value: string) =>
               <button
                 className={`rounded-full px-3 py-1 ${visibility === "Public" ? "bg-white text-black" : "text-white/60"}`}
                 onClick={() => setVisibility("Public")}
+                type="button"
+              >
+                Public
+              </button>
+              <button
+                className={`rounded-full px-3 py-1 ${visibility === "Private" ? "bg-white text-black" : "text-white/60"}`}
+                onClick={() => setVisibility("Private")}
+                type="button"
+              >
+                Private
+              </button>
+            </div>
+            {visibility === "Private" && (
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs">
+                <input
+                  value={accessCode}
+                  onChange={(event) => setAccessCode(event.target.value)}
+                  className="w-28 bg-transparent text-xs text-white outline-none placeholder:text-white/40"
+                />
+                <button
+                  className="rounded-full border border-white/10 px-2 py-1 text-[11px] text-white/70"
+                  onClick={() => setAccessCode(makeAccessCode())}
+                  type="button"
+                >
+                  Generate
+                </button>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowSettings(true)}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
+            >
+              Settings
+            </button>
+            <button
+              onClick={saveTest}
+              className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-black"
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Publish Test"}
+            </button>
+          </div>
+        </header>
 
-{selectedCropIds.size > 0 && (
+        <div
+          className={`pointer-events-none fixed right-6 top-6 z-50 rounded-xl bg-emerald-500 px-4 py-3 text-xs font-semibold text-white shadow-lg transition-all duration-300 ${
+            toastVisible ? "translate-y-0 scale-100 opacity-100" : "-translate-y-2 scale-95 opacity-0"
+          }`}
+        >
+          Test saved successfully
+        </div>
+
+        {pdfDoc ? (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <main className="glass-card p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div>
+                <p className="text-sm font-semibold">{title}</p>
+                <p className="text-xs text-white/60">
+                  {pdfDoc ? `Page ${currentPage} of ${pdfDoc.numPages}` : "Upload a PDF"}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-white/70">
+                <span>Total: {cropRects.length}</span>
+                <span className="text-white/30"></span>
+                <span>Current: {activeCropId ? cropRects.findIndex((crop) => crop.id === activeCropId) + 1 : "--"}</span>
+                <span className="text-white/30"></span>
+                <span>Selected: {selectedCropIds.size}</span>
+                <span className="text-white/30"></span>
+                {selectedCropIds.size > 0 && (
                   <button
                     type="button"
                     onClick={() => setSelectedCropIds(new Set())}
