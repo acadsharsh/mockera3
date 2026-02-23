@@ -951,8 +951,6 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
         </aside>
 
         <main className="flex-1 space-y-6">
-            </div>
-          )}
           <header className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-white/40">Test Analysis</p>
