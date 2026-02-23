@@ -90,6 +90,8 @@ export default function CreatorStudio() {
   const [showAiChoice, setShowAiChoice] = useState(false);
   const [showAiPrompt, setShowAiPrompt] = useState(false);
   const [aiJsonInput, setAiJsonInput] = useState("");
+  const [aiQuestionFile, setAiQuestionFile] = useState<File | null>(null);
+  const [aiAnswerKeyFile, setAiAnswerKeyFile] = useState<File | null>(null);
   const [aiImportStatus, setAiImportStatus] = useState<{
     message: string;
     tone: "success" | "error" | "info";
@@ -570,7 +572,47 @@ const formatSuperscripts = (value: string) =>
     return mapped;
   });
 
-  const applyAiJson = () => {
+  
+
+  const runAiFromPdf = async () => {
+    if (!aiQuestionFile) {
+      setAiImportStatus({ message: "Upload the question PDF first.", tone: "error" });
+      return;
+    }
+    if (!aiAnswerKeyFile) {
+      setAiImportStatus({ message: "Upload the answer key PDF first.", tone: "error" });
+      return;
+    }
+    if (!pdfApi) {
+      setAiImportStatus({ message: "PDF engine not ready yet.", tone: "error" });
+      return;
+    }
+    setAiImportStatus({ message: "Extracting PDFs and generating JSON...", tone: "info" });
+    try {
+      const [questionText, answerKeyText] = await Promise.all([
+        extractPdfText(aiQuestionFile),
+        extractPdfText(aiAnswerKeyFile),
+      ]);
+      const response = await fetch("/api/ai/generate-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionText, answerKeyText }),
+      });
+      const data = await safeJson<any>(response, null);
+      if (!response.ok || !data) {
+        setAiImportStatus({ message: "AI generation failed.", tone: "error" });
+        return;
+      }
+      const jsonString = JSON.stringify(data, null, 2);
+      setAiJsonInput(jsonString);
+      setAiImportStatus({ message: "AI JSON generated. Applying...", tone: "success" });
+      setTimeout(() => applyAiJson(), 0);
+    } catch {
+      setAiImportStatus({ message: "AI generation failed.", tone: "error" });
+    }
+  };
+
+const applyAiJson = () => {
     const raw = aiJsonInput.trim();
     if (!raw) {
       setAiImportStatus({ message: "Paste the AI JSON first.", tone: "error" });
@@ -1981,6 +2023,35 @@ const formatSuperscripts = (value: string) =>
                 Close
               </button>
             </div>
+
+            <div className="mt-4 grid gap-3 text-xs">
+              <div>
+                <div className="text-[11px] text-white/60">Question PDF</div>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
+                  onChange={(event) => setAiQuestionFile(event.target.files?.[0] ?? null)}
+                />
+              </div>
+              <div>
+                <div className="text-[11px] text-white/60">Answer Key PDF</div>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
+                  onChange={(event) => setAiAnswerKeyFile(event.target.files?.[0] ?? null)}
+                />
+              </div>
+              <button
+                type="button"
+                className="rounded-full bg-emerald-400/20 px-4 py-2 text-emerald-100"
+                onClick={runAiFromPdf}
+              >
+                AI Generate from PDFs
+              </button>
+            </div>
+
             <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-4 text-[11px] text-white/70">
               Paste this prompt into your AI along with the PDF, then paste the JSON output below.
               <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-white/60">
