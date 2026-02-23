@@ -133,6 +133,9 @@ export default function CBT() {
   const prevIdRef = useRef<string | null>(null);
   const examStartRef = useRef<number>(Date.now());
   const lastActivityRef = useRef<number>(Date.now());
+  const questionOrderRef = useRef<string[]>([]);
+  const questionFirstSeenRef = useRef<Record<string, number>>({});
+  const questionTimelineRef = useRef<Array<{ id: string; enteredAt: number; exitedAt: number }>>([]);
   const idleActiveRef = useRef<boolean>(false);
   const lastChangeRef = useRef<Record<string, number>>({});
   const subjectFirstRef = useRef<Record<"Physics" | "Chemistry" | "Maths", number | null>>({
@@ -334,6 +337,17 @@ export default function CBT() {
         ...prev,
         [previousId]: (prev[previousId] || 0) + elapsed,
       }));
+      questionTimelineRef.current.push({
+        id: previousId,
+        enteredAt: startRef.current,
+        exitedAt: now,
+      });
+    }
+    if (!questionOrderRef.current.includes(activeQuestion.id)) {
+      questionOrderRef.current.push(activeQuestion.id);
+      if (!questionFirstSeenRef.current[activeQuestion.id]) {
+        questionFirstSeenRef.current[activeQuestion.id] = Math.max(0, Math.floor((now - examStartRef.current) / 1000));
+      }
     }
     prevIdRef.current = activeQuestion.id;
     startRef.current = now;
@@ -414,6 +428,9 @@ export default function CBT() {
           idleGaps,
           idleSeconds,
           sectionOrder: order,
+          questionOrder: questionOrderRef.current,
+          questionFirstSeen: questionFirstSeenRef.current,
+          questionTimeline: questionTimelineRef.current,
         }),
       });
       const saved = await response.json().catch(() => null);

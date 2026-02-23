@@ -79,6 +79,9 @@ export async function POST(request: Request) {
     idleGaps?: number;
     idleSeconds?: number;
     sectionOrder?: Array<"Physics" | "Chemistry" | "Maths">;
+    questionOrder?: string[];
+    questionFirstSeen?: Record<string, number>;
+    questionTimeline?: Array<{ id: string; enteredAt: number; exitedAt: number }>;
   };
 
   const test = await prisma.test.findUnique({
@@ -254,6 +257,9 @@ export async function POST(request: Request) {
     idleGaps: payload.idleGaps ?? 0,
     idleSeconds: payload.idleSeconds ?? 0,
     sectionOrder: payload.sectionOrder ?? [],
+    questionOrder: payload.questionOrder ?? [],
+    questionFirstSeen: payload.questionFirstSeen ?? {},
+    questionTimeline: payload.questionTimeline ?? [],
   };
 
   const [attempt] = await prisma.$transaction([
