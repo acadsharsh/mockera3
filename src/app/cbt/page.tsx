@@ -1,7 +1,5 @@
 ﻿"use client";
 
-import "katex/dist/katex.min.css";
-import katex from "katex";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
@@ -45,80 +43,64 @@ type Attempt = {
 
 const optionLetters = ["A", "B", "C", "D"] as const;
 
-const normalizeMathToken = (value: string) =>
-  value
-    .replace(/\u00b7/g, "\\cdot")
-    .replace(/\u00d7/g, "\\times")
-    .replace(/\b([A-Za-z])x([A-Za-z])\b/g, "$1\\times $2")
-    .replace(/\\times(?=[A-Za-z0-9])/g, "\\times ")
-    .replace(/\\cdot(?=[A-Za-z0-9])/g, "\\cdot ");
+const ensureMathJax = (() => {
+  let loading: Promise<void> | null = null;
+  return () => {
+    if (typeof window === "undefined") return Promise.resolve();
+    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
+    if (loading) return loading;
+    (window as any).MathJax = {
+      tex: {
+        inlineMath: [
+          ["\\(", "\\)"],
+          ["$", "$"],
+        ],
+      },
+      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
+    };
+    loading = new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+      script.async = true;
+      script.onload = () => resolve();
+      document.head.appendChild(script);
+    });
+    return loading;
+  };
+})();
 
-const LatexText = ({ text }: { text: string }) => {
-  if (!text) return null;
-  const segments = text.match(/\s+|\S+/g) ?? [];
-  const hasInlineLatex = text.includes("$");
-  if (hasInlineLatex) {
-    const parts = text.split(/(\$[^$]+\$)/g);
-    return (
-      <>
-        {parts.map((part, idx) => {
-          if (part.startsWith("$") && part.endsWith("$")) {
-            const expr = part.slice(1, -1);
-            const html = katex.renderToString(expr, { throwOnError: false });
-            return (
-              <span
-                key={`katex-${idx}`}
-                className="inline-block align-middle"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-            );
-          }
-          return (
-            <span key={`text-${idx}`} className="whitespace-pre-wrap">
-              {part}
-            </span>
-          );
-        })}
-      </>
-    );
-  }
-  return (
-    <>
-      {segments.map((part, idx) => {
-        if (part.trim().length === 0) {
-          return (
-            <span key={`ws-${idx}`} className="whitespace-pre-wrap">
-              {part}
-            </span>
-          );
-        }
-        const isMathy = /[\^_??=|/]/.test(part);
-        if (!isMathy) {
-          return (
-            <span key={`txt-${idx}`} className="whitespace-pre-wrap">
-              {part}
-            </span>
-          );
-        }
-        const normalized = normalizeMathToken(part);
-        const html = katex.renderToString(normalized, { throwOnError: false });
-        if (html.includes("katex-error")) {
-          return (
-            <span key={`txt-${idx}`} className="whitespace-pre-wrap">
-              {part}
-            </span>
-          );
-        }
-        return (
-          <span
-            key={`katex-${idx}`}
-            className="inline-block align-middle"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        );
-      })}
-    </>
+const normalizeMathToken = (value: string) => {
+  const withOps = value
+    .replace(/·/g, "\\cdot")
+    .replace(/×/g, "\\times")
+    .replace(/\b([A-Za-z])x([A-Za-z])\b/g, "$1\\times $2")
+    .replace(/\times(?=[A-Za-z0-9])/g, "\\times ")
+    .replace(/\cdot(?=[A-Za-z0-9])/g, "\\cdot ");
+
+  return withOps.replace(
+    /(\([^)]+\)|\[[^\]]+\]|\{[^}]+\}|[A-Za-z0-9^]+)\s*\/\s*(\([^)]+\)|\[[^\]]+\]|\{[^}]+\}|[A-Za-z0-9^]+)/g,
+    "\\frac{$1}{$2}"
   );
+};
+
+const MathText = ({ text }: { text: string }) => {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const segments = (text ?? "").match(/\s+|\S+/g) ?? [];
+    const rendered = segments
+      .map((part) => {
+        if (part.trim().length === 0) return part;
+        const isMathy = /[\^_\u00b7\u00d7=|/]/.test(part);
+        if (!isMathy) return part;
+        const normalized = normalizeMathToken(part);
+        return `\\(${normalized}\\)`;
+      })
+      .join("");
+    ref.current.textContent = rendered;
+    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
+  }, [text]);
+  return <span ref={ref} className="whitespace-pre-wrap" />;
 };
 
 const formatTime = (seconds: number) => {
@@ -603,7 +585,7 @@ export default function CBT() {
           <div className="grid min-h-0 flex-1 gap-4 p-5">
                 {activeQuestion?.questionText && (
                   <div className="rounded border border-slate-200 bg-slate-50 p-3 text-[16px] leading-7">
-                    <LatexText text={activeQuestion.questionText} />
+                    <MathText text={activeQuestion.questionText} />
                   </div>
                 )}
             <div className="rounded border border-slate-200 bg-slate-50 p-3">
@@ -763,7 +745,7 @@ export default function CBT() {
                         disabled={solutionMode}
                       />
                       <span>
-                        <LatexText text={option} />
+                        <MathText text={option} />
                         {solutionMode && isCorrect ? " (Correct)" : ""}
                       </span>
                     </label>
