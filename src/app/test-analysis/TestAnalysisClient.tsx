@@ -364,6 +364,9 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
   >([]);
   const [answerKeyMode, setAnswerKeyMode] = useState<"manual" | "file">("file");
   const [manualAnswerKey, setManualAnswerKey] = useState("");
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [aiMistakes, setAiMistakes] = useState<string[]>([]);
+  const [aiInsights, setAiInsights] = useState<AiInsights | null>(null);
 
   useEffect(() => {
     let cancelled = false;
