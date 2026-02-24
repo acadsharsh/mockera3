@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -69,13 +69,19 @@ const ensureMathJax = (() => {
 })();
 
 const cleanupLatex = (value: string) =>
-  value.replace(/\\\\/g, "\\").replace(/\u00a0/g, " ").trim();
+  value
+    .normalize("NFKD")
+    .replace(/[\u200B-\u200D\u2060-\u2064\uFEFF]/g, "")
+    .replace(/\\\\/g, "\\")
+    .replace(/\u00a0/g, " ")
+    .trim();
 
 const normalizeMathToken = (value: string) => {
   let withOps = value
-    .replace(/\vec\s*([A-Za-z])/g, "\\vec{$1}")
-    .replace(/\hat\s*([A-Za-z])/g, "\\hat{$1}")
+    .replace(/\\vec\s*([A-Za-z])/g, "\\vec{$1}")
+    .replace(/\\hat\s*([A-Za-z])/g, "\\hat{$1}")
     .replace(/\u00b7/g, "\\cdot")
+    .replace(/\u22c5/g, "\\cdot")
     .replace(/\u00d7/g, "\\times")
     .replace(/\*/g, "\\cdot ")
     .replace(/\\times(?=[A-Za-z0-9])/g, "\\times ")
@@ -117,12 +123,12 @@ const balanceBraces = (value: string) => {
 const looksLikeLatex = (value: string) =>
   /\\[A-Za-z]+|[_^]/.test(value) ||
   /\\frac|\\sqrt|\\vec|\\hat|\\pi|\\sin|\\cos|\\tan|\\log/.test(value) ||
-  /\b(sqrt|sin|cos|tan|log|ln|arg|pi)\b/.test(value);
+  /\b(sqrt|sin|cos|tan|log|ln|arg|pi|frac)\b/.test(value);
 
 const hasPlainWords = (value: string) => {
   const stripped = value
     .replace(/\\[A-Za-z]+/g, "")
-    .replace(/\b(sqrt|sin|cos|tan|log|ln|arg|pi)\b/gi, "");
+    .replace(/\b(sqrt|sin|cos|tan|log|ln|arg|pi|frac)\b/gi, "");
   return /[A-Za-z]{3,}/.test(stripped);
 };
 
@@ -641,7 +647,7 @@ export default function CBT() {
           </div>
           <div className="flex items-center gap-5 text-sm text-slate-700">
             <button className="flex items-center gap-2">
-              <span className="text-base">📄</span>
+              <span className="text-[11px] font-semibold text-slate-500">PDF</span>
               Question Paper
             </button>
             <div>
@@ -909,7 +915,7 @@ export default function CBT() {
           <div className="rounded-lg border border-slate-300 bg-white">
             <div className="flex items-center gap-4 border-b border-slate-300 px-4 py-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-2xl">
-                👤
+                U
               </div>
               <div>
                 <div className="text-sm text-slate-500">User Name</div>
@@ -1011,7 +1017,7 @@ export default function CBT() {
             <div className="text-xs uppercase tracking-[0.4em] text-rose-200/70">Focus Lock</div>
             <h2 className="mt-3 text-2xl font-semibold">Return to Test</h2>
             <p className="mt-2 text-sm text-rose-100/80">
-              The test is paused while you’re away. Click back into the test to continue.
+              The test is paused while you're away. Click back into the test to continue.
             </p>
           </div>
         </div>
@@ -1061,3 +1067,4 @@ export default function CBT() {
     </div>
   );
 }
+
