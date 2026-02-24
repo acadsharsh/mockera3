@@ -94,6 +94,11 @@ export default function CreatorStudio() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
+  const [extractStatus, setExtractStatus] = useState<{
+    message: string;
+    tone: "success" | "error" | "info";
+  } | null>(null);
+  const [extracting, setExtracting] = useState(false);
 
   const [promptCopied, setPromptCopied] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
@@ -649,6 +654,116 @@ Rules (MathJax-friendly):
     } catch {
       setPromptCopied(true);
       setTimeout(() => setPromptCopied(false), 1500);
+    }
+  };
+
+
+  const extractFromBook = async () => {
+    if (!pdfApi || !uploadedFile) {
+      setExtractStatus({ message: "Upload a PDF first.", tone: "error" });
+      return;
+    }
+    setExtracting(true);
+    setExtractStatus({ message: "Extracting examples/questions...", tone: "info" });
+    try {
+      const arrayBuffer = await uploadedFile.arrayBuffer();
+      const doc = await pdfApi.getDocument({ data: arrayBuffer }).promise;
+      const blocks: Array<{ page: number; lines: string[] }> = [];
+      const startPattern = /^(Example|Solved Example|Illustration|Exercise|Question|Q\.?|\d+\.)/i;
+      for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+        const page = await doc.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const items = content.items || [];
+        const lineMap = new Map<number, Array<{ x: number; str: string }>>();
+        items.forEach((item: any) => {
+          const str = item.str || "";
+          if (!str.trim()) return;
+          const x = item.transform?.[4] ?? 0;
+          const y = Math.round(item.transform?.[5] ?? 0);
+          if (!lineMap.has(y)) lineMap.set(y, []);
+          lineMap.get(y)!.push({ x, str });
+        });
+        const lines = Array.from(lineMap.entries())
+          .sort((a, b) => b[0] - a[0])
+          .map(([, parts]) =>
+            parts
+              .sort((a, b) => a.x - b.x)
+              .map((p) => p.str)
+              .join(" ")
+              .replace(/\s+/g, " ")
+              .trim()
+          )
+          .filter(Boolean);
+
+        let current: { page: number; lines: string[] } | null = null;
+        const pushCurrent = () => {
+          if (current && current.lines.length) blocks.push(current);
+        };
+        lines.forEach((line) => {
+          if (startPattern.test(line)) {
+            pushCurrent();
+            current = { page: pageNumber, lines: [line] };
+          } else if (current) {
+            current.lines.push(line);
+          }
+        });
+        pushCurrent();
+      }
+
+      const optionPattern = /^\(?[A-D]\)?[.)]/;
+      const answerPattern = /^(Ans\.?|Answer\.?)/i;
+      const mapped = blocks.map((block) => {
+        const textLines: string[] = [];
+        const options: string[] = [];
+        let answerLine = "";
+        block.lines.forEach((line) => {
+          if (answerPattern.test(line)) {
+            answerLine = line;
+            return;
+          }
+          if (optionPattern.test(line)) {
+            options.push(line.replace(optionPattern, "").trim());
+            return;
+          }
+          textLines.push(line);
+        });
+        let correctOption = "";
+        const ansMatch = answerLine.match(/[A-D]/i);
+        if (ansMatch) {
+          correctOption = ansMatch[0].toUpperCase();
+        }
+        return {
+          id: makeId("crop"),
+          pageNumber: block.page,
+          parts: 1,
+          x: 0,
+          y: 0,
+          w: 0,
+          h: 0,
+          subject: lastSubject,
+          questionType: options.length ? "MCQ" : "MCQ",
+          correctOption,
+          correctOptions: [],
+          correctNumeric: "",
+          marks: "+4/-1",
+          difficulty: lastDifficulty,
+          imageDataUrl: "",
+          questionText: textLines.join(" "),
+          options,
+          hasDiagram: false,
+        } as CropMeta;
+      });
+
+      if (!mapped.length) {
+        setExtractStatus({ message: "No examples or questions detected.", tone: "error" });
+      } else {
+        setCropRects((prev) => [...prev, ...mapped]);
+        setExtractStatus({ message: `Extracted ${mapped.length} blocks. Review and crop diagrams manually.`, tone: "success" });
+      }
+    } catch (err) {
+      setExtractStatus({ message: "Extraction failed. Try another PDF.", tone: "error" });
+    } finally {
+      setExtracting(false);
     }
   };
 
@@ -1354,6 +1469,14 @@ Rules (MathJax-friendly):
             </button>
             <button
               type="button"
+              onClick={extractFromBook}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
+              disabled={extracting}
+            >
+              {extracting ? "Extracting..." : "Extract from Book"}
+            </button>
+            <button
+              type="button"
               onClick={() => setShowSettings(true)}
               className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
             >
@@ -1368,6 +1491,27 @@ Rules (MathJax-friendly):
             </button>
           </div>
         </header>
+
+        {extractStatus && (
+          <div
+            className={`mt-3 flex items-center justify-between rounded-xl border px-4 py-3 text-xs ${
+              extractStatus.tone === "success"
+                ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+                : extractStatus.tone === "error"
+                ? "border-rose-400/30 bg-rose-500/10 text-rose-200"
+                : "border-sky-400/30 bg-sky-500/10 text-sky-200"
+            }`}
+          >
+            <span>{extractStatus.message}</span>
+            <button
+              type="button"
+              onClick={() => setExtractStatus(null)}
+              className="rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/70 transition hover:border-white/30"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div
           className={`pointer-events-none fixed right-6 top-6 z-50 rounded-xl bg-emerald-500 px-4 py-3 text-xs font-semibold text-white shadow-lg transition-all duration-300 ${
