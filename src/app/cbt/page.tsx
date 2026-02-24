@@ -89,17 +89,19 @@ const MathText = ({ text }: { text: string }) => {
   const ref = useRef<HTMLSpanElement | null>(null);
   useEffect(() => {
     if (!ref.current) return;
-    const segments = (text ?? "").match(/\s+|\S+/g) ?? [];
-    const rendered = segments
-      .map((part) => {
-        if (part.trim().length === 0) return part;
-        const isMathy = /[\^_·×=|/]/.test(part);
-        if (!isMathy) return part;
-        const normalized = normalizeMathToken(part);
-        return `$${normalized}$`;
-      })
-      .join("");
-    ref.current.textContent = rendered;
+    const raw = text ?? "";
+    if (raw.includes("$")) {
+      ref.current.textContent = raw;
+      ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
+      return;
+    }
+    const isMathy = /[\^_\u00b7\u00d7=|/]/.test(raw);
+    if (!isMathy) {
+      ref.current.textContent = raw;
+      return;
+    }
+    const normalized = normalizeMathToken(raw);
+    ref.current.textContent = `\(${normalized}\)`;
     ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
   }, [text]);
   return <span ref={ref} className="whitespace-pre-wrap" />;
