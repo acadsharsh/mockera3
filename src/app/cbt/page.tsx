@@ -135,20 +135,13 @@ const normalizeMathToken = (value: string) => {
     );
 
   withOps = withOps
-    // Normalize malformed escaped fractions such as \\fracpi11.
-    .replace(/\\frac\s*\\pi\s*([0-9]+)/g, "\\frac{\\pi}{$1}")
-    .replace(/\\fracpi([0-9]+)/gi, "\\frac{\\pi}{$1}")
-    .replace(/\\frac\s*([A-Za-z]+)\s*([0-9]+)/g, "\\frac{$1}{$2}")
-    .replace(/\\frac\s*([0-9]+)\s*([A-Za-z]+)/g, "\\frac{$1}{$2}")
-    .replace(/\\frac([A-Za-z]+)([0-9]+)/g, "\\frac{$1}{$2}")
-    .replace(/(^|[^\\])frac\s*\{\s*([^{}]+)\s*\}\s*\{\s*([^{}]+)\s*\}/gi, "$1\\\\frac{$2}{$3}")
-    .replace(/(^|[^\\])frac\s*pi\s*([0-9]+)/gi, "$1\\\\frac{\\\\pi}{$2}")
-    .replace(/(^|[^\\])fracpi([0-9]+)/gi, "$1\\\\frac{\\\\pi}{$2}")
-    .replace(/(^|[^\\])frac\s*([A-Za-z]+)\s*([0-9]+)/g, "$1\\\\frac{$2}{$3}")
-    .replace(/(^|[^\\])frac\s*([0-9]+)\s*([A-Za-z]+)/g, "$1\\\\frac{$2}{$3}")
-    .replace(/(^|[^\\])frac\s*([A-Za-z]+)\s*([A-Za-z]+)/g, "$1\\\\frac{$2}{$3}")
-    .replace(/(^|[^\\])frac\s*([A-Za-z]+)([0-9]+)/g, "$1\\\\frac{$2}{$3}")
-    .replace(/(^|[^\\])frac([A-Za-z]+)([0-9]+)/g, "$1\\\\frac{$2}{$3}");
+    // Normalize malformed fraction tokens like fracpi11 / \fracpi11.
+    .replace(/(^|[^A-Za-z\\])\\?frac\s*\\?pi\s*([0-9]+)\b/gi, "$1\\frac{\\pi}{$2}")
+    .replace(/(^|[^A-Za-z\\])\\?fracpi([0-9]+)\b/gi, "$1\\frac{\\pi}{$2}")
+    .replace(/(^|[^A-Za-z\\])\\?frac\s*\{\s*([^{}]+)\s*\}\s*\{\s*([^{}]+)\s*\}/gi, "$1\\frac{$2}{$3}")
+    .replace(/(^|[^A-Za-z\\])\\?frac\s*([A-Za-z]+)\s*([0-9]+)\b/g, "$1\\frac{$2}{$3}")
+    .replace(/(^|[^A-Za-z\\])\\?frac\s*([0-9]+)\s*([A-Za-z]+)\b/g, "$1\\frac{$2}{$3}")
+    .replace(/(^|[^A-Za-z\\])\\?frac([A-Za-z]+)([0-9]+)\b/g, "$1\\frac{$2}{$3}");
 
   withOps = withOps
     .replace(/([A-Za-z0-9])\\cdot\\frac\{\\pi\}\{([0-9]+)\}/g, "\\frac{$1\\pi}{$2}")
@@ -302,7 +295,7 @@ const splitInlineMathSegments = (
   value: string
 ): Array<{ type: "text" | "math"; value: string; display?: boolean }> => {
   const regex =
-    /((?:[A-Za-z0-9\\]+(?:\s*[\^_=+\-*/]\s*[A-Za-z0-9\\(){}\[\]]+)+)|(?:\b(?:sin|cos|tan|log|ln|arg)\s*\([^)]*\)))/g;
+    /((?:[A-Za-z0-9\\]+(?:\s*[\^_=+\-*/]\s*[A-Za-z0-9\\(){}\[\]]+)+)|(?:\b(?:sin|cos|tan|log|ln|arg)\s*\([^)]*\))|(?:\b\\?frac(?:pi[0-9]+|\s*\\?pi\s*[0-9]+)\b))/g;
   const parts: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
   let last = 0;
   let match: RegExpExecArray | null;
@@ -322,6 +315,7 @@ const splitInlineMathSegments = (
   }
   return parts.length ? parts : [{ type: "text", value }];
 };
+
 
 const MathText = ({ text }: { text: string }) => {
   const ref = useRef<HTMLSpanElement | null>(null);
