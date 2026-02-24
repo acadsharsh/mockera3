@@ -83,11 +83,11 @@ const normalizeMathToken = (value: string) => {
     .replace(/\b(sin|cos|tan|log|ln|arg)\s*\(/g, "\\\\$1(");
 
   withOps = withOps
-    .replace(/(?<!\\)frac\s*([A-Za-z]+)\s*([0-9]+)/g, "\\frac{$1}{$2}")
-    .replace(/(?<!\\)frac\s*([0-9]+)\s*([A-Za-z]+)/g, "\\frac{$1}{$2}")
-    .replace(/(?<!\\)frac\s*([A-Za-z]+)\s*([A-Za-z]+)/g, "\\frac{$1}{$2}")
-    .replace(/(?<!\\)frac\s*([A-Za-z]+)([0-9]+)/g, "\\frac{$1}{$2}")
-    .replace(/(?<!\\)frac\s*\\pi\s*([0-9]+)/g, "\\frac{\\pi}{$1}");
+    .replace(/(^|[^\\])frac\s*pi\s*([0-9]+)/gi, "$1\\\\frac{\\\\pi}{$2}")
+    .replace(/(^|[^\\])frac\s*([A-Za-z]+)\s*([0-9]+)/g, "$1\\\\frac{$2}{$3}")
+    .replace(/(^|[^\\])frac\s*([0-9]+)\s*([A-Za-z]+)/g, "$1\\\\frac{$2}{$3}")
+    .replace(/(^|[^\\])frac\s*([A-Za-z]+)\s*([A-Za-z]+)/g, "$1\\\\frac{$2}{$3}")
+    .replace(/(^|[^\\])frac\s*([A-Za-z]+)([0-9]+)/g, "$1\\\\frac{$2}{$3}");
 
   withOps = withOps.replace(/\bpi\b/g, "\\pi");
 
