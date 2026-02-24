@@ -244,6 +244,8 @@ export async function PUT(request: Request) {
             subject: crop.subject,
             difficulty: crop.difficulty,
             questionType: crop.questionType ?? "MCQ",
+            marksCorrect: payload.markingCorrect,
+            marksIncorrect: payload.markingIncorrect,
             correctOption:
               crop.questionType === "MSQ"
                 ? (crop.correctOptions ?? []).length
