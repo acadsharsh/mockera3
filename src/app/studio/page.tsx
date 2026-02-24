@@ -1363,12 +1363,6 @@ Rules (MathJax-friendly):
             </button>
           </div>
         </header>
-              className="rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/70 transition hover:border-white/30"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
 
         <div
           className={`pointer-events-none fixed right-6 top-6 z-50 rounded-xl bg-emerald-500 px-4 py-3 text-xs font-semibold text-white shadow-lg transition-all duration-300 ${
