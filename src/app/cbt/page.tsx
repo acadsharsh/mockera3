@@ -71,6 +71,8 @@ const ensureMathJax = (() => {
 
 const normalizeMathToken = (value: string) => {
   const withOps = value
+    .replace(/\\vec\s*([A-Za-z])/g, "\\vec{$1}")
+    .replace(/\\hat\s*([A-Za-z])/g, "\\hat{$1}")
     .replace(/·/g, "\\cdot")
     .replace(/×/g, "\\times")
     .replace(/\b([A-Za-z])x([A-Za-z])\b/g, "$1\\times $2")
@@ -91,10 +93,10 @@ const MathText = ({ text }: { text: string }) => {
     const rendered = segments
       .map((part) => {
         if (part.trim().length === 0) return part;
-        const isMathy = /[\^_\u00b7\u00d7=|/]/.test(part);
+        const isMathy = /[\^_·×=|/]/.test(part);
         if (!isMathy) return part;
         const normalized = normalizeMathToken(part);
-        return `\\(${normalized}\\)`;
+        return `$${normalized}$`;
       })
       .join("");
     ref.current.textContent = rendered;
