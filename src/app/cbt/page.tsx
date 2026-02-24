@@ -106,6 +106,9 @@ const cleanupLatex = (value: string) =>
     .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
+    // Fix common OCR for fraction like \fracpi6 or fracpi6
+    .replace(/\\?frac\s*\\?pi\s*([0-9]+)/gi, "\\\\frac{\\\\pi}{$1}")
+    .replace(/\\?frac\s*\\?pi\s*\\/\s*([0-9]+)/gi, "\\\\frac{\\\\pi}{$1}")
     .trim();
 
 const normalizeMathToken = (value: string) => {
