@@ -79,6 +79,11 @@ const looksLikeLatex = (value: string) =>
   /\\[A-Za-z]+|[_^]/.test(value) ||
   /\\frac|\\sqrt|\\vec|\\hat|\\pi|\\sin|\\cos|\\tan|\\log/.test(value);
 
+const hasPlainWords = (value: string) => {
+  const stripped = value.replace(/\\[A-Za-z]+/g, "");
+  return /[A-Za-z]{3,}/.test(stripped);
+};
+
 const splitMathSegments = (value: string) => {
   const regex = /(\$\$[\s\S]+?\$\$|\$[^$]+?\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g;
   const parts: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
@@ -132,7 +137,7 @@ const MathText = ({ text }: { text: string }) => {
 
     if (!parts.length || (parts.length === 1 && parts[0].type === "text")) {
       if (!raw) return;
-      if (looksLikeLatex(raw)) {
+      if (looksLikeLatex(raw) && !hasPlainWords(raw)) {
         const span = document.createElement("span");
         span.innerHTML = renderMath(raw, false);
         host.appendChild(span);
