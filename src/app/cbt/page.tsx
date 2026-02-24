@@ -43,6 +43,25 @@ type Attempt = {
 
 const optionLetters = ["A", "B", "C", "D"] as const;
 
+const isCorrectAnswer = (crop: Crop, selected?: string) => {
+  if (!selected) return false;
+  if (crop.questionType === "NUM") {
+    const normalized = selected.trim();
+    return normalized !== "" && normalized === (crop.correctNumeric ?? "").trim();
+  }
+  if (crop.questionType === "MSQ") {
+    const expected = (crop.correctOptions ?? []).slice().sort().join(",");
+    const got = selected
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .sort()
+      .join(",");
+    return got !== "" && got === expected;
+  }
+  return selected === crop.correctOption;
+};
+
 const ensureMathJax = (() => {
   let loading: Promise<void> | null = null;
   return () => {
@@ -423,6 +442,8 @@ export default function CBT() {
   const [submitting, setSubmitting] = useState(false);
   const [candidateName, setCandidateName] = useState("Candidate");
   const [solutionMode, setSolutionMode] = useState(false);
+  const [practiceMode, setPracticeMode] = useState<"standard" | "adaptive">("standard");
+  const [adaptiveOrder, setAdaptiveOrder] = useState<string[] | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [calcValue, setCalcValue] = useState("0");
@@ -499,6 +520,7 @@ export default function CBT() {
     setTestIdParam(params.get("testId"));
     setJumpParam(params.get("q"));
     setSolutionMode(params.get("solution") === "1");
+    setPracticeMode(params.get("mode") === "adaptive" ? "adaptive" : "standard");
   }, []);
 
   useEffect(() => {
@@ -539,6 +561,46 @@ export default function CBT() {
   }, [testIdParam]);
 
   useEffect(() => {
+    if (practiceMode !== "adaptive") return;
+    if (!testIdParam || !test) return;
+    const loadAdaptive = async () => {
+      const response = await fetch(`/api/attempts?testId=${testIdParam}`);
+      const data = await safeJson<Attempt[]>(response, []);
+      const latest = Array.isArray(data) ? data[0] : null;
+      if (!latest) {
+        setAdaptiveOrder(null);
+        return;
+      }
+      const answered = Object.values(latest.answers || {}).filter(Boolean).length;
+      const avgTime = answered
+        ? Object.values(latest.timeSpent || {}).reduce((a, b) => a + b, 0) / answered
+        : 0;
+      const scored = test.crops.map((crop) => {
+        const selected = latest.answers?.[crop.id];
+        const spent = latest.timeSpent?.[crop.id] ?? 0;
+        let score = 0;
+        if (!selected) {
+          score = 2;
+        } else if (!isCorrectAnswer(crop, selected)) {
+          score = 3;
+        } else if (avgTime > 0 && spent > avgTime * 1.4) {
+          score = 1.5;
+        }
+        return { id: crop.id, score, spent };
+      });
+      scored.sort((a, b) => b.score - a.score || b.spent - a.spent);
+      setAdaptiveOrder(scored.map((item) => item.id));
+    };
+    loadAdaptive();
+  }, [practiceMode, testIdParam, test]);
+
+  useEffect(() => {
+    if (practiceMode !== "adaptive") return;
+    if (!adaptiveOrder) return;
+    setActiveIndex(0);
+  }, [practiceMode, adaptiveOrder]);
+
+  useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) {
         setIsPaused(true);
@@ -563,7 +625,7 @@ export default function CBT() {
     };
   }, []);
 
-  const questions = useMemo(() => {
+  const baseQuestions = useMemo(() => {
     if (!test) {
       return [];
     }
@@ -581,6 +643,18 @@ export default function CBT() {
       index: index + 1,
     }));
   }, [test]);
+
+  const questions = useMemo(() => {
+    if (!adaptiveOrder || adaptiveOrder.length === 0) {
+      return baseQuestions;
+    }
+    const order = new Map(adaptiveOrder.map((id, idx) => [id, idx]));
+    return [...baseQuestions].sort((a, b) => {
+      const aIndex = order.get(a.id) ?? 99999;
+      const bIndex = order.get(b.id) ?? 99999;
+      return aIndex - bIndex;
+    });
+  }, [baseQuestions, adaptiveOrder]);
 
   const activeQuestion = questions[activeIndex];
   const sectionList = useMemo(() => {
@@ -813,6 +887,11 @@ export default function CBT() {
             <span className="rounded-sm bg-[#7d00b3] px-3 py-1 text-sm font-semibold text-white">
               {test.title || "Mock Test"}
             </span>
+            {practiceMode === "adaptive" && (
+              <span className="rounded-sm bg-[#0f172a] px-2 py-1 text-[11px] font-semibold text-white/80">
+                Adaptive Practice
+              </span>
+            )}
             <button
               type="button"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34a2ff] text-[11px] font-semibold text-white"

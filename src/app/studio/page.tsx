@@ -38,6 +38,7 @@ const subjectAccents: Record<CropMeta["subject"], { accent: string; glow: string
 
 const makeAccessCode = () => `BATCH-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 const SETTINGS_KEY = "creatorStudioSettings";
+const DRAFT_KEY = "creatorStudioDraftV1";
 
 export default function CreatorStudio() {
   const router = useRouter();
@@ -120,6 +121,7 @@ export default function CreatorStudio() {
   const renderTaskRef = useRef<{ cancel: () => void; promise: Promise<any> } | null>(null);
   const prevPageRef = useRef<number>(currentPage);
   const prevActiveIdRef = useRef<string | null>(activeCropId);
+  const draftTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -135,6 +137,78 @@ export default function CreatorStudio() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    if (cropRects.length > 0 || title.trim() || uploadedFile) return;
+    try {
+      const parsed = JSON.parse(raw);
+      setTitle(parsed.title ?? "");
+      setTestDescription(parsed.testDescription ?? "");
+      setTestTags(parsed.testTags ?? []);
+      setVisibility(parsed.visibility ?? "Public");
+      setAccessCode(parsed.accessCode ?? makeAccessCode());
+      setDurationMinutes(parsed.durationMinutes ?? 180);
+      setMarkingCorrect(parsed.markingCorrect ?? 4);
+      setMarkingIncorrect(parsed.markingIncorrect ?? -1);
+      setLockNavigation(parsed.lockNavigation ?? false);
+      setLastSubject(parsed.lastSubject ?? "Physics");
+      setLastDifficulty(parsed.lastDifficulty ?? "Easy");
+      setCurrentPage(parsed.currentPage ?? 1);
+      setPageScale(parsed.pageScale ?? 1.7);
+      setCropRects(parsed.cropRects ?? []);
+    } catch {
+      // ignore corrupted draft
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (draftTimerRef.current) {
+      window.clearTimeout(draftTimerRef.current);
+    }
+    draftTimerRef.current = window.setTimeout(() => {
+      const payload = {
+        title,
+        testDescription,
+        testTags,
+        visibility,
+        accessCode,
+        durationMinutes,
+        markingCorrect,
+        markingIncorrect,
+        lockNavigation,
+        lastSubject,
+        lastDifficulty,
+        currentPage,
+        pageScale,
+        cropRects,
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+    }, 600);
+    return () => {
+      if (draftTimerRef.current) {
+        window.clearTimeout(draftTimerRef.current);
+      }
+    };
+  }, [
+    title,
+    testDescription,
+    testTags,
+    visibility,
+    accessCode,
+    durationMinutes,
+    markingCorrect,
+    markingIncorrect,
+    lockNavigation,
+    lastSubject,
+    lastDifficulty,
+    currentPage,
+    pageScale,
+    cropRects,
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

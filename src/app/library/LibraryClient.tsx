@@ -111,6 +111,12 @@ export default function LibraryClient({
   const [attempts, setAttempts] = useState<Attempt[]>(initialAttempts);
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("All Tests");
   const [search, setSearch] = useState("");
+  const [filterSubject, setFilterSubject] = useState<"All" | "Physics" | "Chemistry" | "Maths">("All");
+  const [filterDifficulty, setFilterDifficulty] = useState<"All" | "Easy" | "Moderate" | "Tough">("All");
+  const [minAttempts, setMinAttempts] = useState(0);
+  const [maxWrongRate, setMaxWrongRate] = useState(100);
+  const [maxAvgMinutes, setMaxAvgMinutes] = useState(0);
+  const [lastAttemptDays, setLastAttemptDays] = useState(0);
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [authError, setAuthError] = useState(initialAuthError);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -194,9 +200,51 @@ export default function LibraryClient({
       if (subjectParam) {
         return test.crops?.some((crop) => crop.subject === subjectParam);
       }
+      if (filterSubject !== "All") {
+        if (!test.crops?.some((crop) => crop.subject === filterSubject)) {
+          return false;
+        }
+      }
+      if (filterDifficulty !== "All") {
+        if (!test.crops?.some((crop) => crop.difficulty === filterDifficulty)) {
+          return false;
+        }
+      }
+      const stats = testStats[test.id];
+      if (minAttempts > 0 && (stats?.attempts ?? 0) < minAttempts) {
+        return false;
+      }
+      if (maxWrongRate < 100 && (stats?.wrongRate ?? 0) > maxWrongRate) {
+        return false;
+      }
+      if (maxAvgMinutes > 0 && (stats?.avgTime ?? 0) > maxAvgMinutes * 60) {
+        return false;
+      }
+      if (lastAttemptDays > 0) {
+        const last = stats?.lastAttemptAt;
+        if (!last) {
+          return false;
+        }
+        const windowMs = lastAttemptDays * 24 * 60 * 60 * 1000;
+        if (Date.now() - last > windowMs) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [tests, activeTab, starred, subjectParam]);
+  }, [
+    tests,
+    activeTab,
+    starred,
+    subjectParam,
+    filterSubject,
+    filterDifficulty,
+    minAttempts,
+    maxWrongRate,
+    maxAvgMinutes,
+    lastAttemptDays,
+    testStats,
+  ]);
 
   const searchedTests = useMemo(() => {
     if (!search.trim()) {
@@ -205,7 +253,10 @@ export default function LibraryClient({
     return filteredTests
       .map((test) => ({
         test,
-        score: fuzzyScore(test.title, search),
+        score: fuzzyScore(
+          [test.title, test.description ?? "", (test.tags ?? []).join(" ")].join(" "),
+          search
+        ),
       }))
       .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score)
@@ -219,6 +270,39 @@ export default function LibraryClient({
       return acc;
     }, {} as Record<string, Attempt[]>);
   }, [attempts]);
+
+  const testStats = useMemo(() => {
+    const stats: Record<
+      string,
+      { attempts: number; lastAttemptAt?: number; wrongRate: number; avgTime: number }
+    > = {};
+    tests.forEach((test) => {
+      const list = attemptsByTest[test.id] ?? [];
+      const totalAttempts = list.length;
+      const lastAttemptAt = list[0]?.createdAt ? new Date(list[0].createdAt).getTime() : undefined;
+      let attempted = 0;
+      let correct = 0;
+      let totalTime = 0;
+      list.forEach((attempt) => {
+        const answers = attempt.answers ?? {};
+        const timeSpent = attempt.timeSpent ?? {};
+        Object.keys(answers).forEach((id) => {
+          const selected = answers[id];
+          if (!selected) return;
+          attempted += 1;
+          const crop = test.crops?.find((item) => item.id === id);
+          if (crop && selected === crop.correctOption) {
+            correct += 1;
+          }
+          totalTime += timeSpent[id] ?? 0;
+        });
+      });
+      const wrongRate = attempted ? (1 - correct / attempted) * 100 : 0;
+      const avgTime = attempted ? totalTime / attempted : 0;
+      stats[test.id] = { attempts: totalAttempts, lastAttemptAt, wrongRate, avgTime };
+    });
+    return stats;
+  }, [tests, attemptsByTest]);
 
   const privateBatches = useMemo(() => {
     return tests
@@ -403,6 +487,70 @@ export default function LibraryClient({
               className="w-full rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-white/40"
             />
           </div>
+
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <select
+              value={filterSubject}
+              onChange={(event) => setFilterSubject(event.target.value as typeof filterSubject)}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white"
+            >
+              <option value="All">All Subjects</option>
+              <option value="Physics">Physics</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Maths">Maths</option>
+            </select>
+            <select
+              value={filterDifficulty}
+              onChange={(event) => setFilterDifficulty(event.target.value as typeof filterDifficulty)}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white"
+            >
+              <option value="All">All Difficulty</option>
+              <option value="Easy">Easy</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Tough">Tough</option>
+            </select>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+              <span className="text-white/60">Min attempts</span>
+              <input
+                type="number"
+                min={0}
+                value={minAttempts}
+                onChange={(event) => setMinAttempts(Number(event.target.value || 0))}
+                className="w-16 bg-transparent text-right text-white outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+              <span className="text-white/60">Max wrong %</span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={maxWrongRate}
+                onChange={(event) => setMaxWrongRate(Math.min(100, Math.max(0, Number(event.target.value || 0))))}
+                className="w-16 bg-transparent text-right text-white outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+              <span className="text-white/60">Max avg min</span>
+              <input
+                type="number"
+                min={0}
+                value={maxAvgMinutes}
+                onChange={(event) => setMaxAvgMinutes(Number(event.target.value || 0))}
+                className="w-16 bg-transparent text-right text-white outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+              <span className="text-white/60">Last active (days)</span>
+              <input
+                type="number"
+                min={0}
+                value={lastAttemptDays}
+                onChange={(event) => setLastAttemptDays(Number(event.target.value || 0))}
+                className="w-16 bg-transparent text-right text-white outline-none"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
@@ -490,6 +638,9 @@ export default function LibraryClient({
                               )}
                               <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/cbt?testId=${test.id}`}>
                                 Start
+                              </a>
+                              <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/cbt?testId=${test.id}&mode=adaptive`}>
+                                Adaptive Practice
                               </a>
                               {test.ownerId && currentUserId && test.ownerId === currentUserId && (
                                 <button

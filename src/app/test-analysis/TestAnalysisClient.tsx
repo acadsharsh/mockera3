@@ -522,6 +522,48 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
     };
   }, [activeTest, percentileBands, selectedAttempt]);
 
+  const mistakePatterns = useMemo(() => {
+    if (!activeTest || !selectedAttempt) return [];
+    let attempted = 0;
+    let totalTime = 0;
+    activeTest.crops.forEach((crop) => {
+      const selected = selectedAttempt.answers[crop.id];
+      if (!selected) return;
+      attempted += 1;
+      totalTime += selectedAttempt.timeSpent[crop.id] ?? 0;
+    });
+    const avgTime = attempted ? totalTime / attempted : 0;
+    let fastWrong = 0;
+    let slowWrong = 0;
+    let slowCorrect = 0;
+    let manyChanges = 0;
+    activeTest.crops.forEach((crop) => {
+      const selected = selectedAttempt.answers[crop.id];
+      if (!selected) return;
+      const spent = selectedAttempt.timeSpent[crop.id] ?? 0;
+      const changes = selectedAttempt.events?.answerChanges?.[crop.id] ?? 0;
+      const correct = isCorrectAnswer(crop, selected);
+      if (!correct && avgTime > 0 && spent < avgTime * 0.6) fastWrong += 1;
+      if (!correct && avgTime > 0 && spent > avgTime * 1.4) slowWrong += 1;
+      if (correct && avgTime > 0 && spent > avgTime * 1.4) slowCorrect += 1;
+      if (changes >= 3) manyChanges += 1;
+    });
+    const insights: string[] = [];
+    if (fastWrong >= Math.max(2, Math.ceil(attempted * 0.2))) {
+      insights.push("Fast wrongs detected ? you may be rushing. Slow down on tricky questions.");
+    }
+    if (slowWrong >= Math.max(2, Math.ceil(attempted * 0.15))) {
+      insights.push("Slow wrongs are high ? indicates conceptual gaps. Focus revision on those topics.");
+    }
+    if (slowCorrect >= Math.max(2, Math.ceil(attempted * 0.2))) {
+      insights.push("Correct but slow ? improve speed with timed practice on similar questions.");
+    }
+    if (manyChanges >= Math.max(2, Math.ceil(attempted * 0.15))) {
+      insights.push("Many answer changes ? consider locking your first instinct after a quick recheck.");
+    }
+    return insights;
+  }, [activeTest, selectedAttempt]);
+
   const hasAnswerKey = useMemo(() => {
     if (!activeTest) return false;
     return activeTest.crops.some((crop) => {
@@ -1151,6 +1193,17 @@ export default function TestAnalysisClient({ initialTests, initialAttempts }: Te
                       <p className="mt-2 text-xs text-white/60">Based on this attempt</p>
                     </div>
                   </section>
+
+                  {mistakePatterns.length > 0 && (
+                    <section className="rounded-2xl border border-white/10 bg-[#101624] p-5">
+                      <p className="text-xs uppercase text-white/60">Mistake Patterns</p>
+                      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-white/80">
+                        {mistakePatterns.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
 
                   <section className="grid gap-4 lg:grid-cols-3">
                     <div className="rounded-2xl border border-white/10 bg-[#121826] p-5">
