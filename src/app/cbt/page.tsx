@@ -53,9 +53,16 @@ const ensureMathJax = (() => {
       tex: {
         inlineMath: [
           ["\\(", "\\)"],
-          ["$", "$"],
+          ["$", "$"]
         ],
+        displayMath: [
+          ["$$", "$$"],
+          ["\\[", "\\]"]
+        ],
+        processEscapes: true,
       },
+      loader: { load: ["[tex]/ams"] },
+      tex2jax: { inlineMath: [["$", "$"], ["\\(", "\\)"]] },
       options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
     };
     loading = new Promise((resolve) => {
@@ -69,15 +76,17 @@ const ensureMathJax = (() => {
   };
 })();
 
+const cleanupLatex = (value: string) =>
+  value.replace(/\\\\/g, "\\").replace(/\u00a0/g, " ").trim();
+
 const normalizeMathToken = (value: string) => {
   const withOps = value
     .replace(/\\vec\s*([A-Za-z])/g, "\\vec{$1}")
     .replace(/\\hat\s*([A-Za-z])/g, "\\hat{$1}")
-    .replace(/·/g, "\\cdot")
-    .replace(/×/g, "\\times")
-    .replace(/\b([A-Za-z])x([A-Za-z])\b/g, "$1\\times $2")
-    .replace(/\times(?=[A-Za-z0-9])/g, "\\times ")
-    .replace(/\cdot(?=[A-Za-z0-9])/g, "\\cdot ");
+    .replace(/\u00b7/g, "\\cdot")
+    .replace(/\u00d7/g, "\\times")
+    .replace(/\\times(?=[A-Za-z0-9])/g, "\\times ")
+    .replace(/\\cdot(?=[A-Za-z0-9])/g, "\\cdot ");
 
   return withOps.replace(
     /(\([^)]+\)|\[[^\]]+\]|\{[^}]+\}|[A-Za-z0-9^]+)\s*\/\s*(\([^)]+\)|\[[^\]]+\]|\{[^}]+\}|[A-Za-z0-9^]+)/g,
@@ -85,24 +94,85 @@ const normalizeMathToken = (value: string) => {
   );
 };
 
+const balanceBraces = (value: string) => {
+  let open = 0;
+  let close = 0;
+  for (const ch of value) {
+    if (ch === "{") open += 1;
+    if (ch === "}") close += 1;
+  }
+  if (open > close) return value + "}".repeat(open - close);
+  if (close > open) return value.replace(/}+$/, (m) => m.slice(0, m.length - (close - open)));
+  return value;
+};
+
+const looksLikeLatex = (value: string) =>
+  /\\[A-Za-z]+|[_^]/.test(value) ||
+  /\\frac|\\sqrt|\\vec|\\hat|\\pi|\\sin|\\cos|\\tan|\\log/.test(value);
+
+const splitMathSegments = (value: string) => {
+  const regex = /(\$\$[\s\S]+?\$\$|\$[^$]+?\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g;
+  const parts: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(value))) {
+    if (match.index > last) {
+      parts.push({ type: "text", value: value.slice(last, match.index) });
+    }
+    const raw = match[0];
+    const display = raw.startsWith("$$") || raw.startsWith("\\[");
+    const inner = raw
+      .replace(/^\$\$|\$\$$/g, "")
+      .replace(/^\$|\$$/g, "")
+      .replace(/^\\\[/g, "")
+      .replace(/\\\]$/g, "")
+      .replace(/^\\\(/g, "")
+      .replace(/\\\)$/g, "");
+    parts.push({ type: "math", value: inner, display });
+    last = regex.lastIndex;
+  }
+  if (last < value.length) {
+    parts.push({ type: "text", value: value.slice(last) });
+  }
+  return parts;
+};
+
 const MathText = ({ text }: { text: string }) => {
   const ref = useRef<HTMLSpanElement | null>(null);
   useEffect(() => {
     if (!ref.current) return;
-    const raw = text ?? "";
-    if (raw.includes("$")) {
-      ref.current.textContent = raw;
-      ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
+    const raw = cleanupLatex(text ?? "");
+    const host = ref.current;
+    const parts = splitMathSegments(raw);
+
+    host.innerHTML = "";
+
+    if (!parts.length || (parts.length === 1 && parts[0].type === "text")) {
+      if (!raw) return;
+      if (looksLikeLatex(raw)) {
+        const normalized = balanceBraces(normalizeMathToken(raw));
+        const span = document.createElement("span");
+        span.textContent = `\\(${normalized}\\)`;
+        host.appendChild(span);
+        ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
+      } else {
+        host.textContent = raw;
+      }
       return;
     }
-    const isMathy = /[\^_\u00b7\u00d7=|/]/.test(raw);
-    if (!isMathy) {
-      ref.current.textContent = raw;
-      return;
-    }
-    const normalized = normalizeMathToken(raw);
-    ref.current.textContent = `\(${normalized}\)`;
-    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
+
+    parts.forEach((part) => {
+      const span = document.createElement("span");
+      if (part.type === "math") {
+        const normalized = balanceBraces(normalizeMathToken(part.value));
+        span.textContent = part.display ? `\\[${normalized}\\]` : `\\(${normalized}\\)`;
+      } else {
+        span.textContent = part.value;
+      }
+      host.appendChild(span);
+    });
+
+    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
   }, [text]);
   return <span ref={ref} className="whitespace-pre-wrap" />;
 };
