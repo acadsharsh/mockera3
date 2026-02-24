@@ -85,6 +85,7 @@ const normalizeMathToken = (value: string) => {
   };
 
   let withOps = value
+    .replace(/\s+/g, " ")
     .replace(/\\vec\s*([A-Za-z])/g, "\\vec{$1}")
     .replace(/\\hat\s*([A-Za-z])/g, "\\hat{$1}")
     .replace(/\u00b7/g, "\\cdot")
@@ -135,6 +136,15 @@ const normalizeMathToken = (value: string) => {
     .replace(/(^|[^\\])frac\s*([0-9]+)\s*([A-Za-z]+)/g, "$1\\\\frac{$2}{$3}")
     .replace(/(^|[^\\])frac\s*([A-Za-z]+)\s*([A-Za-z]+)/g, "$1\\\\frac{$2}{$3}")
     .replace(/(^|[^\\])frac\s*([A-Za-z]+)([0-9]+)/g, "$1\\\\frac{$2}{$3}");
+
+  withOps = withOps
+    .replace(/([A-Za-z0-9])\\cdot\\frac\{\\pi\}\{([0-9]+)\}/g, "\\frac{$1\\pi}{$2}")
+    .replace(/\b([0-9]+)\(([^)]+)\)\s*(\\sin|\\cos|\\tan|\\log|\\ln|\\arg)\b/g, "$1^{($2)}$3")
+    .replace(/\b([0-9]+)([A-Za-z])\s*(\\sin|\\cos|\\tan|\\log|\\ln|\\arg)\b/g, "$1^{$2}$3");
+
+  withOps = withOps
+    .replace(/(^|[^\\])\bpi\b/gi, "$1\\pi")
+    .replace(/\\{2,}(?=[A-Za-z])/g, "\\");
 
   const sqrtPattern = /\bsqrt\s*\(([^()]+)\)/g;
   while (sqrtPattern.test(withOps)) {
@@ -199,13 +209,68 @@ const splitMathSegments = (value: string) => {
   return parts;
 };
 
+const splitLooseMathSegments = (
+  value: string
+): Array<{ type: "text" | "math"; value: string; display?: boolean }> => {
+  const parts: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
+  let cursor = 0;
+  let i = 0;
+
+  while (i < value.length) {
+    if (value[i] !== "(") {
+      i += 1;
+      continue;
+    }
+
+    let depth = 0;
+    let j = i;
+    while (j < value.length) {
+      const ch = value[j];
+      if (ch === "(") depth += 1;
+      if (ch === ")") {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+      j += 1;
+    }
+
+    if (depth !== 0) break;
+
+    const candidate = value.slice(i, j + 1);
+    const isMathGroup =
+      /(sin|cos|tan|log|ln|arg|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega|frac|sqrt|[0-9]|[\^*/=])/i.test(
+        candidate
+      );
+
+    if (isMathGroup) {
+      if (i > cursor) {
+        parts.push({ type: "text", value: value.slice(cursor, i) });
+      }
+      parts.push({ type: "math", value: candidate, display: false });
+      cursor = j + 1;
+    }
+
+    i = j + 1;
+  }
+
+  if (cursor < value.length) {
+    parts.push({ type: "text", value: value.slice(cursor) });
+  }
+
+  return parts.some((part) => part.type === "math") ? parts : [{ type: "text" as const, value }];
+};
+
 const MathText = ({ text }: { text: string }) => {
   const ref = useRef<HTMLSpanElement | null>(null);
   useEffect(() => {
     if (!ref.current) return;
     const raw = cleanupLatex(text ?? "");
     const host = ref.current;
-    const parts = splitMathSegments(raw);
+    const explicitParts = splitMathSegments(raw);
+    const parts =
+      !explicitParts.length || (explicitParts.length === 1 && explicitParts[0].type === "text")
+        ? splitLooseMathSegments(raw)
+        : explicitParts;
 
     host.innerHTML = "";
 
