@@ -192,6 +192,84 @@ export async function DELETE(request: Request) {
   return NextResponse.json({ ok: true });
 }
 
+
+export async function PUT(request: Request) {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const payload = (await request.json()) as {
+    testId?: string;
+    title: string;
+    description?: string;
+    tags?: string[];
+    visibility: "Public" | "Private";
+    accessCode?: string;
+    durationMinutes: number;
+    markingCorrect: number;
+    markingIncorrect: number;
+    crops: Array<any>;
+    lockNavigation?: boolean;
+  };
+
+  if (!payload?.testId) {
+    return NextResponse.json({ error: "Missing testId" }, { status: 400 });
+  }
+
+  const ownedTest = await prisma.test.findFirst({
+    where: { id: payload.testId, ownerId: session.user.id },
+    select: { id: true },
+  });
+  if (!ownedTest) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.question.deleteMany({ where: { testId: payload.testId } });
+    return tx.test.update({
+      where: { id: payload.testId },
+      data: {
+        title: payload.title,
+        description: payload.description,
+        tags: payload.tags ?? [],
+        visibility: payload.visibility,
+        accessCode: payload.visibility === "Private" ? payload.accessCode : null,
+        durationMinutes: payload.durationMinutes,
+        markingCorrect: payload.markingCorrect,
+        markingIncorrect: payload.markingIncorrect,
+        lockNavigation: payload.lockNavigation ?? false,
+        questions: {
+          create: payload.crops.map((crop: any) => ({
+            subject: crop.subject,
+            difficulty: crop.difficulty,
+            questionType: crop.questionType ?? "MCQ",
+            correctOption:
+              crop.questionType === "MSQ"
+                ? (crop.correctOptions ?? []).length
+                  ? (crop.correctOptions ?? []).join(",")
+                  : null
+                : crop.questionType === "NUM"
+                ? null
+                : crop.correctOption || null,
+            correctNumeric: crop.questionType === "NUM" ? crop.correctNumeric ?? "" : null,
+            imageUrl: crop.imageDataUrl,
+            cropX: crop.x,
+            cropY: crop.y,
+            cropW: crop.w,
+            cropH: crop.h,
+            prompt: crop.questionText ?? "",
+            options: crop.options ?? [],
+          })),
+        },
+      },
+      include: { questions: true },
+    });
+  });
+
+  return NextResponse.json(mapTest(updated));
+}
+
 export async function PATCH(request: Request) {
   const session = await getSession();
   if (!session?.user?.id) {

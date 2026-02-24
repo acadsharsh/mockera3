@@ -46,6 +46,7 @@ export default function CreatorStudio() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [testDescription, setTestDescription] = useState("");
   const [testTags, setTestTags] = useState<string[]>([]);
+  const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [pdfApi, setPdfApi] = useState<{ getDocument: any } | null>(null);
   const [pageScale, setPageScale] = useState(1.7);
   const [currentPage, setCurrentPage] = useState(1);
@@ -164,6 +165,53 @@ const [isPanning, setIsPanning] = useState(false);
     } catch {
       // ignore corrupted draft
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const testId = params.get("testId");
+    if (!testId) return;
+    setEditingTestId(testId);
+    const loadExisting = async () => {
+      const response = await fetch(`/api/tests?testId=${testId}`);
+      const data = await safeJson<any>(response, null);
+      if (!data) return;
+      setTitle(data.title ?? "");
+      setTestDescription(data.description ?? "");
+      setTestTags(data.tags ?? []);
+      setVisibility(data.visibility ?? "Public");
+      setAccessCode(data.accessCode ?? makeAccessCode());
+      setDurationMinutes(data.durationMinutes ?? 180);
+      setMarkingCorrect(data.markingCorrect ?? 4);
+      setMarkingIncorrect(data.markingIncorrect ?? -1);
+      setLockNavigation(Boolean(data.lockNavigation));
+      const mapped = (data.crops ?? []).map((crop: any) => ({
+        id: crop.id,
+        pageNumber: crop.pageNumber ?? 1,
+        parts: crop.parts ?? 1,
+        x: crop.x ?? 0,
+        y: crop.y ?? 0,
+        w: crop.w ?? 0,
+        h: crop.h ?? 0,
+        subject: crop.subject ?? "Physics",
+        questionType: crop.questionType ?? "MCQ",
+        correctOption: crop.correctOption ?? "",
+        correctOptions: crop.correctOptions ?? [],
+        correctNumeric: crop.correctNumeric ?? "",
+        marks: "+4/-1",
+        difficulty: crop.difficulty ?? "Easy",
+        imageDataUrl: crop.imageDataUrl ?? "",
+        questionText: crop.questionText ?? "",
+        options: crop.options ?? [],
+        hasDiagram: Boolean(crop.imageDataUrl),
+      }));
+      setCropRects(mapped);
+      if (mapped.length > 0) {
+        setActiveCropId(mapped[0].id);
+      }
+    };
+    loadExisting();
   }, []);
 
   useEffect(() => {
@@ -328,9 +376,10 @@ const [isPanning, setIsPanning] = useState(false);
     setIsSelecting(false);
     try {
       const response = await fetch("/api/tests", {
-        method: "POST",
+        method: editingTestId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          testId: editingTestId ?? undefined,
           title,
           visibility,
           accessCode: visibility === "Private" ? accessCode : undefined,

@@ -629,13 +629,12 @@ export default function LibraryClient({
                                 View Analysis
                               </a>
                               {test.ownerId && currentUserId && test.ownerId === currentUserId && (
-                                <button
-                                  onClick={() => openEdit(test)}
+                                <a
                                   className="mt-1 block w-full rounded-lg px-2 py-1 text-left text-white/80 hover:bg-white/10"
-                                  type="button"
+                                  href={`/studio?testId=${test.id}`}
                                 >
-                                  Edit Details
-                                </button>
+                                  Edit in Studio
+                                </a>
                               )}
                               <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/cbt?testId=${test.id}`}>
                                 Start
