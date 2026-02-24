@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
 import { safeJson } from "@/lib/safe-json";
@@ -42,39 +44,6 @@ type Attempt = {
 };
 
 const optionLetters = ["A", "B", "C", "D"] as const;
-
-const ensureMathJax = (() => {
-  let loading: Promise<void> | null = null;
-  return () => {
-    if (typeof window === "undefined") return Promise.resolve();
-    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
-    if (loading) return loading;
-    (window as any).MathJax = {
-      tex: {
-        inlineMath: [
-          ["\\(", "\\)"],
-          ["$", "$"]
-        ],
-        displayMath: [
-          ["$$", "$$"],
-          ["\\[", "\\]"]
-        ],
-        processEscapes: true,
-      },
-      loader: { load: ["[tex]/ams"] },
-      tex2jax: { inlineMath: [["$", "$"], ["\\(", "\\)"]] },
-      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
-    };
-    loading = new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
-      script.async = true;
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
-    return loading;
-  };
-})();
 
 const cleanupLatex = (value: string) =>
   value.replace(/\\\\/g, "\\").replace(/\u00a0/g, " ").trim();
@@ -147,14 +116,26 @@ const MathText = ({ text }: { text: string }) => {
 
     host.innerHTML = "";
 
+    const renderMath = (value: string, displayMode: boolean) => {
+      try {
+        const normalized = balanceBraces(normalizeMathToken(value));
+        return katex.renderToString(normalized, {
+          displayMode,
+          throwOnError: false,
+          strict: false,
+          trust: true,
+        });
+      } catch {
+        return value;
+      }
+    };
+
     if (!parts.length || (parts.length === 1 && parts[0].type === "text")) {
       if (!raw) return;
       if (looksLikeLatex(raw)) {
-        const normalized = balanceBraces(normalizeMathToken(raw));
         const span = document.createElement("span");
-        span.textContent = `\\(${normalized}\\)`;
+        span.innerHTML = renderMath(raw, false);
         host.appendChild(span);
-        ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
       } else {
         host.textContent = raw;
       }
@@ -164,15 +145,12 @@ const MathText = ({ text }: { text: string }) => {
     parts.forEach((part) => {
       const span = document.createElement("span");
       if (part.type === "math") {
-        const normalized = balanceBraces(normalizeMathToken(part.value));
-        span.textContent = part.display ? `\\[${normalized}\\]` : `\\(${normalized}\\)`;
+        span.innerHTML = renderMath(part.value, Boolean(part.display));
       } else {
         span.textContent = part.value;
       }
       host.appendChild(span);
     });
-
-    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
   }, [text]);
   return <span ref={ref} className="whitespace-pre-wrap" />;
 };
