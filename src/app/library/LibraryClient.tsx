@@ -7,7 +7,10 @@ import BroadcastPopup from "@/components/BroadcastPopup";
 type Crop = {
   id: string;
   subject: "Physics" | "Chemistry" | "Maths";
-  correctOption: "A" | "B" | "C" | "D";
+  correctOption: string;
+  correctOptions?: Array<"A" | "B" | "C" | "D">;
+  correctNumeric?: string;
+  questionType?: "MCQ" | "MSQ" | "NUM";
   marks: "+4/-1";
   difficulty: "Easy" | "Moderate" | "Tough";
   imageDataUrl: string;
@@ -111,6 +114,11 @@ export default function LibraryClient({
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [authError, setAuthError] = useState(initialAuthError);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [editTest, setEditTest] = useState<Test | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editTags, setEditTags] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -236,6 +244,56 @@ export default function LibraryClient({
     });
   };
 
+  const missingAnswerCount = (test: Test) => {
+    if (!test.crops?.length) return 0;
+    return test.crops.filter((crop) => {
+      if (crop.questionType === "NUM") {
+        return !crop.correctNumeric || String(crop.correctNumeric).trim() === "";
+      }
+      if (crop.questionType === "MSQ") {
+        const raw = crop.correctOption ?? "";
+        return raw.trim() === "";
+      }
+      return !crop.correctOption || String(crop.correctOption).trim() === "";
+    }).length;
+  };
+
+  const openEdit = (test: Test) => {
+    setEditTest(test);
+    setEditTitle(test.title ?? "");
+    setEditDescription(test.description ?? "");
+    setEditTags((test.tags ?? []).join(", "));
+  };
+
+  const saveEdit = async () => {
+    if (!editTest) return;
+    setSavingEdit(true);
+    try {
+      const response = await fetch("/api/tests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          testId: editTest.id,
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          tags: editTags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+        }),
+      });
+      if (!response.ok) {
+        alert("Update failed. Please try again.");
+        return;
+      }
+      const updated = await response.json();
+      setTests((prev) => prev.map((t) => (t.id == updated.id ? updated : t)));
+      setEditTest(null);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const handleDelete = async (id: string, title: string) => {
     const confirmed = window.confirm(`Delete "${title}"? This cannot be undone.`);
     if (!confirmed) return;
@@ -252,6 +310,61 @@ export default function LibraryClient({
     <div className="min-h-screen bg-[#0f0f10] text-white">
       <GlassRail />
       <BroadcastPopup />
+
+
+      {editTest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Edit test details</h2>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                onClick={() => setEditTest(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <label className="block text-xs text-white/60">Title</label>
+              <input
+                value={editTitle}
+                onChange={(event) => setEditTitle(event.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+              />
+              <label className="block text-xs text-white/60">Description</label>
+              <textarea
+                value={editDescription}
+                onChange={(event) => setEditDescription(event.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+              />
+              <label className="block text-xs text-white/60">Tags (comma separated)</label>
+              <input
+                value={editTags}
+                onChange={(event) => setEditTags(event.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+              />
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/70"
+                onClick={() => setEditTest(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
+                onClick={saveEdit}
+                disabled={savingEdit}
+              >
+                {savingEdit ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 pt-24 pb-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
@@ -366,6 +479,15 @@ export default function LibraryClient({
                               <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/test-analysis?testId=${test.id}`}>
                                 View Analysis
                               </a>
+                              {test.ownerId && currentUserId && test.ownerId === currentUserId && (
+                                <button
+                                  onClick={() => openEdit(test)}
+                                  className="mt-1 block w-full rounded-lg px-2 py-1 text-left text-white/80 hover:bg-white/10"
+                                  type="button"
+                                >
+                                  Edit Details
+                                </button>
+                              )}
                               <a className="block rounded-lg px-2 py-1 hover:bg-white/10" href={`/cbt?testId=${test.id}`}>
                                 Start
                               </a>
@@ -383,6 +505,14 @@ export default function LibraryClient({
                         </div>
                         <h3 className="mt-4 text-lg font-semibold">{test.title}</h3>
                         <p className="mt-2 text-xs text-white/60">{statusLabel}</p>
+                        {test.ownerId && currentUserId && test.ownerId === currentUserId && missingAnswerCount(test) > 0 && (
+                          <p className="mt-2 text-xs text-amber-300">
+                            Answer key missing: {missingAnswerCount(test)} questions.
+                            <a className="underline" href={`/answer-key?testId=${test.id}`}>
+                              Add answers
+                            </a>
+                          </p>
+                        )}
 
                         <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-white/50">
                           <span className="flex items-center gap-1">

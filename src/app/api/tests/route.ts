@@ -201,7 +201,38 @@ export async function PATCH(request: Request) {
   const payload = (await request.json()) as {
     testId?: string;
     entries?: Array<{ index?: number; value: string }>;
+    title?: string;
+    description?: string;
+    tags?: string[];
   };
+
+
+  const wantsMetaUpdate = Boolean(
+    payload?.testId &&
+      (typeof payload.title === "string" ||
+        typeof payload.description === "string" ||
+        Array.isArray(payload.tags))
+  );
+  if (wantsMetaUpdate) {
+    const ownedTest = await prisma.test.findFirst({
+      where: { id: payload.testId, ownerId: session.user.id },
+      select: { id: true },
+    });
+    if (!ownedTest) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const updated = await prisma.test.update({
+      where: { id: payload.testId },
+      data: {
+        title: typeof payload.title === "string" ? payload.title : undefined,
+        description:
+          typeof payload.description === "string" ? payload.description : undefined,
+        tags: Array.isArray(payload.tags) ? payload.tags : undefined,
+      },
+      include: { questions: true },
+    });
+    return NextResponse.json(mapTest(updated));
+  }
 
   if (!payload?.testId || !payload.entries?.length) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
