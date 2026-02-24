@@ -83,7 +83,7 @@ const cleanupLatex = (value: string) =>
     .replace(/[\u2061-\u2064]/g, "")
     .replace(/\\\\/g, "\\")
     .replace(/\u00a0/g, " ")
-    .replace(/\s*\n+\s*/g, " ")
+    .replace(/[\r\n\u2028\u2029]+/g, " ")
     .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
@@ -372,7 +372,7 @@ const MathText = ({ text }: { text: string }) => {
 
     ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
   }, [text]);
-  return <span ref={ref} className="whitespace-pre-wrap" />;
+  return <span ref={ref} className="whitespace-normal break-words" />;
 };
 
 const formatTime = (seconds: number) => {
