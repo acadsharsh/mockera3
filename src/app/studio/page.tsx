@@ -48,6 +48,7 @@ export default function CreatorStudio() {
   const [testTags, setTestTags] = useState<string[]>([]);
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [pdfApi, setPdfApi] = useState<{ getDocument: any } | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pageScale, setPageScale] = useState(1.7);
   const [currentPage, setCurrentPage] = useState(1);
   const [cropRects, setCropRects] = useState<CropMeta[]>([]);
@@ -162,6 +163,7 @@ const [isPanning, setIsPanning] = useState(false);
       setCurrentPage(parsed.currentPage ?? 1);
       setPageScale(parsed.pageScale ?? 1.7);
       setCropRects(parsed.cropRects ?? []);
+      setPdfUrl(parsed.pdfUrl ?? null);
     } catch {
       // ignore corrupted draft
     }
@@ -186,6 +188,10 @@ const [isPanning, setIsPanning] = useState(false);
       setMarkingCorrect(data.markingCorrect ?? 4);
       setMarkingIncorrect(data.markingIncorrect ?? -1);
       setLockNavigation(Boolean(data.lockNavigation));
+      setPdfUrl(data.pdfUrl ?? null);
+      if (data.pdfUrl) {
+        loadPdfFromUrl(data.pdfUrl);
+      }
       const mapped = (data.crops ?? []).map((crop: any) => ({
         id: crop.id,
         pageNumber: crop.pageNumber ?? 1,
@@ -235,6 +241,7 @@ const [isPanning, setIsPanning] = useState(false);
         currentPage,
         pageScale,
         cropRects,
+        pdfUrl,
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
     }, 600);
@@ -388,6 +395,7 @@ const [isPanning, setIsPanning] = useState(false);
           markingIncorrect,
           description: testDescription,
           tags: testTags,
+          pdfUrl: pdfUrl ?? undefined,
           crops: cropRects,
           lockNavigation,
         }),
@@ -546,6 +554,29 @@ const [isPanning, setIsPanning] = useState(false);
     pendingFocusIdRef.current = null;
   }, [currentPage, cropRects]);
 
+  const loadPdfFromUrl = useCallback(async (url: string) => {
+    if (!pdfApi) return;
+    const doc = await pdfApi.getDocument(url).promise;
+    setPdfDoc(doc);
+    setCurrentPage(1);
+  }, [pdfApi]);
+
+  const uploadPdfToCloud = useCallback(async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/upload/pdf", { method: "POST", body: formData });
+    const data = await safeJson<{ url?: string }>(response, {} as any);
+    if (data?.url) {
+      setPdfUrl(data.url);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pdfApi && pdfUrl && !pdfDoc) {
+      loadPdfFromUrl(pdfUrl);
+    }
+  }, [pdfApi, pdfUrl, pdfDoc, loadPdfFromUrl]);
+
   const handleUpload = async (file: File | null) => {
     if (!file) {
       return;
@@ -561,6 +592,7 @@ const [isPanning, setIsPanning] = useState(false);
     setCurrentPage(1);
     setCropRects([]);
     setActiveCropId(null);
+    uploadPdfToCloud(file);
   };
 
   const startResize = (

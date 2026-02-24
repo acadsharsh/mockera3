@@ -32,6 +32,7 @@ const mapTest = (test: any) => ({
   title: test.title,
   description: test.description ?? "",
   tags: test.tags ?? [],
+  pdfUrl: test.pdfUrl ?? undefined,
   visibility: test.visibility as "Public" | "Private",
   hidden: Boolean(test.hidden),
   ownerId: test.ownerId,
@@ -114,6 +115,7 @@ export async function POST(request: Request) {
     title: string;
     description?: string;
     tags?: string[];
+    pdfUrl?: string;
     visibility: "Public" | "Private";
     accessCode?: string;
     durationMinutes: number;
@@ -128,6 +130,7 @@ export async function POST(request: Request) {
       title: payload.title,
       description: payload.description ?? null,
       tags: payload.tags ?? [],
+      pdfUrl: payload.pdfUrl ?? null,
       visibility: payload.visibility,
       accessCode: payload.visibility === "Private" ? payload.accessCode : null,
       durationMinutes: payload.durationMinutes,
@@ -204,6 +207,7 @@ export async function PUT(request: Request) {
     title: string;
     description?: string;
     tags?: string[];
+    pdfUrl?: string;
     visibility: "Public" | "Private";
     accessCode?: string;
     durationMinutes: number;
@@ -233,6 +237,7 @@ export async function PUT(request: Request) {
         title: payload.title,
         description: payload.description,
         tags: payload.tags ?? [],
+        pdfUrl: payload.pdfUrl ?? null,
         visibility: payload.visibility,
         accessCode: payload.visibility === "Private" ? payload.accessCode : null,
         durationMinutes: payload.durationMinutes,
