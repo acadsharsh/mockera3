@@ -83,6 +83,8 @@ const cleanupLatex = (value: string) =>
     .replace(/[\u2061-\u2064]/g, "")
     .replace(/\\\\/g, "\\")
     .replace(/\u00a0/g, " ")
+    .replace(/\s*\n+\s*/g, " ")
+    .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
     .trim();
