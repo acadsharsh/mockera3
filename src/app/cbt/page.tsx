@@ -59,7 +59,7 @@ const ensureMathJax = (() => {
     };
     loading = new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js";
+      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js";
       script.async = true;
       script.onload = () => resolve();
       document.head.appendChild(script);
