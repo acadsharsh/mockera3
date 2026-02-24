@@ -70,37 +70,77 @@ const ensureMathJax = (() => {
 
 const cleanupLatex = (value: string) =>
   value
-    .normalize("NFKD")
-    .replace(/[\u200B-\u200D\u2060-\u2064\uFEFF]/g, "")
+    .normalize("NFKC")
+    .replace(/\p{Cf}/gu, "")
     .replace(/\\\\/g, "\\")
     .replace(/\u00a0/g, " ")
+    .replace(/\u2212/g, "-")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
     .trim();
 
 const normalizeMathToken = (value: string) => {
+  const collapseSpacedToken = (source: string, token: string) => {
+    const pattern = token.split("").join("[\\s\\u00b7\\u22c5\\u2219\\u2022]*");
+    return source.replace(new RegExp(`\\b${pattern}\\b`, "gi"), token);
+  };
+
   let withOps = value
     .replace(/\\vec\s*([A-Za-z])/g, "\\vec{$1}")
     .replace(/\\hat\s*([A-Za-z])/g, "\\hat{$1}")
     .replace(/\u00b7/g, "\\cdot")
     .replace(/\u22c5/g, "\\cdot")
+    .replace(/[\u2219\u22c5\u2022]/g, "\\cdot")
     .replace(/\u00d7/g, "\\times")
+    .replace(/\u00f7/g, "/")
     .replace(/\*/g, "\\cdot ")
     .replace(/\\times(?=[A-Za-z0-9])/g, "\\times ")
     .replace(/\\cdot(?=[A-Za-z0-9])/g, "\\cdot ")
-    .replace(/\b(sin|cos|tan|log|ln|arg)\s*\(/g, "\\\\$1(");
+    .replace(/(^|[^\\])\b(cdot|times)\b/gi, "$1\\\\$2");
+
+  [
+    "frac",
+    "sqrt",
+    "sin",
+    "cos",
+    "tan",
+    "log",
+    "ln",
+    "arg",
+    "pi",
+    "alpha",
+    "beta",
+    "gamma",
+    "theta",
+    "lambda",
+    "mu",
+    "eta",
+    "phi",
+    "psi",
+    "omega",
+  ].forEach((token) => {
+    withOps = collapseSpacedToken(withOps, token);
+  });
 
   withOps = withOps
+    .replace(/(^|[^\\])\b(sin|cos|tan|log|ln|arg)\s*\(/gi, "$1\\\\$2(")
+    .replace(
+      /(^|[^\\])\b(alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega|pi)\b/gi,
+      "$1\\\\$2"
+    );
+
+  withOps = withOps
+    .replace(/(^|[^\\])frac\s*\{\s*([^{}]+)\s*\}\s*\{\s*([^{}]+)\s*\}/gi, "$1\\\\frac{$2}{$3}")
     .replace(/(^|[^\\])frac\s*pi\s*([0-9]+)/gi, "$1\\\\frac{\\\\pi}{$2}")
     .replace(/(^|[^\\])frac\s*([A-Za-z]+)\s*([0-9]+)/g, "$1\\\\frac{$2}{$3}")
     .replace(/(^|[^\\])frac\s*([0-9]+)\s*([A-Za-z]+)/g, "$1\\\\frac{$2}{$3}")
     .replace(/(^|[^\\])frac\s*([A-Za-z]+)\s*([A-Za-z]+)/g, "$1\\\\frac{$2}{$3}")
     .replace(/(^|[^\\])frac\s*([A-Za-z]+)([0-9]+)/g, "$1\\\\frac{$2}{$3}");
 
-  withOps = withOps.replace(/\bpi\b/g, "\\pi");
-
   const sqrtPattern = /\bsqrt\s*\(([^()]+)\)/g;
   while (sqrtPattern.test(withOps)) {
     withOps = withOps.replace(sqrtPattern, "\\sqrt{$1}");
   }
+
 
   return withOps.replace(
     /(\([^)]+\)|\[[^\]]+\]|\{[^}]+\}|[A-Za-z0-9^]+)\s*\/\s*(\([^)]+\)|\[[^\]]+\]|\{[^}]+\}|[A-Za-z0-9^]+)/g,

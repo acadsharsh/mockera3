@@ -629,11 +629,12 @@ export default function CreatorStudio() {
 }
 
 Rules (MathJax-friendly):
-- Use LaTeX commands with backslashes: \pi, \sin, \cos, \tan, \log.
-- Use fractions as \frac{a}{b} (do NOT use a/b).
-- Use vectors as \vec{a}, hats as \hat{a}.
+- Use LaTeX commands with backslashes: \\pi, \\sin, \\cos, \\tan, \\log.
+- Use fractions as \\frac{a}{b} (do NOT use a/b or fracpi3).
+- Use vectors as \\vec{a}, hats as \\hat{a}.
 - Use exponents as x^2, (a+b)^2, 10^{-3}.
-- Use \times for multiplication, \cdot for dot product.
+- Use \\times for multiplication, \\cdot for dot product.
+- Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
 - If a question has a diagram, set hasDiagram: true.
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
