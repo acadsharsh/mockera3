@@ -630,8 +630,11 @@ export default function CreatorStudio() {
   ]
 }
 
-Rules:
-- Keep math in plain text (use ^ for exponents).
+Rules (MathJax-friendly):
+- Use LaTeX commands: \pi, \sin, \cos, \tan, \log, etc.
+- Use fractions as \frac{a}{b} (do NOT use a/b).
+- Use exponents as x^2, (a+b)^2, 10^{-3}.
+- Use \times for multiplication, \cdot for dot product.
 - If a question has a diagram, set hasDiagram: true.
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
