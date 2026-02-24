@@ -1,8 +1,6 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import katex from "katex";
-import "katex/dist/katex.min.css";
 import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
 import { safeJson } from "@/lib/safe-json";
@@ -45,17 +43,49 @@ type Attempt = {
 
 const optionLetters = ["A", "B", "C", "D"] as const;
 
+const ensureMathJax = (() => {
+  let loading: Promise<void> | null = null;
+  return () => {
+    if (typeof window === "undefined") return Promise.resolve();
+    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
+    if (loading) return loading;
+    (window as any).MathJax = {
+      tex: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]],
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+        processEscapes: true,
+      },
+      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
+    };
+    loading = new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js";
+      script.async = true;
+      script.onload = () => resolve();
+      document.head.appendChild(script);
+    });
+    return loading;
+  };
+})();
+
 const cleanupLatex = (value: string) =>
   value.replace(/\\\\/g, "\\").replace(/\u00a0/g, " ").trim();
 
 const normalizeMathToken = (value: string) => {
-  const withOps = value
+  let withOps = value
     .replace(/\\vec\s*([A-Za-z])/g, "\\vec{$1}")
     .replace(/\\hat\s*([A-Za-z])/g, "\\hat{$1}")
     .replace(/\u00b7/g, "\\cdot")
     .replace(/\u00d7/g, "\\times")
     .replace(/\\times(?=[A-Za-z0-9])/g, "\\times ")
-    .replace(/\\cdot(?=[A-Za-z0-9])/g, "\\cdot ");
+    .replace(/\\cdot(?=[A-Za-z0-9])/g, "\\cdot ")
+    .replace(/\bpi\b/g, "\\pi")
+    .replace(/\b(sin|cos|tan|log|ln|arg)\s*\(/g, "\\\\$1(");
+
+  const sqrtPattern = /\bsqrt\s*\(([^()]+)\)/g;
+  while (sqrtPattern.test(withOps)) {
+    withOps = withOps.replace(sqrtPattern, "\\\\sqrt{$1}");
+  }
 
   return withOps.replace(
     /(\([^)]+\)|\[[^\]]+\]|\{[^}]+\}|[A-Za-z0-9^]+)\s*\/\s*(\([^)]+\)|\[[^\]]+\]|\{[^}]+\}|[A-Za-z0-9^]+)/g,
@@ -77,10 +107,13 @@ const balanceBraces = (value: string) => {
 
 const looksLikeLatex = (value: string) =>
   /\\[A-Za-z]+|[_^]/.test(value) ||
-  /\\frac|\\sqrt|\\vec|\\hat|\\pi|\\sin|\\cos|\\tan|\\log/.test(value);
+  /\\frac|\\sqrt|\\vec|\\hat|\\pi|\\sin|\\cos|\\tan|\\log/.test(value) ||
+  /\b(sqrt|sin|cos|tan|log|ln|arg|pi)\b/.test(value);
 
 const hasPlainWords = (value: string) => {
-  const stripped = value.replace(/\\[A-Za-z]+/g, "");
+  const stripped = value
+    .replace(/\[A-Za-z]+/g, "")
+    .replace(/\b(sqrt|sin|cos|tan|log|ln|arg|pi)\b/gi, "");
   return /[A-Za-z]{3,}/.test(stripped);
 };
 
@@ -121,26 +154,14 @@ const MathText = ({ text }: { text: string }) => {
 
     host.innerHTML = "";
 
-    const renderMath = (value: string, displayMode: boolean) => {
-      try {
-        const normalized = balanceBraces(normalizeMathToken(value));
-        return katex.renderToString(normalized, {
-          displayMode,
-          throwOnError: false,
-          strict: false,
-          trust: true,
-        });
-      } catch {
-        return value;
-      }
-    };
-
     if (!parts.length || (parts.length === 1 && parts[0].type === "text")) {
       if (!raw) return;
       if (looksLikeLatex(raw) && !hasPlainWords(raw)) {
+        const normalized = balanceBraces(normalizeMathToken(raw));
         const span = document.createElement("span");
-        span.innerHTML = renderMath(raw, false);
+        span.textContent = `\\(${normalized}\\)`;
         host.appendChild(span);
+        ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
       } else {
         host.textContent = raw;
       }
@@ -150,12 +171,15 @@ const MathText = ({ text }: { text: string }) => {
     parts.forEach((part) => {
       const span = document.createElement("span");
       if (part.type === "math") {
-        span.innerHTML = renderMath(part.value, Boolean(part.display));
+        const normalized = balanceBraces(normalizeMathToken(part.value));
+        span.textContent = part.display ? `\\[${normalized}\\]` : `\\(${normalized}\\)`;
       } else {
         span.textContent = part.value;
       }
       host.appendChild(span);
     });
+
+    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
   }, [text]);
   return <span ref={ref} className="whitespace-pre-wrap" />;
 };
