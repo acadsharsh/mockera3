@@ -694,7 +694,7 @@ export default function CBT() {
                   return (
                     <label
                       key={letter}
-                      className={`flex items-center gap-2 text-sm ${
+                      className={`flex items-center gap-3 text-base ${
                         solutionMode && isCorrect ? "font-semibold text-emerald-700" : "text-slate-700"
                       }`}
                     >
@@ -744,7 +744,7 @@ export default function CBT() {
                         }}
                         disabled={solutionMode}
                       />
-                      <span>
+                      <span className="text-[17px] leading-7">
                         <MathText text={option} />
                         {solutionMode && isCorrect ? " (Correct)" : ""}
                       </span>
