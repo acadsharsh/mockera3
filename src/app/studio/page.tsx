@@ -94,12 +94,6 @@ export default function CreatorStudio() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
-  const [extractStatus, setExtractStatus] = useState<{
-    message: string;
-    tone: "success" | "error" | "info";
-  } | null>(null);
-  const [extracting, setExtracting] = useState(false);
-
   const [promptCopied, setPromptCopied] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
@@ -554,7 +548,6 @@ export default function CreatorStudio() {
 
   const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
 
-
   const handleJsonImport = () => {
     try {
       const parsed = JSON.parse(jsonImportText || "{}") as {
@@ -645,7 +638,6 @@ Rules (MathJax-friendly):
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
 
-
   const handleCopyJsonPrompt = async () => {
     try {
       await navigator.clipboard.writeText(jsonPrompt);
@@ -656,49 +648,6 @@ Rules (MathJax-friendly):
       setTimeout(() => setPromptCopied(false), 1500);
     }
   };
-
-
-  const extractFromBook = async () => {
-    if (!pdfApi || !uploadedFile) {
-      setExtractStatus({ message: "Upload a PDF first.", tone: "error" });
-      return;
-    }
-    setExtracting(true);
-    setExtractStatus({ message: "Extracting examples/questions...", tone: "info" });
-    try {
-      const arrayBuffer = await uploadedFile.arrayBuffer();
-      const doc = await pdfApi.getDocument({ data: arrayBuffer }).promise;
-      const blocks: Array<{ page: number; lines: string[] }> = [];
-      const startPattern = /^(Example|Solved Example|Illustration|Exercise|Question|Q\.?|\d+\.)/i;
-      for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
-        const page = await doc.getPage(pageNumber);
-        const content = await page.getTextContent();
-        const items = content.items || [];
-        const lineMap = new Map<number, Array<{ x: number; str: string }>>();
-        items.forEach((item: any) => {
-          const str = item.str || "";
-          if (!str.trim()) return;
-          const x = item.transform?.[4] ?? 0;
-          const y = Math.round(item.transform?.[5] ?? 0);
-          if (!lineMap.has(y)) lineMap.set(y, []);
-          lineMap.get(y)!.push({ x, str });
-        });
-        const lines = Array.from(lineMap.entries())
-          .sort((a, b) => b[0] - a[0])
-          .map(([, parts]) =>
-            parts
-              .sort((a, b) => a.x - b.x)
-              .map((p) => p.str)
-              .join(" ")
-              .replace(/\s+/g, " ")
-              .trim()
-          )
-          .filter(Boolean);
-
-        let current: { page: number; lines: string[] } | null = null;
-        const pushCurrent = () => {
-          if (current && current.lines.length) blocks.push(current);
-        };
         lines.forEach((line) => {
           if (startPattern.test(line)) {
             pushCurrent();
@@ -1183,7 +1132,6 @@ Rules (MathJax-friendly):
     }
   };
 
-
   const handlePointerUp = () => {
     if (resizeHandle) {
       setResizeHandle(null);
@@ -1469,14 +1417,6 @@ Rules (MathJax-friendly):
             </button>
             <button
               type="button"
-              onClick={extractFromBook}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
-              disabled={extracting}
-            >
-              {extracting ? "Extracting..." : "Extract from Book"}
-            </button>
-            <button
-              type="button"
               onClick={() => setShowSettings(true)}
               className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
             >
@@ -1491,21 +1431,6 @@ Rules (MathJax-friendly):
             </button>
           </div>
         </header>
-
-        {extractStatus && (
-          <div
-            className={`mt-3 flex items-center justify-between rounded-xl border px-4 py-3 text-xs ${
-              extractStatus.tone === "success"
-                ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-                : extractStatus.tone === "error"
-                ? "border-rose-400/30 bg-rose-500/10 text-rose-200"
-                : "border-sky-400/30 bg-sky-500/10 text-sky-200"
-            }`}
-          >
-            <span>{extractStatus.message}</span>
-            <button
-              type="button"
-              onClick={() => setExtractStatus(null)}
               className="rounded-md border border-white/10 px-2 py-1 text-[10px] text-white/70 transition hover:border-white/30"
             >
               Dismiss
@@ -2016,7 +1941,6 @@ Rules (MathJax-friendly):
           </div>
         </div>
       )}
-
 
       {showJsonImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
