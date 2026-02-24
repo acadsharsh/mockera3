@@ -271,6 +271,91 @@ export default function LibraryClient({
     }, {} as Record<string, Attempt[]>);
   }, [attempts]);
 
+  const filteredTests = useMemo(() => {
+    return tests.filter((test) => {
+      if (activeTab === "Public" && test.visibility !== "Public") {
+        return false;
+      }
+      if (activeTab === "My Batches" && test.visibility !== "Private") {
+        return false;
+      }
+      if (activeTab === "Starred" && !starred.has(test.id)) {
+        return false;
+      }
+      if (subjectParam) {
+        return test.crops?.some((crop) => crop.subject === subjectParam);
+      }
+      if (filterSubject !== "All") {
+        if (!test.crops?.some((crop) => crop.subject === filterSubject)) {
+          return false;
+        }
+      }
+      if (filterDifficulty !== "All") {
+        if (!test.crops?.some((crop) => crop.difficulty === filterDifficulty)) {
+          return false;
+        }
+      }
+      const stats = testStats[test.id];
+      if (minAttempts > 0 && (stats?.attempts ?? 0) < minAttempts) {
+        return false;
+      }
+      if (maxWrongRate < 100 && (stats?.wrongRate ?? 0) > maxWrongRate) {
+        return false;
+      }
+      if (maxAvgMinutes > 0 && (stats?.avgTime ?? 0) > maxAvgMinutes * 60) {
+        return false;
+      }
+      if (lastAttemptDays > 0) {
+        const last = stats?.lastAttemptAt;
+        if (!last) {
+          return false;
+        }
+        const windowMs = lastAttemptDays * 24 * 60 * 60 * 1000;
+        if (Date.now() - last > windowMs) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [
+    tests,
+    activeTab,
+    starred,
+    subjectParam,
+    filterSubject,
+    filterDifficulty,
+    minAttempts,
+    maxWrongRate,
+    maxAvgMinutes,
+    lastAttemptDays,
+    testStats,
+  ]);
+
+  const searchedTests = useMemo(() => {
+    if (!search.trim()) {
+      return filteredTests;
+    }
+    return filteredTests
+      .map((test) => ({
+        test,
+        score: fuzzyScore(
+          [test.title, test.description ?? "", (test.tags ?? []).join(" ")].join(" "),
+          search
+        ),
+      }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((item) => item.test);
+  }, [filteredTests, search]);
+
+  const attemptsByTest = useMemo(() => {
+    return attempts.reduce((acc, attempt) => {
+      acc[attempt.testId] = acc[attempt.testId] || [];
+      acc[attempt.testId].push(attempt);
+      return acc;
+    }, {} as Record<string, Attempt[]>);
+  }, [attempts]);
+
   const testStats = useMemo(() => {
     const stats: Record<
       string,
