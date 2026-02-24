@@ -71,12 +71,16 @@ const ensureMathJax = (() => {
 const cleanupLatex = (value: string) =>
   value
     .normalize("NFKC")
+    // Normalize math alphanumeric symbols (e.g. \u001d45b, \u001d453) to ASCII.
+    .replace(/[\u{1D400}-\u{1D7FF}]/gu, (ch) => ch.normalize("NFKC"))
     // Recover common JSON escape fallout from pasted LaTeX (\frac, \times, \beta).
     .replace(/\u0008/g, "\\b")
     .replace(/\u0009/g, "\\t")
     .replace(/\u000c/g, "\\f")
     .replace(/[\u0000-\u0007\u000b\u000e-\u001f]/g, "")
+    .replace(/\p{Mn}/gu, "")
     .replace(/\p{Cf}/gu, "")
+    .replace(/[\u2061-\u2064]/g, "")
     .replace(/\\\\/g, "\\")
     .replace(/\u00a0/g, " ")
     .replace(/\u2212/g, "-")
