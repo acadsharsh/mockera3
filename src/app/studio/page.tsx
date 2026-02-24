@@ -103,7 +103,8 @@ export default function CreatorStudio() {
     h: number;
   } | null>(null);
   const [resizeHandle, setResizeHandle] = useState<"nw" | "ne" | "sw" | "se" | null>(null);
-  const cropTool: "rect" = "rect";
+  const [cropTool, setCropTool] = useState<"rect" | "hand">("rect");
+const [isPanning, setIsPanning] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -122,6 +123,7 @@ export default function CreatorStudio() {
   const prevPageRef = useRef<number>(currentPage);
   const prevActiveIdRef = useRef<string | null>(activeCropId);
   const draftTimerRef = useRef<number | null>(null);
+  const panStartRef = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -252,6 +254,51 @@ export default function CreatorStudio() {
       })
     );
   }, [lastSubject, lastDifficulty, markingCorrect, markingIncorrect]);
+
+  const updateZoom = useCallback((value: number) => {
+    if (!Number.isFinite(value)) return;
+    setPageScale(Math.max(0.2, value));
+  }, []);
+
+  const handleViewerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (cropTool !== "hand") return;
+    const el = viewerRef.current;
+    if (!el) return;
+    event.preventDefault();
+    setIsPanning(true);
+    panStartRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      left: el.scrollLeft,
+      top: el.scrollTop,
+    };
+    try {
+      el.setPointerCapture(event.pointerId);
+    } catch {}
+  }, [cropTool]);
+
+  const handleViewerPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isPanning || cropTool !== "hand") return;
+    const el = viewerRef.current;
+    const start = panStartRef.current;
+    if (!el || !start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    el.scrollLeft = start.left - dx;
+    el.scrollTop = start.top - dy;
+  }, [isPanning, cropTool]);
+
+  const handleViewerPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (cropTool !== "hand") return;
+    setIsPanning(false);
+    panStartRef.current = null;
+    const el = viewerRef.current;
+    if (el) {
+      try {
+        el.releasePointerCapture(event.pointerId);
+      } catch {}
+    }
+  }, [cropTool]);
 
   const hasAnswerKey = useCallback(() => {
     return cropRects.some((crop) => {
@@ -1478,11 +1525,21 @@ Rules (MathJax-friendly):
                 <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1 text-[11px]">
                   <button
                     type="button"
+                    onClick={() => setCropTool("rect")}
                     className={`rounded-md px-2 py-1 ${
                       cropTool === "rect" ? "bg-white text-black" : "text-white/70 hover:text-white"
                     }`}
                   >
                     Rect
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCropTool("hand")}
+                    className={`rounded-md px-2 py-1 ${
+                      cropTool === "hand" ? "bg-white text-black" : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    Hand
                   </button>
                 </div>
                 <button
@@ -1499,32 +1556,46 @@ Rules (MathJax-friendly):
                 >
                   &gt;
                 </button>
-                  <label className="flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1 text-xs">
+                  <div className="flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1 text-xs">
                     <span>Zoom</span>
                     <input
                       type="range"
-                      min="0.8"
-                      max="2.4"
+                      min="0.5"
+                      max="4"
                       step="0.1"
-                      value={pageScale}
-                      onChange={(event) => setPageScale(Number(event.target.value))}
+                      value={Math.min(pageScale, 4)}
+                      onChange={(event) => updateZoom(Number(event.target.value))}
                     />
-                  </label>
+                    <input
+                      type="number"
+                      min={0.2}
+                      step={0.1}
+                      value={Number.isFinite(pageScale) ? pageScale : 1}
+                      onChange={(event) => updateZoom(Number(event.target.value))}
+                      className="w-16 bg-transparent text-right text-white outline-none"
+                    />
+                  </div>
               </div>
             </div>
 
             <div
               ref={viewerRef}
-              className="relative mt-4 flex max-h-[96vh] justify-center overflow-auto rounded-2xl bg-[#0c0c0e] p-1"
+              className={`relative mt-4 flex max-h-[96vh] justify-center overflow-auto rounded-2xl bg-[#0c0c0e] p-1 ${
+                cropTool === "hand" ? (isPanning ? "cursor-grabbing" : "cursor-grab") : ""
+              }`}
+              onPointerDown={handleViewerPointerDown}
+              onPointerMove={handleViewerPointerMove}
+              onPointerUp={handleViewerPointerUp}
+              onPointerLeave={handleViewerPointerUp}
             >
               <div className="relative rounded-2xl bg-white p-3 shadow-xl">
                 <canvas ref={canvasRef} className="rounded-2xl" />
                 <div
                   ref={overlayRef}
-                  className="absolute left-3 top-3 cursor-crosshair"
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
+                  className={`absolute left-3 top-3 ${cropTool === "hand" ? "cursor-grab" : "cursor-crosshair"}`}
+                  onPointerDown={cropTool === "rect" ? handlePointerDown : undefined}
+                  onPointerMove={cropTool === "rect" ? handlePointerMove : undefined}
+                  onPointerUp={cropTool === "rect" ? handlePointerUp : undefined}
                 >
                   <div className="absolute inset-0 h-full w-full" />
                   {(draftRect || activeCrop) && (
