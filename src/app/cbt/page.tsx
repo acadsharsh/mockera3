@@ -73,18 +73,27 @@ const cleanupLatex = (value: string) =>
 
 const normalizeMathToken = (value: string) => {
   let withOps = value
-    .replace(/\\vec\s*([A-Za-z])/g, "\\vec{$1}")
-    .replace(/\\hat\s*([A-Za-z])/g, "\\hat{$1}")
+    .replace(/\vec\s*([A-Za-z])/g, "\\vec{$1}")
+    .replace(/\hat\s*([A-Za-z])/g, "\\hat{$1}")
     .replace(/\u00b7/g, "\\cdot")
     .replace(/\u00d7/g, "\\times")
+    .replace(/\*/g, "\\cdot ")
     .replace(/\\times(?=[A-Za-z0-9])/g, "\\times ")
     .replace(/\\cdot(?=[A-Za-z0-9])/g, "\\cdot ")
-    .replace(/\bpi\b/g, "\\pi")
     .replace(/\b(sin|cos|tan|log|ln|arg)\s*\(/g, "\\\\$1(");
+
+  withOps = withOps
+    .replace(/(?<!\\)frac\s*([A-Za-z]+)\s*([0-9]+)/g, "\\frac{$1}{$2}")
+    .replace(/(?<!\\)frac\s*([0-9]+)\s*([A-Za-z]+)/g, "\\frac{$1}{$2}")
+    .replace(/(?<!\\)frac\s*([A-Za-z]+)\s*([A-Za-z]+)/g, "\\frac{$1}{$2}")
+    .replace(/(?<!\\)frac\s*([A-Za-z]+)([0-9]+)/g, "\\frac{$1}{$2}")
+    .replace(/(?<!\\)frac\s*\\pi\s*([0-9]+)/g, "\\frac{\\pi}{$1}");
+
+  withOps = withOps.replace(/\bpi\b/g, "\\pi");
 
   const sqrtPattern = /\bsqrt\s*\(([^()]+)\)/g;
   while (sqrtPattern.test(withOps)) {
-    withOps = withOps.replace(sqrtPattern, "\\\\sqrt{$1}");
+    withOps = withOps.replace(sqrtPattern, "\\sqrt{$1}");
   }
 
   return withOps.replace(
@@ -112,7 +121,7 @@ const looksLikeLatex = (value: string) =>
 
 const hasPlainWords = (value: string) => {
   const stripped = value
-    .replace(/\[A-Za-z]+/g, "")
+    .replace(/\\[A-Za-z]+/g, "")
     .replace(/\b(sqrt|sin|cos|tan|log|ln|arg|pi)\b/gi, "");
   return /[A-Za-z]{3,}/.test(stripped);
 };
