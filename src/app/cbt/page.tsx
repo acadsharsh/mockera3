@@ -71,6 +71,11 @@ const ensureMathJax = (() => {
 const cleanupLatex = (value: string) =>
   value
     .normalize("NFKC")
+    // Recover common JSON escape fallout from pasted LaTeX (\frac, \times, \beta).
+    .replace(/\u0008/g, "\\b")
+    .replace(/\u0009/g, "\\t")
+    .replace(/\u000c/g, "\\f")
+    .replace(/[\u0000-\u0007\u000b\u000e-\u001f]/g, "")
     .replace(/\p{Cf}/gu, "")
     .replace(/\\\\/g, "\\")
     .replace(/\u00a0/g, " ")
@@ -182,6 +187,31 @@ const hasPlainWords = (value: string) => {
   return /[A-Za-z]{3,}/.test(stripped);
 };
 
+const isMathTokenWord = (word: string) => {
+  const lowered = word.toLowerCase();
+  if (
+    /^(sin|cos|tan|log|ln|arg|sqrt|frac|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega|vec|hat|times|cdot)$/.test(
+      lowered
+    )
+  ) {
+    return true;
+  }
+  return /^(?:frac|sqrt|sin|cos|tan|log|ln|arg|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega)+$/.test(
+    lowered
+  );
+};
+
+const isMathDominant = (value: string) => {
+  const words = value.match(/[A-Za-z]{3,}/g) ?? [];
+  const plainWords = words.filter((word) => !isMathTokenWord(word));
+  const hasOps = /[\^_=+\-*/]|[0-9]/.test(value);
+  const hasMathNames =
+    /\\[A-Za-z]+|\b(sin|cos|tan|log|ln|arg|sqrt|frac|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega)\b/i.test(
+      value
+    );
+  return (hasOps || hasMathNames) && plainWords.length <= 2;
+};
+
 const splitMathSegments = (value: string) => {
   const regex = /(\$\$[\s\S]+?\$\$|\$[^$]+?\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g;
   const parts: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
@@ -260,31 +290,64 @@ const splitLooseMathSegments = (
   return parts.some((part) => part.type === "math") ? parts : [{ type: "text" as const, value }];
 };
 
+const splitInlineMathSegments = (
+  value: string
+): Array<{ type: "text" | "math"; value: string; display?: boolean }> => {
+  const regex =
+    /((?:[A-Za-z0-9\\]+(?:\s*[\^_=+\-*/]\s*[A-Za-z0-9\\(){}\[\]]+)+)|(?:\b(?:sin|cos|tan|log|ln|arg)\s*\([^)]*\)))/g;
+  const parts: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(value))) {
+    const candidate = match[0];
+    if (!candidate || !looksLikeLatex(candidate)) {
+      continue;
+    }
+    if (match.index > last) {
+      parts.push({ type: "text", value: value.slice(last, match.index) });
+    }
+    parts.push({ type: "math", value: candidate.trim(), display: false });
+    last = regex.lastIndex;
+  }
+  if (last < value.length) {
+    parts.push({ type: "text", value: value.slice(last) });
+  }
+  return parts.length ? parts : [{ type: "text", value }];
+};
+
 const MathText = ({ text }: { text: string }) => {
   const ref = useRef<HTMLSpanElement | null>(null);
   useEffect(() => {
     if (!ref.current) return;
     const raw = cleanupLatex(text ?? "");
     const host = ref.current;
-    const explicitParts = splitMathSegments(raw);
-    const parts =
-      !explicitParts.length || (explicitParts.length === 1 && explicitParts[0].type === "text")
-        ? splitLooseMathSegments(raw)
-        : explicitParts;
 
     host.innerHTML = "";
 
+    const explicitParts = splitMathSegments(raw);
+    const hasExplicitMath = !(
+      !explicitParts.length ||
+      (explicitParts.length === 1 && explicitParts[0].type === "text")
+    );
+
+    // Formula-dominant strings should be rendered as a single math expression.
+    if (!hasExplicitMath && looksLikeLatex(raw) && (isMathDominant(raw) || !hasPlainWords(raw))) {
+      const normalized = balanceBraces(normalizeMathToken(raw));
+      const span = document.createElement("span");
+      span.textContent = `\\(${normalized}\\)`;
+      host.appendChild(span);
+      ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
+      return;
+    }
+
+    const baseParts = hasExplicitMath ? explicitParts : splitLooseMathSegments(raw);
+    const parts = hasExplicitMath
+      ? baseParts
+      : baseParts.flatMap((part) => (part.type === "text" ? splitInlineMathSegments(part.value) : [part]));
+
     if (!parts.length || (parts.length === 1 && parts[0].type === "text")) {
       if (!raw) return;
-      if (looksLikeLatex(raw) && !hasPlainWords(raw)) {
-        const normalized = balanceBraces(normalizeMathToken(raw));
-        const span = document.createElement("span");
-        span.textContent = `\\(${normalized}\\)`;
-        host.appendChild(span);
-        ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
-      } else {
-        host.textContent = raw;
-      }
+      host.textContent = raw;
       return;
     }
 
