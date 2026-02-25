@@ -67,6 +67,7 @@ export default function CreatorStudio() {
   const [markingCorrect, setMarkingCorrect] = useState(4);
   const [markingIncorrect, setMarkingIncorrect] = useState(-1);
   const [saving, setSaving] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [lastSubject, setLastSubject] = useState<CropMeta["subject"]>("Physics");
   const [lastDifficulty, setLastDifficulty] = useState<CropMeta["difficulty"]>("Easy");
@@ -389,6 +390,32 @@ const [isPanning, setIsPanning] = useState(false);
     setIsDrawing(false);
     setIsSelecting(false);
     try {
+      let resolvedPdfUrl = pdfUrl;
+      if (uploadedFile && !resolvedPdfUrl) {
+        setUploadingPdf(true);
+        try {
+          const formData = new FormData();
+          formData.append("file", uploadedFile);
+          const uploadResponse = await fetch("/api/upload/pdf", {
+            method: "POST",
+            body: formData,
+          });
+          if (!uploadResponse.ok) {
+            alert("PDF upload failed. Please re-upload the PDF and try again.");
+            return;
+          }
+          const uploadData = await safeJson<{ url?: string }>(uploadResponse, {} as any);
+          resolvedPdfUrl = uploadData?.url ?? null;
+          if (!resolvedPdfUrl) {
+            alert("PDF upload failed. Please re-upload the PDF and try again.");
+            return;
+          }
+          setPdfUrl(resolvedPdfUrl);
+        } finally {
+          setUploadingPdf(false);
+        }
+      }
+
       const response = await fetch("/api/tests", {
         method: editingTestId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -402,7 +429,7 @@ const [isPanning, setIsPanning] = useState(false);
           markingIncorrect,
           description: testDescription,
           tags: testTags,
-          pdfUrl: pdfUrl ?? undefined,
+          pdfUrl: resolvedPdfUrl ?? undefined,
           crops: cropRects,
           lockNavigation,
         }),
@@ -421,14 +448,19 @@ const [isPanning, setIsPanning] = useState(false);
     accessCode,
     cropRects,
     durationMinutes,
+    editingTestId,
     lockNavigation,
     markingCorrect,
     markingIncorrect,
+    pdfUrl,
     router,
+    testDescription,
+    testTags,
     title,
+    uploadedFile,
+
     visibility,
   ]);
-
   const saveTest = useCallback(() => {
     if (!hasAnswerKey()) {
       setShowAnswerKeyConfirm(true);
@@ -568,16 +600,25 @@ const [isPanning, setIsPanning] = useState(false);
     setCurrentPage(1);
   }, [pdfApi]);
 
-  const uploadPdfToCloud = useCallback(async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch("/api/upload/pdf", { method: "POST", body: formData });
-    const data = await safeJson<{ url?: string }>(response, {} as any);
-    if (data?.url) {
-      setPdfUrl(data.url);
+  const uploadPdfToCloud = useCallback(async (file: File): Promise<string | null> => {
+    setUploadingPdf(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/upload/pdf", { method: "POST", body: formData });
+      if (!response.ok) {
+        return null;
+      }
+      const data = await safeJson<{ url?: string }>(response, {} as any);
+      if (data?.url) {
+        setPdfUrl(data.url);
+        return data.url;
+      }
+      return null;
+    } finally {
+      setUploadingPdf(false);
     }
   }, []);
-
   useEffect(() => {
     if (pdfApi && pdfUrl && !pdfDoc) {
       loadPdfFromUrl(pdfUrl);
@@ -600,7 +641,7 @@ const [isPanning, setIsPanning] = useState(false);
     setCurrentPage(1);
     setCropRects([]);
     setActiveCropId(null);
-    uploadPdfToCloud(file);
+    void uploadPdfToCloud(file);
   };
 
   const startResize = (
@@ -1569,9 +1610,9 @@ Rules (MathJax-friendly):
             <button
               onClick={saveTest}
               className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-black"
-              disabled={saving}
+              disabled={saving || uploadingPdf}
             >
-              {saving ? "Saving..." : "Publish Test"}
+              {uploadingPdf ? "Uploading PDF..." : saving ? "Saving..." : "Publish Test"}
             </button>
           </div>
         </header>
@@ -2266,6 +2307,14 @@ Rules (MathJax-friendly):
     </div>
   );
 }
+
+
+
+
+
+
+
+
 
 
 
