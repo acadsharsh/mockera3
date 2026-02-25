@@ -146,8 +146,8 @@ const [isPanning, setIsPanning] = useState(false);
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const testId = params.get("testId");
-    if (!testId) {
-      // Don't restore draft when starting a brand-new test.
+    if (testId) {
+      // Never restore local draft while editing an existing test.
       return;
     }
     const raw = localStorage.getItem(DRAFT_KEY);
@@ -169,7 +169,8 @@ const [isPanning, setIsPanning] = useState(false);
       setCurrentPage(parsed.currentPage ?? 1);
       setPageScale(parsed.pageScale ?? 1.7);
       setCropRects(parsed.cropRects ?? []);
-      setPdfUrl(parsed.pdfUrl ?? null);
+      // Don't preload previous draft PDF into a new test flow.
+      setPdfUrl(null);
     } catch {
       // ignore corrupted draft
     }
@@ -2265,6 +2266,9 @@ Rules (MathJax-friendly):
     </div>
   );
 }
+
+
+
 
 
 
