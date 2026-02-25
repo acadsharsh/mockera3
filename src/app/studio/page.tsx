@@ -144,6 +144,12 @@ const [isPanning, setIsPanning] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const testId = params.get("testId");
+    if (!testId) {
+      // Don't restore draft when starting a brand-new test.
+      return;
+    }
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return;
     if (cropRects.length > 0 || title.trim() || uploadedFile) return;
@@ -586,6 +592,7 @@ const [isPanning, setIsPanning] = useState(false);
     }
 
     setUploadedFile(file);
+    setPdfUrl(null);
     const arrayBuffer = await file.arrayBuffer();
     const doc = await pdfApi.getDocument({ data: arrayBuffer }).promise;
     setPdfDoc(doc);
@@ -1162,6 +1169,7 @@ Rules (MathJax-friendly):
   const extractPdfText = async (file: File) => {
     if (!pdfApi) return "";
     setUploadedFile(file);
+    setPdfUrl(null);
     const arrayBuffer = await file.arrayBuffer();
     const doc = await pdfApi.getDocument({ data: arrayBuffer }).promise;
     let all = "";
@@ -2257,3 +2265,6 @@ Rules (MathJax-friendly):
     </div>
   );
 }
+
+
+
