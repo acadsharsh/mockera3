@@ -30,6 +30,7 @@ model User {
   tests              Test[]
   attempts           Attempt[]
   broadcasts         BroadcastMessage[]
+  savedQuestions    SavedQuestion[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -83,6 +84,14 @@ model Test {
   pdfUrl           String?
   visibility       String
   hidden          Boolean   @default(false)
+  isPyq           Boolean   @default(false)
+  exam            String?
+  examId          String?
+  examRef         Exam?     @relation(fields: [examId], references: [id], onDelete: SetNull)
+  examPapers      ExamPaper[]
+  year            Int?
+  shift           String?
+  stream          String?
   accessCode       String?
   durationMinutes  Int
   markingCorrect   Int
@@ -103,6 +112,8 @@ model Question {
   subject        String
   difficulty     String
   questionType   String
+  chapter        String?
+  topic          String?
   correctOption  String?
   correctNumeric String?
   marksCorrect   Int
@@ -117,6 +128,7 @@ model Question {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   test           Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  savedBy       SavedQuestion[]
 }
 
 model Attempt {
@@ -166,4 +178,67 @@ model BroadcastMessage {
   updatedAt   DateTime @updatedAt
   createdById String?
   createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+}
+
+
+model Exam {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  shortCode String?
+  order     Int        @default(0)
+  active    Boolean    @default(true)
+  tests     Test[]
+  papers    ExamPaper[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Chapter {
+  id        String   @id @default(cuid())
+  subject   String
+  name      String
+  order     Int      @default(0)
+  topics    Topic[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([subject, name])
+}
+
+model Topic {
+  id        String   @id @default(cuid())
+  chapterId String
+  name      String
+  order     Int      @default(0)
+  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chapterId, name])
+}
+
+model ExamPaper {
+  id        String   @id @default(cuid())
+  examId    String
+  year      Int
+  shift     String?
+  pdfUrl    String
+  testId    String?
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  test      Test?    @relation(fields: [testId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([examId, year])
+}
+
+model SavedQuestion {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
 }

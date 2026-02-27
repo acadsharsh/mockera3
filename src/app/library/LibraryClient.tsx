@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import GlassRail from "@/components/GlassRail";
@@ -21,6 +21,11 @@ type Test = {
   title: string;
   description?: string;
   tags?: string[];
+  isPyq?: boolean;
+  exam?: string;
+  examId?: string;
+  year?: number;
+  shift?: string;
   visibility: "Public" | "Private";
   ownerId?: string;
   accessCode?: string;
@@ -46,6 +51,13 @@ type LibraryClientProps = {
   initialTests: Test[];
   initialAttempts: Attempt[];
   initialAuthError?: boolean;
+};
+
+type PyqStats = {
+  questions: number;
+  chapters: number;
+  exams: number;
+  latestYear: number | null;
 };
 
 const tabs = ["All Tests", "Public", "My Batches", "Starred"] as const;
@@ -125,6 +137,8 @@ export default function LibraryClient({
   const [editDescription, setEditDescription] = useState("");
   const [editTags, setEditTags] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [pyqStats, setPyqStats] = useState<PyqStats | null>(null);
+  const [pyqPapers, setPyqPapers] = useState<any[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -186,6 +200,32 @@ export default function LibraryClient({
     };
   }, []);
 
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/pyq/stats")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data) return;
+        setPyqStats({
+          questions: Number(data.questions) || 0,
+          chapters: Number(data.chapters) || 0,
+          exams: Number(data.exams) || 0,
+          latestYear: data.latestYear ? Number(data.latestYear) : null,
+        });
+      })
+      .catch(() => null);
+    fetch("/api/pyq/papers")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!active) return;
+        setPyqPapers(Array.isArray(data) ? data.slice(0, 3) : []);
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, []);
   const attemptsByTest = useMemo(() => {
     return attempts.reduce((acc, attempt) => {
       acc[attempt.testId] = acc[attempt.testId] || [];
@@ -392,7 +432,7 @@ export default function LibraryClient({
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f10] text-white">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 font-neue">
       <GlassRail />
       <BroadcastPopup />
 
@@ -401,7 +441,7 @@ export default function LibraryClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Edit test details</h2>
+              <h2 className="text-lg font-semibold font-everett">Edit test details</h2>
               <button
                 type="button"
                 className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
@@ -451,27 +491,72 @@ export default function LibraryClient({
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 pt-24 pb-10">
-        <header className="flex flex-wrap items-center justify-between gap-4">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 pb-10 pt-24 md:px-8">
+        <header className="rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-[#0f1626] to-[#0a0f1c] p-6 shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_20px_80px_rgba(2,6,23,0.65)]">
           <div>
-            <h1 className="text-3xl font-semibold">CBTCORE</h1>
+            <h1 className="text-3xl font-semibold font-everett text-slate-50">Course Library</h1>
           </div>
           <div className="flex items-center gap-3">
-                        <a className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20" href="/studio">
+                        <a className="rounded-full border border-cyan-300/25 bg-cyan-500/15 px-4 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/25" href="/studio">
               + Create Test
             </a>
           </div>
         </header>
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="rounded-full border border-white/10 bg-white/5 p-1">
+        
+        <section className="rounded-3xl border border-cyan-400/20 bg-[#0b1323] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.08)]">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/50">PYQ Bank</p>
+              <h2 className="mt-2 text-xl font-semibold font-everett">Chapter-wise PYQs + Year-wise papers</h2>
+              <p className="mt-1 text-sm text-white/60">Filter by exam, year, shift, chapter and difficulty. Build mocks fast.</p>
+            </div>
+            <a className="rounded-full border border-cyan-300/25 bg-cyan-500/10 px-4 py-2 text-xs font-semibold text-cyan-100" href="/pyq">
+              Open PYQ Bank
+            </a>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase text-white/50">Questions</p>
+              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.questions) : "-"}</p>
+            </div>
+            <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase text-white/50">Chapters</p>
+              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.chapters) : "-"}</p>
+            </div>
+            <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase text-white/50">Exams</p>
+              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.exams) : "-"}</p>
+            </div>
+            <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase text-white/50">Latest Year</p>
+              <p className="mt-2 text-lg font-semibold">{pyqStats?.latestYear ?? "-"}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 md:grid-cols-3">
+            {(pyqPapers.length ? pyqPapers : []).map((paper) => (
+              <div key={paper.id} className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3 text-xs">
+                <div className="font-semibold text-white">{paper.exam?.name ?? "Exam"} ? {paper.year}{paper.shift ? ` ? ${paper.shift}` : ""}</div>
+                <a className="mt-2 inline-flex text-[11px] uppercase tracking-wide text-cyan-200" href={paper.test?.id ? `/cbt?testId=${paper.test.id}` : paper.pdfUrl}>
+                  {paper.test?.id ? "Open test" : "View PDF"}
+                </a>
+              </div>
+            ))}
+            {pyqPapers.length === 0 ? (
+              <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3 text-xs text-white/60">No year-wise papers yet.</div>
+            ) : null}
+          </div>
+        </section>
+
+<div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="rounded-full border border-cyan-400/20 bg-[#0b1323] p-1">
             <div className="flex items-center gap-1">
               {tabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-                    activeTab === tab ? "bg-white text-black" : "text-white/60"
+                    activeTab === tab ? "bg-cyan-300 text-[#031525]" : "text-slate-300"
                   }`}
                 >
                   {tab}
@@ -485,7 +570,7 @@ export default function LibraryClient({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search tests..."
-              className="w-full rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-white/40"
+              className="w-full rounded-full border border-cyan-400/20 bg-[#0b1323] px-5 py-3 text-sm text-slate-100 placeholder:text-slate-500"
             />
           </div>
 
@@ -493,7 +578,7 @@ export default function LibraryClient({
             <select
               value={filterSubject}
               onChange={(event) => setFilterSubject(event.target.value as typeof filterSubject)}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white"
+              className="rounded-full border border-cyan-400/20 bg-[#0b1323] px-4 py-2 text-xs text-slate-100"
             >
               <option value="All">All Subjects</option>
               <option value="Physics">Physics</option>
@@ -503,14 +588,14 @@ export default function LibraryClient({
             <select
               value={filterDifficulty}
               onChange={(event) => setFilterDifficulty(event.target.value as typeof filterDifficulty)}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white"
+              className="rounded-full border border-cyan-400/20 bg-[#0b1323] px-4 py-2 text-xs text-slate-100"
             >
               <option value="All">All Difficulty</option>
               <option value="Easy">Easy</option>
               <option value="Moderate">Moderate</option>
               <option value="Tough">Tough</option>
             </select>
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+            <div className="flex items-center gap-2 rounded-full border border-cyan-400/20 bg-[#0b1323] px-3 py-2 text-xs text-slate-100">
               <span className="text-white/60">Min attempts</span>
               <input
                 type="number"
@@ -520,7 +605,7 @@ export default function LibraryClient({
                 className="w-16 bg-transparent text-right text-white outline-none"
               />
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+            <div className="flex items-center gap-2 rounded-full border border-cyan-400/20 bg-[#0b1323] px-3 py-2 text-xs text-slate-100">
               <span className="text-white/60">Max wrong %</span>
               <input
                 type="number"
@@ -531,7 +616,7 @@ export default function LibraryClient({
                 className="w-16 bg-transparent text-right text-white outline-none"
               />
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+            <div className="flex items-center gap-2 rounded-full border border-cyan-400/20 bg-[#0b1323] px-3 py-2 text-xs text-slate-100">
               <span className="text-white/60">Max avg min</span>
               <input
                 type="number"
@@ -541,7 +626,7 @@ export default function LibraryClient({
                 className="w-16 bg-transparent text-right text-white outline-none"
               />
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+            <div className="flex items-center gap-2 rounded-full border border-cyan-400/20 bg-[#0b1323] px-3 py-2 text-xs text-slate-100">
               <span className="text-white/60">Last active (days)</span>
               <input
                 type="number"
@@ -601,11 +686,17 @@ export default function LibraryClient({
                   } else if (isInProgress) {
                     statusLabel = "In Progress";
                   }
+                  const pyqBits = [
+                    test.isPyq ? "PYQ" : null,
+                    test.exam ?? null,
+                    test.year ? String(test.year) : null,
+                    test.shift ?? null,
+                  ].filter(Boolean) as string[];
 
                   return (
                     <div
                       key={test.id}
-                                            className={`rounded-xl border border-white/10 bg-white/5 p-4 ${style.border} ${style.glow}`}
+                                            className={`rounded-2xl border border-cyan-400/20 bg-[#0a1220] p-4 shadow-[0_0_0_1px_rgba(34,211,238,0.08)] ${style.border} ${style.glow}`}
                     >
                       
 
@@ -655,6 +746,18 @@ export default function LibraryClient({
                           </details>
                         </div>
                         <h3 className="mt-4 text-lg font-semibold">{test.title}</h3>
+                        {pyqBits.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1 text-[10px] uppercase tracking-wide">
+                            {pyqBits.map((bit) => (
+                              <span
+                                key={`${test.id}-${bit}`}
+                                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-white/70"
+                              >
+                                {bit}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <p className="mt-2 text-xs text-white/60">{statusLabel}</p>
                         {test.ownerId && currentUserId && test.ownerId === currentUserId && missingAnswerCount(test) > 0 && (
                           <p className="mt-2 text-xs text-amber-300">
@@ -689,7 +792,7 @@ export default function LibraryClient({
                           <span>Global attempts: {formatCount(attemptsCount)}</span>
                         </div>
                         <a
-                          className="mt-6 inline-flex rounded-md border border-white/20 px-3 py-2 text-xs text-white/80"
+                          className="mt-6 inline-flex rounded-md border border-cyan-300/25 bg-cyan-500/15 px-3 py-2 text-xs text-cyan-100"
                           href={
                             isCompleted ? `/test-analysis?testId=${test.id}` : `/cbt?testId=${test.id}`
                           }
@@ -704,8 +807,8 @@ export default function LibraryClient({
             )}
           </div>
 
-          <aside className="glass-card p-5">
-            <h3 className="text-sm font-semibold">Private Batches</h3>
+          <aside className="rounded-3xl border border-cyan-400/20 bg-[#0b1323] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_20px_80px_rgba(2,6,23,0.65)]">
+            <h3 className="text-sm font-semibold font-everett">Private Batches</h3>
             <p className="mt-1 text-xs text-white/50">Enter a 6-digit access code to unlock</p>
             <div className="mt-4 flex gap-2">
               <input
@@ -718,7 +821,7 @@ export default function LibraryClient({
               {privateBatches.map((batch) => (
                 <div key={batch.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
                   <div>
-                    <p className="text-sm font-semibold">{batch.title}</p>
+                    <p className="text-sm font-semibold font-everett">{batch.title}</p>
                     <p className="text-xs text-white/50">Code: {batch.accessCode || "Private"}</p>
                   </div>
                   {batch.isNew && <span className="h-2 w-2 rounded-full bg-emerald-400" />}
@@ -734,3 +837,4 @@ export default function LibraryClient({
     </div>
   );
 }
+

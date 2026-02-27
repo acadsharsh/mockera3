@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
 import { safeJson } from "@/lib/safe-json";
+
+type ExamItem = {
+  id: string;
+  name: string;
+  shortCode?: string | null;
+};
 
 type CropMeta = {
   id: string;
@@ -20,6 +26,8 @@ type CropMeta = {
   correctNumeric?: string;
   marks: "+4/-1";
   difficulty: "Easy" | "Moderate" | "Tough";
+  chapter?: string;
+  topic?: string;
   imageDataUrl: string;
   questionText: string;
   options: string[];
@@ -45,6 +53,12 @@ export default function CreatorStudio() {
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [testDescription, setTestDescription] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [examDirectory, setExamDirectory] = useState<ExamItem[]>([]);
+  const [pyqExamId, setPyqExamId] = useState<string | null>(null);
+  const [pyqExamName, setPyqExamName] = useState<string | null>(null);
+  const [pyqYear, setPyqYear] = useState<number | null>(null);
+  const [pyqShift, setPyqShift] = useState<string | null>(null);
   const [testTags, setTestTags] = useState<string[]>([]);
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [pdfApi, setPdfApi] = useState<{ getDocument: any } | null>(null);
@@ -74,6 +88,8 @@ export default function CreatorStudio() {
   const [selectedCropIds, setSelectedCropIds] = useState<Set<string>>(new Set());
   const [bulkSubject, setBulkSubject] = useState<CropMeta["subject"]>("Physics");
   const [bulkDifficulty, setBulkDifficulty] = useState<CropMeta["difficulty"]>("Easy");
+  const [bulkChapter, setBulkChapter] = useState("");
+  const [bulkTopic, setBulkTopic] = useState("");
   const [lockNavigation, setLockNavigation] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isEditingOptions, setIsEditingOptions] = useState(false);
@@ -140,6 +156,28 @@ const [isPanning, setIsPanning] = useState(false);
     });
     return () => {
       mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/check")
+      .then((res) => {
+        if (active) setIsAdmin(res.ok);
+      })
+      .catch(() => setIsAdmin(false));
+
+    fetch("/api/pyq/exams")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setExamDirectory(data);
+        }
+      })
+      .catch(() => null);
+
+    return () => {
+      active = false;
     };
   }, []);
 
@@ -215,6 +253,8 @@ const [isPanning, setIsPanning] = useState(false);
         correctNumeric: crop.correctNumeric ?? "",
         marks: "+4/-1",
         difficulty: crop.difficulty ?? "Easy",
+        chapter: crop.chapter ?? "",
+        topic: crop.topic ?? "",
         imageDataUrl: crop.imageDataUrl ?? "",
         questionText: crop.questionText ?? "",
         options: crop.options ?? [],
@@ -430,6 +470,11 @@ const [isPanning, setIsPanning] = useState(false);
           description: testDescription,
           tags: testTags,
           pdfUrl: resolvedPdfUrl ?? undefined,
+          isPyq: Boolean(pyqExamId || pyqYear || pyqShift),
+          examId: pyqExamId ?? undefined,
+          exam: pyqExamName ?? undefined,
+          year: pyqYear ?? undefined,
+          shift: pyqShift ?? undefined,
           crops: cropRects,
           lockNavigation,
         }),
@@ -799,21 +844,71 @@ const [isPanning, setIsPanning] = useState(false);
 
   const normalizeAnswer = (raw: string) => raw.trim().toUpperCase();
 
+  const normalizeSubject = (value?: string) => {
+    const normalized = (value || "").toLowerCase();
+    if (!normalized) return undefined;
+    if (normalized.startsWith("phy")) return "Physics";
+    if (normalized.startsWith("chem")) return "Chemistry";
+    if (normalized.startsWith("math")) return "Maths";
+    return undefined;
+  };
+
+  const resolveExam = (value?: string) => {
+    if (!value) return undefined;
+    const needle = value.toLowerCase();
+    return examDirectory.find((exam) =>
+      exam.name.toLowerCase() === needle ||
+      exam.shortCode?.toLowerCase() === needle
+    );
+  };
+
   const handleJsonImport = () => {
+    if (!isAdmin) {
+      setJsonImportStatus({ message: "Admin only: JSON import is disabled for non-admin accounts.", tone: "error" });
+      return;
+    }
     try {
       const parsed = JSON.parse(jsonImportText || "{}") as {
+        meta?: {
+          exam?: string;
+          year?: number | string;
+          shift?: string;
+          subject?: string;
+          chapter?: string;
+          topic?: string;
+        };
         questions?: Array<{
           number?: number;
           text?: string;
           options?: string[];
           answer?: string;
           subject?: CropMeta["subject"];
+          chapter?: string;
+          topic?: string;
           hasDiagram?: boolean;
         }>;
       };
       if (!parsed.questions || parsed.questions.length === 0) {
         setJsonImportStatus({ message: "No questions found in JSON.", tone: "error" });
         return;
+      }
+      const meta = parsed.meta || {};
+      const metaSubject = normalizeSubject(meta.subject) ?? undefined;
+      const metaChapter = meta.chapter ? String(meta.chapter) : "";
+      const metaTopic = meta.topic ? String(meta.topic) : "";
+      const examMatch = resolveExam(meta.exam);
+      if (examMatch) {
+        setPyqExamId(examMatch.id);
+        setPyqExamName(examMatch.name);
+      } else if (meta.exam) {
+        setPyqExamName(String(meta.exam));
+      }
+      if (meta.year !== undefined && meta.year !== null && String(meta.year).trim()) {
+        const parsedYear = Number(meta.year);
+        if (!Number.isNaN(parsedYear)) setPyqYear(parsedYear);
+      }
+      if (meta.shift) {
+        setPyqShift(String(meta.shift));
       }
       const mapped = parsed.questions.map((q) => {
         const answer = q.answer ? normalizeAnswer(q.answer) : "";
@@ -842,13 +937,15 @@ const [isPanning, setIsPanning] = useState(false);
           y: 0,
           w: 0,
           h: 0,
-          subject: q.subject ?? lastSubject,
+          subject: q.subject ?? metaSubject ?? lastSubject,
           questionType: isNumeric ? "NUM" : isMulti ? "MSQ" : "MCQ",
           correctOption,
           correctOptions,
           correctNumeric: isNumeric ? answer : "",
           marks: "+4/-1",
           difficulty: lastDifficulty,
+          chapter: q.chapter ?? metaChapter ?? "",
+          topic: q.topic ?? metaTopic ?? "",
           imageDataUrl: "",
           questionText: String(q.text ?? ""),
           options,
@@ -867,6 +964,14 @@ const [isPanning, setIsPanning] = useState(false);
   const jsonPrompt = `Extract questions into strict JSON with this shape:
 
 {
+  "meta": {
+    "exam": "JEE Main",
+    "year": 2024,
+    "shift": "Jan 27 S1",
+    "subject": "Physics",
+    "chapter": "Units & Measurements",
+    "topic": "Dimensions"
+  },
   "questions": [
     {
       "number": 1,
@@ -887,6 +992,7 @@ Rules (MathJax-friendly):
 - Use \\times for multiplication, \\cdot for dot product.
 - Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
 - If a question has a diagram, set hasDiagram: true.
+- Use meta for shared tags (exam/year/shift/subject/chapter).
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
 
@@ -1460,7 +1566,13 @@ Rules (MathJax-friendly):
     setCropRects((prev) =>
       prev.map((rect) =>
         selectedCropIds.has(rect.id)
-          ? { ...rect, subject: bulkSubject, difficulty: bulkDifficulty }
+          ? {
+              ...rect,
+              subject: bulkSubject,
+              difficulty: bulkDifficulty,
+              chapter: bulkChapter || rect.chapter || "",
+              topic: bulkTopic || rect.topic || "",
+            }
           : rect
       )
     );
@@ -1590,16 +1702,18 @@ Rules (MathJax-friendly):
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                setJsonImportStatus(null);
-                setShowJsonImport(true);
-              }}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
-            >
-              Paste JSON
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setJsonImportStatus(null);
+                  setShowJsonImport(true);
+                }}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
+              >
+                Paste JSON
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowSettings(true)}
@@ -1930,6 +2044,24 @@ Rules (MathJax-friendly):
                               ))}
                             </select>
                           </div>
+                          <div>
+                            <label className="text-white/60">Chapter</label>
+                            <input
+                              value={activeCrop.chapter ?? ""}
+                              onChange={(event) => updateActiveCrop({ chapter: event.target.value })}
+                              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                              placeholder="e.g., Thermodynamics"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-white/60">Topic</label>
+                            <input
+                              value={activeCrop.topic ?? ""}
+                              onChange={(event) => updateActiveCrop({ topic: event.target.value })}
+                              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                              placeholder="e.g., First Law"
+                            />
+                          </div>
                           {activeCrop.questionType === "MCQ" && (
                             <div>
                               <label className="text-white/60">Correct Option</label>
@@ -2026,6 +2158,18 @@ Rules (MathJax-friendly):
                               {activeCrop.subject}
                             </div>
                           </div>
+                          {activeCrop.chapter ? (
+                            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                              <div className="text-[11px] uppercase text-white/50">Chapter</div>
+                              <div className="mt-1 font-semibold text-white">{activeCrop.chapter}</div>
+                            </div>
+                          ) : null}
+                          {activeCrop.topic ? (
+                            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                              <div className="text-[11px] uppercase text-white/50">Topic</div>
+                              <div className="mt-1 font-semibold text-white">{activeCrop.topic}</div>
+                            </div>
+                          ) : null}
                           {activeCrop.questionType === "NUM" ? (
                             <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
                               <div className="text-[11px] uppercase text-white/50">
@@ -2159,7 +2303,7 @@ Rules (MathJax-friendly):
               </button>
             </div>
             <p className="mt-2 text-sm text-white/70">
-              Paste your questions JSON and we will add them as draft questions. You can still crop diagrams manually.
+              Paste your questions JSON and we will add them as draft questions. Admin only. You can still crop diagrams manually.
             </p>
 
             <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">

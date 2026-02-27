@@ -33,6 +33,11 @@ const mapTest = (test: any) => ({
   description: test.description ?? "",
   tags: test.tags ?? [],
   pdfUrl: test.pdfUrl ?? undefined,
+  isPyq: Boolean(test.isPyq),
+  exam: test.exam ?? undefined,
+  examId: test.examId ?? undefined,
+  year: test.year ?? undefined,
+  shift: test.shift ?? undefined,
   visibility: test.visibility as "Public" | "Private",
   hidden: Boolean(test.hidden),
   ownerId: test.ownerId,
@@ -122,6 +127,11 @@ export async function POST(request: Request) {
     markingCorrect: number;
     markingIncorrect: number;
     lockNavigation?: boolean;
+    isPyq?: boolean;
+    examId?: string;
+    exam?: string;
+    year?: number;
+    shift?: string;
     crops: Crop[];
   };
 
@@ -132,6 +142,11 @@ export async function POST(request: Request) {
       tags: payload.tags ?? [],
       pdfUrl: payload.pdfUrl ?? null,
       visibility: payload.visibility,
+      isPyq: Boolean(payload.isPyq),
+      examId: payload.examId ?? null,
+      exam: payload.exam ?? null,
+      year: payload.year ?? null,
+      shift: payload.shift ?? null,
       accessCode: payload.visibility === "Private" ? payload.accessCode : null,
       durationMinutes: payload.durationMinutes,
       markingCorrect: payload.markingCorrect,
@@ -213,6 +228,11 @@ export async function PUT(request: Request) {
     durationMinutes: number;
     markingCorrect: number;
     markingIncorrect: number;
+    isPyq?: boolean;
+    examId?: string;
+    exam?: string;
+    year?: number;
+    shift?: string;
     crops: Array<any>;
     lockNavigation?: boolean;
   };
@@ -239,6 +259,11 @@ export async function PUT(request: Request) {
         tags: payload.tags ?? [],
         pdfUrl: payload.pdfUrl ?? null,
         visibility: payload.visibility,
+        isPyq: Boolean(payload.isPyq),
+        examId: payload.examId ?? null,
+        exam: payload.exam ?? null,
+        year: payload.year ?? null,
+        shift: payload.shift ?? null,
         accessCode: payload.visibility === "Private" ? payload.accessCode : null,
         durationMinutes: payload.durationMinutes,
         markingCorrect: payload.markingCorrect,

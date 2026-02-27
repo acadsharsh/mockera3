@@ -16,6 +16,11 @@ export async function GET() {
       hidden: t.hidden,
       ownerEmail: t.owner?.email ?? null,
       createdAt: t.createdAt,
+      isPyq: t.isPyq,
+      exam: t.exam,
+      examId: t.examId,
+      year: t.year,
+      shift: t.shift,
     }))
   );
 }
@@ -28,7 +33,14 @@ export async function PATCH(request: Request) {
   }
   const updated = await prisma.test.update({
     where: { id: payload.id },
-    data: { hidden: Boolean(payload.hidden) },
+    data: {
+      hidden: payload.hidden !== undefined ? Boolean(payload.hidden) : undefined,
+      isPyq: payload.isPyq !== undefined ? Boolean(payload.isPyq) : undefined,
+      examId: payload.examId !== undefined ? (payload.examId ? String(payload.examId) : null) : undefined,
+      exam: payload.exam !== undefined ? (payload.exam ? String(payload.exam) : null) : undefined,
+      year: payload.year !== undefined && payload.year !== null && payload.year !== "" ? Number(payload.year) : payload.year === null || payload.year === "" ? null : undefined,
+      shift: payload.shift !== undefined ? (payload.shift ? String(payload.shift) : null) : undefined,
+    },
   });
   return NextResponse.json(updated);
 }

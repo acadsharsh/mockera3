@@ -405,6 +405,31 @@ const formatTime = (seconds: number) => {
   return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
 };
 
+
+  const toggleBookmark = async (questionId: string) => {
+    if (!questionId || bookmarkBusy) return;
+    setBookmarkBusy(true);
+    try {
+      const res = await fetch("/api/pyq/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionId }),
+      });
+      const data = await safeJson<{ saved?: boolean } | null>(res, null);
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (data?.saved) {
+          next.add(questionId);
+        } else {
+          next.delete(questionId);
+        }
+        return next;
+      });
+    } finally {
+      setBookmarkBusy(false);
+    }
+  };
+
 const calculatorButtons = [
   "7",
   "8",
@@ -456,6 +481,8 @@ export default function CBT() {
   const [focusLocked, setFocusLocked] = useState(false);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [imageZoom, setImageZoom] = useState(1);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const startRef = useRef<number>(Date.now());
   const prevIdRef = useRef<string | null>(null);
   const examStartRef = useRef<number>(Date.now());
@@ -551,6 +578,22 @@ export default function CBT() {
       }
     };
     loadSession();
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/pyq/bookmarks")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!active) return;
+        const items = Array.isArray(data) ? data : [];
+        const ids = new Set(items.map((row: any) => row?.questionId ?? row?.question?.id).filter(Boolean));
+        setBookmarkedIds(ids);
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, []);
   }, []);
 
   useEffect(() => {
@@ -933,8 +976,16 @@ export default function CBT() {
 
       <main className="grid w-full flex-1 gap-4 px-4 py-4 lg:grid-cols-[1.85fr_1fr]">
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-300 bg-[#7a1fa2] px-5 py-2 text-sm font-semibold text-white">
-            Question No. {activeQuestion?.index}
+          <div className="flex items-center justify-between border-b border-slate-300 bg-[#7a1fa2] px-5 py-2 text-sm font-semibold text-white">
+            <span>Question No. {activeQuestion?.index}</span>
+            <button
+              type="button"
+              onClick={() => activeQuestion && toggleBookmark(activeQuestion.id)}
+              className={`rounded border border-white/40 px-2 py-1 text-[11px] font-semibold ${bookmarkedIds.has(activeQuestion?.id ?? "") ? "bg-white text-[#7a1fa2]" : "bg-transparent text-white"}`}
+              disabled={bookmarkBusy || !activeQuestion}
+            >
+              {bookmarkedIds.has(activeQuestion?.id ?? "") ? "Bookmarked" : "Bookmark"}
+            </button>
           </div>
           <div className="grid min-h-0 flex-1 gap-4 p-5">
                 {activeQuestion?.questionText && (

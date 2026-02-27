@@ -47,6 +47,13 @@ type DashboardSummary = {
   myTests: MyTest[];
 };
 
+type PyqStats = {
+  questions: number;
+  chapters: number;
+  exams: number;
+  latestYear: number | null;
+};
+
 const CACHE_KEY = "dashboard-summary-v1";
 
 const formatCount = (value: number) => {
@@ -65,6 +72,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pyqStats, setPyqStats] = useState<PyqStats | null>(null);
 
   useEffect(() => {
     try {
@@ -99,6 +107,25 @@ export default function Dashboard() {
     load();
   }, [router]);
 
+  useEffect(() => {
+    let active = true;
+    fetch("/api/pyq/stats")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data) return;
+        setPyqStats({
+          questions: Number(data.questions) || 0,
+          chapters: Number(data.chapters) || 0,
+          exams: Number(data.exams) || 0,
+          latestYear: data.latestYear ? Number(data.latestYear) : null,
+        });
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const stats = summary?.stats;
 
   const recentAttempts = useMemo(() => summary?.recentAttempts ?? [], [summary]);
@@ -114,14 +141,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f10] text-white">
+    <div className="min-h-screen bg-[#0f0f10] text-white font-neue">
       <GlassRail />
       <BroadcastPopup />
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 pt-24 pb-12">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold">
+            <h1 className="text-3xl font-semibold font-everett">
               Welcome back{summary?.user?.name ? `, ${summary.user.name}` : ""}.
             </h1>
             <p className="mt-2 text-sm text-white/60">
@@ -130,7 +157,37 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <section className="grid gap-4 lg:grid-cols-3">
+        
+        <section className="rounded-3xl border border-white/10 bg-[#101624] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/50">PYQ Bank</p>
+              <h2 className="mt-2 text-2xl font-semibold font-everett">Chapter-wise PYQs</h2>
+              <p className="mt-2 text-sm text-white/60">Filter by exam, year, shift, and difficulty. Build a mock in seconds.</p>
+            </div>
+            <a href="/pyq" className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white/80">Open PYQ</a>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase text-white/50">Questions</p>
+              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.questions) : "-"}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase text-white/50">Chapters</p>
+              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.chapters) : "-"}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase text-white/50">Exams</p>
+              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.exams) : "-"}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase text-white/50">Latest Year</p>
+              <p className="mt-2 text-lg font-semibold">{pyqStats?.latestYear ?? "-"}</p>
+            </div>
+          </div>
+        </section>
+
+<section className="grid gap-4 lg:grid-cols-3">
           <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f1624] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)] lg:col-span-2">
             <div className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.35),transparent_70%)] blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 left-10 h-48 w-48 rounded-full bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.25),transparent_70%)] blur-3xl" />

@@ -1,5 +1,29 @@
 ﻿@import "tailwindcss";
 
+@font-face {
+  font-family: "Kura";
+  src: url("/fonts/kura-regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Kura";
+  src: url("/fonts/kura-rounded.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Florida Bell";
+  src: url("/fonts/florida-bell.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --radius-xl: 24px;
   --bg: #f6f4ef;
@@ -41,7 +65,15 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-inter), "Inter", system-ui, sans-serif;
+  font-family: "Helvetica Neue", "Neue Haas Grotesk", "Inter", system-ui, sans-serif;
+}
+
+.font-everett {
+  font-family: "Everett", "Helvetica Neue", "Neue Haas Grotesk", Arial, sans-serif;
+}
+
+.font-neue {
+  font-family: "Helvetica Neue", "Neue Haas Grotesk", "Inter", Arial, sans-serif;
 }
 
 a {

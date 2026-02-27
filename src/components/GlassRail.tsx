@@ -15,6 +15,7 @@ const SUBJECT_LINKS = [
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Library", href: "/library" },
+  { label: "PYQ Bank", href: "/pyq" },
   { label: "Creator Studio", href: "/studio" },
   { label: "Test Analysis", href: "/test-analysis" },
 ];

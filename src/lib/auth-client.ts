@@ -1,3 +1,5 @@
+"use client";
+
 import { createAuthClient } from "better-auth/react";
 import { adminClient, emailOTPClient, usernameClient } from "better-auth/client/plugins";
 

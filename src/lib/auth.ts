@@ -12,13 +12,15 @@ type SocialProviderConfig = {
   accessType?: string;
 };
 
-const socialProviders: Record<string, SocialProviderConfig> = {
-  google: {
-    clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+const socialProviders: Record<string, SocialProviderConfig> = {};
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  socialProviders.google = {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     prompt: "select_account",
-  },
-};
+  };
+}
 
 if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
   socialProviders.discord = {
