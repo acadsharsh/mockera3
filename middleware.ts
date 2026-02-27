@@ -4,11 +4,37 @@ import { NextResponse } from "next/server";
 const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
 const BYPASS_TOKEN = process.env.MAINTENANCE_BYPASS_TOKEN;
 
-const allowedPrefixes = ["/maintenance", "/api", "/_next"];
+const allowedPrefixes = [
+  "/maintenance",
+  "/admin",
+  "/admin-login",
+  "/api/admin",
+  "/api/auth",
+  "/api/maintenance",
+  "/_next",
+];
 const allowedPaths = ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/site.webmanifest"];
 
-export function middleware(req: NextRequest) {
-  if (!MAINTENANCE_MODE) {
+export async function middleware(req: NextRequest) {
+  let maintenanceEnabled = MAINTENANCE_MODE;
+  if (!maintenanceEnabled) {
+    try {
+      const res = await fetch(new URL("/api/maintenance", req.url), {
+        cache: "no-store",
+        headers: {
+          "x-maintenance-check": "1",
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        maintenanceEnabled = Boolean(data?.enabled);
+      }
+    } catch {
+      maintenanceEnabled = false;
+    }
+  }
+
+  if (!maintenanceEnabled) {
     return NextResponse.next();
   }
 

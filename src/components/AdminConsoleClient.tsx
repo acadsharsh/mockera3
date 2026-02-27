@@ -74,6 +74,8 @@ export default function AdminConsoleClient() {
   const [chapters, setChapters] = useState<ChapterItem[]>([]);
   const [topics, setTopics] = useState<TopicItem[]>([]);
   const [papers, setPapers] = useState<PaperItem[]>([]);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -100,7 +102,7 @@ export default function AdminConsoleClient() {
   const [paperTestId, setPaperTestId] = useState("");
 
   const load = async () => {
-    const [t, u, b, e, c, tp, p] = await Promise.all([
+    const [t, u, b, e, c, tp, p, m] = await Promise.all([
       fetch("/api/admin/tests", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/users", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/broadcast", { cache: "no-store" }).then((r) => r.json()),
@@ -108,6 +110,7 @@ export default function AdminConsoleClient() {
       fetch("/api/admin/chapters", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/topics", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/papers", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/maintenance", { cache: "no-store" }).then((r) => r.json()),
     ]);
     setTests(Array.isArray(t) ? t : []);
     setUsers(Array.isArray(u) ? u : []);
@@ -116,12 +119,24 @@ export default function AdminConsoleClient() {
     setChapters(Array.isArray(c) ? c : []);
     setTopics(Array.isArray(tp) ? tp : []);
     setPapers(Array.isArray(p) ? p : []);
+    setMaintenanceEnabled(Boolean(m?.enabled));
     if (Array.isArray(e) && e[0]?.id && !paperExamId) {
       setPaperExamId(e[0].id);
     }
     if (Array.isArray(c) && c[0]?.id && !topicChapterId) {
       setTopicChapterId(c[0].id);
     }
+  };
+
+  const toggleMaintenance = async (enabled: boolean) => {
+    setMaintenanceLoading(true);
+    await fetch("/api/maintenance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    });
+    setMaintenanceLoading(false);
+    await load();
   };
 
   useEffect(() => {
@@ -267,6 +282,24 @@ export default function AdminConsoleClient() {
       <GlassRail />
       <div className="mx-auto w-full max-w-6xl px-6 pt-24 pb-10">
         <h1 className="text-2xl font-semibold">Admin</h1>
+
+        <section className="mt-6 rounded-xl border border-white/10 p-4">
+          <h2 className="text-sm font-semibold">Maintenance Mode</h2>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={maintenanceEnabled}
+                disabled={maintenanceLoading}
+                onChange={(e) => toggleMaintenance(e.target.checked)}
+              />
+              {maintenanceEnabled ? "Enabled" : "Disabled"}
+            </label>
+            <span className="text-white/50">
+              When enabled, only admin routes remain accessible.
+            </span>
+          </div>
+        </section>
 
         <section className="mt-6 rounded-xl border border-white/10 p-4">
           <h2 className="text-sm font-semibold">Broadcast Message</h2>
