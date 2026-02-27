@@ -405,31 +405,6 @@ const formatTime = (seconds: number) => {
   return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
 };
 
-
-  const toggleBookmark = async (questionId: string) => {
-    if (!questionId || bookmarkBusy) return;
-    setBookmarkBusy(true);
-    try {
-      const res = await fetch("/api/pyq/bookmarks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ questionId }),
-      });
-      const data = await safeJson<{ saved?: boolean } | null>(res, null);
-      setBookmarkedIds((prev) => {
-        const next = new Set(prev);
-        if (data?.saved) {
-          next.add(questionId);
-        } else {
-          next.delete(questionId);
-        }
-        return next;
-      });
-    } finally {
-      setBookmarkBusy(false);
-    }
-  };
-
 const calculatorButtons = [
   "7",
   "8",
@@ -497,6 +472,30 @@ export default function CBT() {
     Chemistry: null,
     Maths: null,
   });
+
+  const toggleBookmark = async (questionId: string) => {
+    if (!questionId || bookmarkBusy) return;
+    setBookmarkBusy(true);
+    try {
+      const res = await fetch("/api/pyq/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionId }),
+      });
+      const data = await safeJson<{ saved?: boolean } | null>(res, null);
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (data?.saved) {
+          next.add(questionId);
+        } else {
+          next.delete(questionId);
+        }
+        return next;
+      });
+    } finally {
+      setBookmarkBusy(false);
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
