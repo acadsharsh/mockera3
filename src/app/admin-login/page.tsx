@@ -101,7 +101,6 @@ export default function AdminLoginPage() {
     await signIn.emailOtp({
       email: email.trim(),
       otp: otp.trim(),
-      callbackURL: "/admin",
       fetchOptions: {
         onRequest: () => setLoading(true),
         onResponse: () => setLoading(false),
