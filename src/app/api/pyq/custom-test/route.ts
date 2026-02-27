@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/auth-helpers";
 
 const parseIntMaybe = (value: string | null) => {
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
           cropW: q.cropW,
           cropH: q.cropH,
           prompt: q.prompt,
-          options: q.options,
+          options: q.options ?? Prisma.JsonNull,
           chapter: q.chapter,
           topic: q.topic,
         })),
