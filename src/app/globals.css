@@ -1225,45 +1225,6 @@ body.app-light-body {
   color: #16133f;
 }
 
-html.light body {
-  background: #e2ded4;
-  color: #16133f;
-}
-
-html.light .bg-\[\#0f1218\] {
-  background-color: #e2ded4 !important;
-}
-
-html.light .bg-\[\#171c24\],
-html.light .bg-\[\#10141d\],
-html.light .bg-\[\#0f0f10\],
-html.light .bg-\[\#111318\],
-html.light .bg-black\/40 {
-  background-color: #f1ece2 !important;
-}
-
-html.light .text-white,
-html.light .text-white\/90,
-html.light .text-white\/80 {
-  color: #16133f !important;
-}
-
-html.light .text-white\/70 {
-  color: rgba(22, 19, 63, 0.8) !important;
-}
-
-html.light .text-white\/60 {
-  color: rgba(22, 19, 63, 0.74) !important;
-}
-
-html.light .text-white\/50 {
-  color: rgba(22, 19, 63, 0.68) !important;
-}
-
-html.light .text-white\/40 {
-  color: rgba(22, 19, 63, 0.6) !important;
-}
-
 .app-light .bg-\[\#0f1218\] {
   background-color: #e8e8e2 !important;
 }
