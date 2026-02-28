@@ -1176,7 +1176,7 @@ Rules (MathJax-friendly):
     if (!isAdmin || !pyqExamId || !newChapterName.trim()) return;
     setCreatingChapter(true);
     try {
-      await fetch("/api/admin/chapters", {
+      const response = await fetch("/api/admin/chapters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1186,6 +1186,12 @@ Rules (MathJax-friendly):
           order: newChapterOrder,
         }),
       });
+      if (response.status === 409) {
+        const payload = await response.json().catch(() => null);
+        if (payload?.chapter?.id) {
+          setBulkChapterId(payload.chapter.id);
+        }
+      }
       setNewChapterName("");
       setNewChapterOrder(0);
       await refreshChapters();

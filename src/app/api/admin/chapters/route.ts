@@ -14,11 +14,25 @@ export async function GET() {
 export async function POST(req: Request) {
   await requireAdmin();
   const body = await req.json();
+  const subject = String(body.subject ?? "").trim();
+  const name = String(body.name ?? "").trim();
+  const examId = body.examId ? String(body.examId) : null;
+
+  const existing = await prisma.chapter.findFirst({
+    where: { examId, subject, name },
+  });
+  if (existing) {
+    return NextResponse.json(
+      { error: "Chapter already exists.", chapter: existing },
+      { status: 409 }
+    );
+  }
+
   const chapter = await prisma.chapter.create({
     data: {
-      examId: body.examId ? String(body.examId) : null,
-      subject: String(body.subject ?? "").trim(),
-      name: String(body.name ?? "").trim(),
+      examId,
+      subject,
+      name,
       order: Number(body.order ?? 0),
     },
   });
