@@ -574,6 +574,16 @@ const [isPanning, setIsPanning] = useState(false);
           .filter(Boolean)
           .join(" ");
 
+      const shouldFillChapter = Boolean(bulkChapter) && cropRects.every((c) => !c.chapter);
+      const shouldFillTopic = Boolean(bulkTopic) && cropRects.every((c) => !c.topic);
+      const normalizedCrops = shouldFillChapter || shouldFillTopic
+        ? cropRects.map((c) => ({
+            ...c,
+            chapter: c.chapter || (shouldFillChapter ? bulkChapter : ""),
+            topic: c.topic || (shouldFillTopic ? bulkTopic : ""),
+          }))
+        : cropRects;
+
       const response = await fetch("/api/tests", {
         method: editingTestId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -593,7 +603,7 @@ const [isPanning, setIsPanning] = useState(false);
           exam: pyqExamName ?? undefined,
           year: pyqYear ?? undefined,
           shift: pyqShift ?? undefined,
-          crops: cropRects,
+          crops: normalizedCrops,
           lockNavigation,
         }),
       });
