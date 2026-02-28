@@ -6,7 +6,7 @@ export async function GET() {
   await requireAdmin();
   const rows = await prisma.topic.findMany({
     orderBy: [{ order: "asc" }, { name: "asc" }],
-    include: { chapter: true },
+    include: { chapter: { include: { exam: { select: { id: true, name: true } } } } },
   });
   return NextResponse.json(rows);
 }

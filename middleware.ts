@@ -10,6 +10,7 @@ const allowedPrefixes = [
   "/admin-login",
   "/api/admin",
   "/api/auth",
+  "/api/upload",
   "/api/maintenance",
   "/_next",
 ];

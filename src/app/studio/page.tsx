@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
 import { safeJson } from "@/lib/safe-json";
@@ -9,6 +9,22 @@ type ExamItem = {
   id: string;
   name: string;
   shortCode?: string | null;
+};
+
+type ChapterItem = {
+  id: string;
+  examId?: string | null;
+  subject: string;
+  name: string;
+  order: number;
+  topics?: TopicItem[];
+};
+
+type TopicItem = {
+  id: string;
+  chapterId: string;
+  name: string;
+  order: number;
 };
 
 type CropMeta = {
@@ -55,6 +71,7 @@ export default function CreatorStudio() {
   const [testDescription, setTestDescription] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [examDirectory, setExamDirectory] = useState<ExamItem[]>([]);
+  const [chapterDirectory, setChapterDirectory] = useState<ChapterItem[]>([]);
   const [pyqExamId, setPyqExamId] = useState<string | null>(null);
   const [pyqExamName, setPyqExamName] = useState<string | null>(null);
   const [pyqYear, setPyqYear] = useState<number | null>(null);
@@ -90,6 +107,8 @@ export default function CreatorStudio() {
   const [bulkDifficulty, setBulkDifficulty] = useState<CropMeta["difficulty"]>("Easy");
   const [bulkChapter, setBulkChapter] = useState("");
   const [bulkTopic, setBulkTopic] = useState("");
+  const [bulkChapterId, setBulkChapterId] = useState("");
+  const [bulkTopicId, setBulkTopicId] = useState("");
   const [lockNavigation, setLockNavigation] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isEditingOptions, setIsEditingOptions] = useState(false);
@@ -180,6 +199,27 @@ const [isPanning, setIsPanning] = useState(false);
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    if (!pyqExamId) {
+      setChapterDirectory([]);
+      return () => {
+        active = false;
+      };
+    }
+    fetch(`/api/pyq/chapters?examId=${pyqExamId}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setChapterDirectory(data);
+        }
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, [pyqExamId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -357,6 +397,58 @@ const [isPanning, setIsPanning] = useState(false);
       })
     );
   }, [lastSubject, lastDifficulty, markingCorrect, markingIncorrect]);
+
+  const chaptersBySubject = useMemo(() => {
+    const map = new Map<string, ChapterItem[]>();
+    chapterDirectory.forEach((chapter) => {
+      const key = chapter.subject || "General";
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
+      map.get(key)!.push(chapter);
+    });
+    return map;
+  }, [chapterDirectory]);
+
+  const topicsByChapterId = useMemo(() => {
+    const map = new Map<string, TopicItem[]>();
+    chapterDirectory.forEach((chapter) => {
+      if (chapter.topics?.length) {
+        map.set(chapter.id, chapter.topics);
+      }
+    });
+    return map;
+  }, [chapterDirectory]);
+
+  useEffect(() => {
+    if (!bulkChapterId) {
+      setBulkChapter("");
+      setBulkTopic("");
+      setBulkTopicId("");
+      return;
+    }
+    const chapter = chapterDirectory.find((item) => item.id === bulkChapterId);
+    setBulkChapter(chapter?.name ?? "");
+    setBulkTopic("");
+    setBulkTopicId("");
+  }, [bulkChapterId, chapterDirectory]);
+
+  useEffect(() => {
+    if (!bulkTopicId || !bulkChapterId) {
+      setBulkTopic("");
+      return;
+    }
+    const topics = topicsByChapterId.get(bulkChapterId) ?? [];
+    const topic = topics.find((item) => item.id === bulkTopicId);
+    setBulkTopic(topic?.name ?? "");
+  }, [bulkTopicId, bulkChapterId, topicsByChapterId]);
+
+  useEffect(() => {
+    if (!bulkChapterId) return;
+    if (!chapterDirectory.some((chapter) => chapter.id === bulkChapterId)) {
+      setBulkChapterId("");
+    }
+  }, [bulkChapterId, chapterDirectory]);
 
   const updateZoom = useCallback((value: number) => {
     if (!Number.isFinite(value)) return;
@@ -549,6 +641,16 @@ const [isPanning, setIsPanning] = useState(false);
 
   const activeCrop = cropRects.find((rect) => rect.id === activeCropId) || null;
   const activeAccent = activeCrop ? subjectAccents[activeCrop.subject] : subjectAccents.Physics;
+  const activeChapter = activeCrop
+    ? resolveChapter(activeCrop.chapter, activeCrop.subject)
+    : undefined;
+  const activeChapterId = activeChapter?.id ?? "";
+  const activeTopics = activeChapterId ? topicsByChapterId.get(activeChapterId) ?? [] : [];
+  const activeTopic = activeCrop ? resolveTopic(activeCrop.topic, activeChapterId) : undefined;
+  const activeTopicId = activeTopic?.id ?? "";
+  const activeChaptersForSubject = activeCrop
+    ? chaptersBySubject.get(activeCrop.subject) ?? chapterDirectory
+    : chapterDirectory;
 
   const renderPdfPage = async (pageNumber: number) => {
     if (!pdfDoc || !canvasRef.current) {
@@ -860,6 +962,25 @@ const [isPanning, setIsPanning] = useState(false);
       exam.name.toLowerCase() === needle ||
       exam.shortCode?.toLowerCase() === needle
     );
+  };
+
+  const resolveChapter = (name?: string, subject?: string) => {
+    if (!name) return undefined;
+    const match = chapterDirectory.find(
+      (chapter) =>
+        chapter.name.toLowerCase() === name.toLowerCase() &&
+        (!subject || chapter.subject === subject)
+    );
+    if (match) return match;
+    return chapterDirectory.find(
+      (chapter) => chapter.name.toLowerCase() === name.toLowerCase()
+    );
+  };
+
+  const resolveTopic = (name?: string, chapterId?: string) => {
+    if (!name || !chapterId) return undefined;
+    const topics = topicsByChapterId.get(chapterId) ?? [];
+    return topics.find((topic) => topic.name.toLowerCase() === name.toLowerCase());
   };
 
   const handleJsonImport = () => {
@@ -2046,21 +2167,62 @@ Rules (MathJax-friendly):
                           </div>
                           <div>
                             <label className="text-white/60">Chapter</label>
-                            <input
-                              value={activeCrop.chapter ?? ""}
-                              onChange={(event) => updateActiveCrop({ chapter: event.target.value })}
-                              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                              placeholder="e.g., Thermodynamics"
-                            />
+                            {chapterDirectory.length ? (
+                              <select
+                                value={activeChapterId}
+                                onChange={(event) => {
+                                  const nextId = event.target.value;
+                                  const chapter = chapterDirectory.find((item) => item.id === nextId);
+                                  updateActiveCrop({
+                                    chapter: chapter?.name ?? "",
+                                    topic: "",
+                                  });
+                                }}
+                                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                              >
+                                <option value="">Select chapter</option>
+                                {activeChaptersForSubject.map((chapter) => (
+                                  <option key={chapter.id} value={chapter.id}>
+                                    {chapter.subject} · {chapter.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                value={activeCrop.chapter ?? ""}
+                                onChange={(event) => updateActiveCrop({ chapter: event.target.value })}
+                                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                                placeholder="e.g., Thermodynamics"
+                              />
+                            )}
                           </div>
                           <div>
                             <label className="text-white/60">Topic</label>
-                            <input
-                              value={activeCrop.topic ?? ""}
-                              onChange={(event) => updateActiveCrop({ topic: event.target.value })}
-                              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                              placeholder="e.g., First Law"
-                            />
+                            {activeChapterId && activeTopics.length ? (
+                              <select
+                                value={activeTopicId}
+                                onChange={(event) => {
+                                  const nextId = event.target.value;
+                                  const topic = activeTopics.find((item) => item.id === nextId);
+                                  updateActiveCrop({ topic: topic?.name ?? "" });
+                                }}
+                                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                              >
+                                <option value="">Select topic</option>
+                                {activeTopics.map((topic) => (
+                                  <option key={topic.id} value={topic.id}>
+                                    {topic.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                value={activeCrop.topic ?? ""}
+                                onChange={(event) => updateActiveCrop({ topic: event.target.value })}
+                                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                                placeholder="e.g., First Law"
+                              />
+                            )}
                           </div>
                           {activeCrop.questionType === "MCQ" && (
                             <div>
@@ -2247,6 +2409,48 @@ Rules (MathJax-friendly):
                 />
               </div>
               <div>
+                <label className="text-white/60">Exam (PYQ)</label>
+                <select
+                  value={pyqExamId ?? ""}
+                  onChange={(event) => {
+                    const nextId = event.target.value || null;
+                    const match = examDirectory.find((exam) => exam.id === nextId);
+                    setPyqExamId(nextId);
+                    setPyqExamName(match?.name ?? null);
+                  }}
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                >
+                  <option value="">Select exam</option>
+                  {examDirectory.map((exam) => (
+                    <option key={exam.id} value={exam.id}>
+                      {exam.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-white/60">Year</label>
+                  <input
+                    type="number"
+                    value={pyqYear ?? ""}
+                    onChange={(event) =>
+                      setPyqYear(event.target.value ? Number(event.target.value) : null)
+                    }
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-white/60">Shift</label>
+                  <input
+                    value={pyqShift ?? ""}
+                    onChange={(event) => setPyqShift(event.target.value || null)}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                    placeholder="optional"
+                  />
+                </div>
+              </div>
+              <div>
                 <label className="text-white/60">Duration (minutes)</label>
                 <input
                   type="number"
@@ -2422,6 +2626,50 @@ Rules (MathJax-friendly):
                 <option key={difficulty}>{difficulty}</option>
               ))}
             </select>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {chapterDirectory.length ? (
+              <select
+                value={bulkChapterId}
+                onChange={(event) => setBulkChapterId(event.target.value)}
+                className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px]"
+              >
+                <option value="">Chapter</option>
+                {chapterDirectory.map((chapter) => (
+                  <option key={chapter.id} value={chapter.id}>
+                    {chapter.subject} · {chapter.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={bulkChapter}
+                onChange={(event) => setBulkChapter(event.target.value)}
+                className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px]"
+                placeholder="Chapter"
+              />
+            )}
+            {bulkChapterId && (topicsByChapterId.get(bulkChapterId) ?? []).length ? (
+              <select
+                value={bulkTopicId}
+                onChange={(event) => setBulkTopicId(event.target.value)}
+                className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px]"
+              >
+                <option value="">Topic</option>
+                {(topicsByChapterId.get(bulkChapterId) ?? []).map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={bulkTopic}
+                onChange={(event) => setBulkTopic(event.target.value)}
+                className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px]"
+                placeholder="Topic"
+              />
+            )}
           </div>
           <div className="mt-3 flex gap-2">
             <button

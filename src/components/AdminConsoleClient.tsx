@@ -43,9 +43,11 @@ type ExamItem = {
 
 type ChapterItem = {
   id: string;
+  examId?: string | null;
   subject: string;
   name: string;
   order: number;
+  exam?: { id: string; name: string } | null;
 };
 
 type TopicItem = {
@@ -90,7 +92,9 @@ export default function AdminConsoleClient() {
   const [chapterSubject, setChapterSubject] = useState("Physics");
   const [chapterName, setChapterName] = useState("");
   const [chapterOrder, setChapterOrder] = useState(0);
+  const [chapterExamId, setChapterExamId] = useState("");
 
+  const [topicExamId, setTopicExamId] = useState("");
   const [topicChapterId, setTopicChapterId] = useState("");
   const [topicName, setTopicName] = useState("");
   const [topicOrder, setTopicOrder] = useState(0);
@@ -122,6 +126,12 @@ export default function AdminConsoleClient() {
     setMaintenanceEnabled(Boolean(m?.enabled));
     if (Array.isArray(e) && e[0]?.id && !paperExamId) {
       setPaperExamId(e[0].id);
+    }
+    if (Array.isArray(e) && e[0]?.id && !chapterExamId) {
+      setChapterExamId(e[0].id);
+    }
+    if (Array.isArray(e) && e[0]?.id && !topicExamId) {
+      setTopicExamId(e[0].id);
     }
     if (Array.isArray(c) && c[0]?.id && !topicChapterId) {
       setTopicChapterId(c[0].id);
@@ -171,11 +181,16 @@ export default function AdminConsoleClient() {
   };
 
   const createChapter = async () => {
-    if (!chapterName.trim()) return;
+    if (!chapterName.trim() || !chapterExamId) return;
     await fetch("/api/admin/chapters", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject: chapterSubject, name: chapterName, order: chapterOrder }),
+      body: JSON.stringify({
+        examId: chapterExamId,
+        subject: chapterSubject,
+        name: chapterName,
+        order: chapterOrder,
+      }),
     });
     setChapterName("");
     setChapterOrder(0);
@@ -276,6 +291,21 @@ export default function AdminConsoleClient() {
     chapters.forEach((c) => map.set(c.id, c));
     return map;
   }, [chapters]);
+
+  const filteredChaptersForTopics = useMemo(() => {
+    if (!topicExamId) return chapters;
+    return chapters.filter((chapter) => chapter.examId === topicExamId);
+  }, [chapters, topicExamId]);
+
+  useEffect(() => {
+    if (!filteredChaptersForTopics.length) {
+      if (topicChapterId) setTopicChapterId("");
+      return;
+    }
+    if (!filteredChaptersForTopics.some((chapter) => chapter.id === topicChapterId)) {
+      setTopicChapterId(filteredChaptersForTopics[0].id);
+    }
+  }, [filteredChaptersForTopics, topicChapterId]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -384,7 +414,19 @@ export default function AdminConsoleClient() {
 
         <section className="mt-6 rounded-xl border border-white/10 p-4">
           <h2 className="text-sm font-semibold">Chapters</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+          <div className="mt-3 grid gap-2 sm:grid-cols-5">
+            <select
+              value={chapterExamId}
+              onChange={(e) => setChapterExamId(e.target.value)}
+              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
+            >
+              <option value="">Select exam</option>
+              {exams.map((exam) => (
+                <option key={exam.id} value={exam.id}>
+                  {exam.name}
+                </option>
+              ))}
+            </select>
             <select
               value={chapterSubject}
               onChange={(e) => setChapterSubject(e.target.value)}
@@ -416,7 +458,9 @@ export default function AdminConsoleClient() {
               <div key={chapter.id} className="flex items-center justify-between rounded-md border border-white/10 px-3 py-2">
                 <div>
                   <div className="font-semibold">{chapter.name}</div>
-                  <div className="text-white/50">{chapter.subject}</div>
+                  <div className="text-white/50">
+                    {chapter.exam?.name ?? "Exam"} · {chapter.subject}
+                  </div>
                 </div>
                 <button className="rounded-md border border-rose-400/40 px-2 py-1 text-rose-200" onClick={() => deleteChapter(chapter.id)}>
                   Delete
@@ -428,14 +472,26 @@ export default function AdminConsoleClient() {
 
         <section className="mt-6 rounded-xl border border-white/10 p-4">
           <h2 className="text-sm font-semibold">Topics</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+          <div className="mt-3 grid gap-2 sm:grid-cols-5">
+            <select
+              value={topicExamId}
+              onChange={(e) => setTopicExamId(e.target.value)}
+              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
+            >
+              <option value="">Select exam</option>
+              {exams.map((exam) => (
+                <option key={exam.id} value={exam.id}>
+                  {exam.name}
+                </option>
+              ))}
+            </select>
             <select
               value={topicChapterId}
               onChange={(e) => setTopicChapterId(e.target.value)}
               className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
             >
               <option value="">Select chapter</option>
-              {chapters.map((chapter) => (
+              {filteredChaptersForTopics.map((chapter) => (
                 <option key={chapter.id} value={chapter.id}>
                   {chapter.subject}  {chapter.name}
                 </option>
@@ -463,7 +519,9 @@ export default function AdminConsoleClient() {
               <div key={topic.id} className="flex items-center justify-between rounded-md border border-white/10 px-3 py-2">
                 <div>
                   <div className="font-semibold">{topic.name}</div>
-                  <div className="text-white/50">{topicChapterMap.get(topic.chapterId)?.name ?? ""}</div>
+                  <div className="text-white/50">
+                    {topicChapterMap.get(topic.chapterId)?.exam?.name ?? "Exam"} · {topicChapterMap.get(topic.chapterId)?.name ?? ""}
+                  </div>
                 </div>
                 <button className="rounded-md border border-rose-400/40 px-2 py-1 text-rose-200" onClick={() => deleteTopic(topic.id)}>
                   Delete
