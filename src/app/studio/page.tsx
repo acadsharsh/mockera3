@@ -1082,7 +1082,7 @@ const [isPanning, setIsPanning] = useState(false);
     }
   };
 
-  const jsonPrompt = `Extract questions into strict JSON with this shape:
+  const jsonPrompt = `Extract questions into strict JSON with this shape (include full details per question):
 
 {
   "meta": {
@@ -1091,7 +1091,10 @@ const [isPanning, setIsPanning] = useState(false);
     "shift": "Jan 27 S1",
     "subject": "Physics",
     "chapter": "Units & Measurements",
-    "topic": "Dimensions"
+    "topic": "Dimensions",
+    "difficulty": "Easy|Moderate|Tough",
+    "marksCorrect": 4,
+    "marksIncorrect": -1
   },
   "questions": [
     {
@@ -1099,7 +1102,15 @@ const [isPanning, setIsPanning] = useState(false);
       "text": "Question text only (remove Section labels like [Section 1])",
       "options": ["A", "B", "C", "D"],
       "answer": "A",
+      "questionType": "MCQ|MSQ|NUM",
+      "correctOptions": ["A","C"],
+      "correctNumeric": "42",
       "subject": "Physics|Chemistry|Maths",
+      "chapter": "Thermodynamics",
+      "topic": "First Law",
+      "difficulty": "Easy|Moderate|Tough",
+      "marksCorrect": 4,
+      "marksIncorrect": -1,
       "hasDiagram": true|false
     }
   ]
@@ -1113,7 +1124,7 @@ Rules (MathJax-friendly):
 - Use \\times for multiplication, \\cdot for dot product.
 - Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
 - If a question has a diagram, set hasDiagram: true.
-- Use meta for shared tags (exam/year/shift/subject/chapter).
+- Use meta for shared tags (exam/year/shift/subject/chapter/topic/difficulty/marks).
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
 
