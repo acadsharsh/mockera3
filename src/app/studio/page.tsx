@@ -109,6 +109,10 @@ export default function CreatorStudio() {
   const [bulkTopic, setBulkTopic] = useState("");
   const [bulkChapterId, setBulkChapterId] = useState("");
   const [bulkTopicId, setBulkTopicId] = useState("");
+  const [newChapterSubject, setNewChapterSubject] = useState<CropMeta["subject"]>("Physics");
+  const [newChapterName, setNewChapterName] = useState("");
+  const [newChapterOrder, setNewChapterOrder] = useState(0);
+  const [creatingChapter, setCreatingChapter] = useState(false);
   const [lockNavigation, setLockNavigation] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isEditingOptions, setIsEditingOptions] = useState(false);
@@ -200,6 +204,22 @@ const [isPanning, setIsPanning] = useState(false);
     };
   }, []);
 
+  const refreshChapters = useCallback(async () => {
+    if (!pyqExamId) {
+      setChapterDirectory([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/pyq/chapters?examId=${pyqExamId}`, { cache: "no-store" });
+      const data = res.ok ? await res.json() : [];
+      if (Array.isArray(data)) {
+        setChapterDirectory(data);
+      }
+    } catch {
+      // ignore
+    }
+  }, [pyqExamId]);
+
   useEffect(() => {
     let active = true;
     if (!pyqExamId) {
@@ -208,18 +228,13 @@ const [isPanning, setIsPanning] = useState(false);
         active = false;
       };
     }
-    fetch(`/api/pyq/chapters?examId=${pyqExamId}`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (active && Array.isArray(data)) {
-          setChapterDirectory(data);
-        }
-      })
-      .catch(() => null);
+    refreshChapters().finally(() => {
+      if (!active) return;
+    });
     return () => {
       active = false;
     };
-  }, [pyqExamId]);
+  }, [pyqExamId, refreshChapters]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -512,8 +527,8 @@ const [isPanning, setIsPanning] = useState(false);
   }, [cropRects]);
 
   const runSaveTest = useCallback(async () => {
-    if (!title.trim() || cropRects.length === 0) {
-      alert("Please enter a title and create at least one crop.");
+    if (cropRects.length === 0) {
+      alert("Please create at least one crop.");
       return;
     }
     setSaving(true);
@@ -548,12 +563,23 @@ const [isPanning, setIsPanning] = useState(false);
         }
       }
 
+      const resolvedTitle =
+        title.trim() ||
+        [
+          pyqExamName || "Chapterwise PYQ",
+          pyqYear ? String(pyqYear) : "",
+          pyqShift ?? "",
+          bulkChapter || "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
       const response = await fetch("/api/tests", {
         method: editingTestId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           testId: editingTestId ?? undefined,
-          title,
+          title: resolvedTitle || "Untitled Test",
           visibility,
           accessCode: visibility === "Private" ? accessCode : undefined,
           durationMinutes,
@@ -1098,8 +1124,6 @@ const [isPanning, setIsPanning] = useState(false);
       "year": 2024,
       "shift": "Jan 27 S1",
       "subject": "Physics|Chemistry|Maths",
-      "chapter": "Thermodynamics",
-      "topic": "First Law",
       "difficulty": "Easy|Moderate|Tough",
       "marksCorrect": 4,
       "marksIncorrect": -1,
@@ -1116,7 +1140,7 @@ Rules (MathJax-friendly):
 - Use \\times for multiplication, \\cdot for dot product.
 - Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
 - If a question has a diagram, set hasDiagram: true.
-- Provide exam/year/shift/subject/chapter/topic/difficulty/marks for every question.
+- Provide exam/year/shift/subject/difficulty/marks for every question.
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
 
@@ -1147,6 +1171,28 @@ Rules (MathJax-friendly):
 - One JSON object only, no extra commentary.`;
 
   const jsonPrompt = isAdmin ? adminJsonPrompt : userJsonPrompt;
+
+  const handleCreateChapter = async () => {
+    if (!isAdmin || !pyqExamId || !newChapterName.trim()) return;
+    setCreatingChapter(true);
+    try {
+      await fetch("/api/admin/chapters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          examId: pyqExamId,
+          subject: newChapterSubject,
+          name: newChapterName.trim(),
+          order: newChapterOrder,
+        }),
+      });
+      setNewChapterName("");
+      setNewChapterOrder(0);
+      await refreshChapters();
+    } finally {
+      setCreatingChapter(false);
+    }
+  };
 
   const handleCopyJsonPrompt = async () => {
     try {
@@ -2482,6 +2528,46 @@ Rules (MathJax-friendly):
                         placeholder="optional"
                       />
                     </div>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="text-xs font-semibold text-white/70">Create Chapter</div>
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <select
+                        value={newChapterSubject}
+                        onChange={(event) => setNewChapterSubject(event.target.value as CropMeta["subject"])}
+                        className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm"
+                      >
+                        {subjects.map((subject) => (
+                          <option key={subject}>{subject}</option>
+                        ))}
+                      </select>
+                      <input
+                        value={newChapterName}
+                        onChange={(event) => setNewChapterName(event.target.value)}
+                        placeholder="Chapter name"
+                        className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm"
+                      />
+                      <input
+                        type="number"
+                        value={newChapterOrder}
+                        onChange={(event) => setNewChapterOrder(Number(event.target.value))}
+                        placeholder="Order"
+                        className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCreateChapter}
+                      disabled={!pyqExamId || creatingChapter}
+                      className="mt-3 rounded-full border border-white/10 px-4 py-2 text-xs text-white/70 hover:border-white/30 disabled:opacity-50"
+                    >
+                      {creatingChapter ? "Creating..." : "Add Chapter"}
+                    </button>
+                    {!pyqExamId && (
+                      <div className="mt-2 text-[11px] text-white/40">
+                        Select an exam first to add chapters.
+                      </div>
+                    )}
                   </div>
                 </>
               )}
