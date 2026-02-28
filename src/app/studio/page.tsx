@@ -549,7 +549,9 @@ const [isPanning, setIsPanning] = useState(false);
             body: formData,
           });
           if (!uploadResponse.ok) {
-            alert("PDF upload failed. Please re-upload the PDF and try again.");
+            const errorPayload = await safeJson<{ error?: string }>(uploadResponse, {});
+            const errorMessage = errorPayload?.error || "PDF upload failed. Please re-upload the PDF and try again.";
+            alert(errorMessage);
             return;
           }
           const uploadData = await safeJson<{ url?: string }>(uploadResponse, {} as any);
