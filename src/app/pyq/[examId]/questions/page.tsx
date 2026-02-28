@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type QuestionItem = {
@@ -13,6 +13,50 @@ type QuestionItem = {
   test?: { id: string; title?: string | null; year?: number | null; shift?: string | null; exam?: string | null };
 };
 
+const ensureMathJax = (() => {
+  let loading: Promise<void> | null = null;
+  return () => {
+    if (typeof window === "undefined") return Promise.resolve();
+    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
+    if (loading) return loading;
+    (window as any).MathJax = {
+      tex: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]],
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+        processEscapes: true,
+      },
+      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
+    };
+    loading = new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+      script.async = true;
+      script.onload = () => resolve();
+      document.head.appendChild(script);
+    });
+    return loading;
+  };
+})();
+
+const cleanupLatex = (value: string) =>
+  value
+    .normalize("NFKC")
+    .replace(/[\u{1D400}-\u{1D7FF}]/gu, (ch) => ch.normalize("NFKC"))
+    .replace(/\u0008/g, "\\b")
+    .replace(/\u0009/g, "\\t")
+    .replace(/\u000c/g, "\\f")
+    .replace(/[\u0000-\u0007\u000b\u000e-\u001f]/g, "")
+    .replace(/\p{Mn}/gu, "")
+    .replace(/\p{Cf}/gu, "")
+    .replace(/[\u2061-\u2064]/g, "")
+    .replace(/\\\\/g, "\\")
+    .replace(/\u00a0/g, " ")
+    .replace(/[\r\n\u2028\u2029]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\u2212/g, "-")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
+    .trim();
+
 export default function PyqChapterQuestions({ params }: { params: Promise<{ examId: string }> }) {
   const { examId } = use(params);
   const searchParams = useSearchParams();
@@ -21,6 +65,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
   const chapter = searchParams.get("chapter") ?? "";
   const [items, setItems] = useState<QuestionItem[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -40,6 +85,13 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
       active = false;
     };
   }, [examId, subject, chapter]);
+
+  useEffect(() => {
+    if (!items.length) return;
+    const host = listRef.current;
+    if (!host) return;
+    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
+  }, [items]);
 
   const title = useMemo(() => {
     if (subject && chapter) return `${subject} > ${chapter}`;
@@ -86,7 +138,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
           <p className="mt-2 text-xs text-white/50">Showing {items.length} questions</p>
         </div>
 
-        <div className="mt-6 space-y-4">
+        <div ref={listRef} className="mt-6 space-y-4">
           {items.map((item, index) => (
             <button
               key={item.id}
@@ -100,7 +152,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-white">
-                    {(item.prompt || "").slice(0, 160) || "Question"}
+                    {cleanupLatex(item.prompt || "").slice(0, 220) || "Question"}
                   </p>
                   <p className="mt-2 text-xs text-white/50">
                     {item.test?.exam ?? ""} {item.test?.year ? `${item.test?.year}` : ""} {item.test?.shift ? `(${item.test?.shift})` : ""}
