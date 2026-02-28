@@ -79,10 +79,15 @@ export async function GET(request: Request) {
   }
   const adminEmails = parseAdminEmails();
   const isAdmin = session.user.email ? adminEmails.includes(session.user.email.toLowerCase()) : false;
-  const cacheHeaders = { "Cache-Control": "private, max-age=30" };
+  const cacheHeaders = {
+    "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+  };
   const url = new URL(request.url);
   const latest = url.searchParams.get("latest");
   const testId = url.searchParams.get("testId");
+  const limitParam = url.searchParams.get("limit");
+  const cursor = url.searchParams.get("cursor");
+  const limit = limitParam ? Math.min(Number(limitParam) || 0, 100) : 0;
 
   if (testId) {
     const test = await prisma.test.findFirst({
@@ -106,14 +111,32 @@ export async function GET(request: Request) {
     return NextResponse.json(latestTest ? mapTest(latestTest) : null, { headers: cacheHeaders });
   }
 
-  const tests = await prisma.test.findMany({
+  if (!limit) {
+    const tests = await prisma.test.findMany({
+      where: {
+        OR: [{ visibility: "Public", hidden: false }, { ownerId: session.user.id }],
+      },
+      include: { questions: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(tests.map(mapTest), { headers: cacheHeaders });
+  }
+
+  const paged = await prisma.test.findMany({
     where: {
       OR: [{ visibility: "Public", hidden: false }, { ownerId: session.user.id }],
     },
     include: { questions: true },
     orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
-  return NextResponse.json(tests.map(mapTest), { headers: cacheHeaders });
+
+  const hasMore = paged.length > limit;
+  const items = hasMore ? paged.slice(0, limit) : paged;
+  const nextCursor = hasMore ? items[items.length - 1]?.id ?? null : null;
+
+  return NextResponse.json({ items: items.map(mapTest), nextCursor }, { headers: cacheHeaders });
 }
 
 export async function POST(request: Request) {

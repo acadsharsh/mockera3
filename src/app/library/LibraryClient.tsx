@@ -130,6 +130,8 @@ export default function LibraryClient({
   const [editDescription, setEditDescription] = useState("");
   const [editTags, setEditTags] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -153,7 +155,7 @@ export default function LibraryClient({
       }
 
       try {
-        const testsResponse = await fetch("/api/tests");
+        const testsResponse = await fetch("/api/tests?limit=40");
         if (testsResponse.status === 401) {
           if (!cancelled) {
             setAuthError(true);
@@ -164,7 +166,13 @@ export default function LibraryClient({
         }
         const testsData = await testsResponse.json();
         if (!cancelled) {
-          setTests(Array.isArray(testsData) ? testsData : []);
+          if (Array.isArray(testsData)) {
+            setTests(testsData);
+            setNextCursor(null);
+          } else {
+            setTests(Array.isArray(testsData.items) ? testsData.items : []);
+            setNextCursor(testsData.nextCursor ?? null);
+          }
         }
 
         const attemptsResponse = await fetch("/api/attempts");
@@ -190,6 +198,21 @@ export default function LibraryClient({
       cancelled = true;
     };
   }, []);
+
+  const loadMoreTests = async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await fetch(`/api/tests?limit=40&cursor=${encodeURIComponent(nextCursor)}`);
+      if (!response.ok) return;
+      const payload = await response.json();
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      setTests((prev) => [...prev, ...items]);
+      setNextCursor(payload.nextCursor ?? null);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const attemptsByTest = useMemo(() => {
     return attempts.reduce((acc, attempt) => {
@@ -571,7 +594,8 @@ export default function LibraryClient({
                 </a>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {searchedTests.map((test, index) => {
                   const subject = test.crops?.[0]?.subject ?? "Physics";
                   const style = subjectStyles[subject] ?? subjectStyles.Physics;
@@ -712,7 +736,20 @@ export default function LibraryClient({
                     </div>
                   );
                 })}
-              </div>
+                </div>
+                {nextCursor && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={loadMoreTests}
+                      className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs font-semibold text-white/80 hover:border-white/30"
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? "Loading..." : "Load more"}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
