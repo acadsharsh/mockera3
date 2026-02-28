@@ -480,6 +480,15 @@ export default function LibraryClient({
       )}
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 pb-10 pt-24 md:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold font-everett">Course Library</h1>
+          <a
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80 hover:border-white/30"
+            href="/studio"
+          >
+            + Create Test
+          </a>
+        </div>
 <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="rounded-full border border-cyan-400/20 bg-[#0b1323] p-1">
             <div className="flex items-center gap-1">

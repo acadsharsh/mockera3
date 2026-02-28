@@ -1030,10 +1030,6 @@ const [isPanning, setIsPanning] = useState(false);
     : chapterDirectory;
 
   const handleJsonImport = () => {
-    if (!isAdmin) {
-      setJsonImportStatus({ message: "Admin only: JSON import is disabled for non-admin accounts.", tone: "error" });
-      return;
-    }
     try {
       const parsed = JSON.parse(jsonImportText || "{}") as {
         meta?: {
@@ -1931,18 +1927,16 @@ Rules (MathJax-friendly):
               </div>
             )}
 
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => {
-                  setJsonImportStatus(null);
-                  setShowJsonImport(true);
-                }}
-                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
-              >
-                Paste JSON
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setJsonImportStatus(null);
+                setShowJsonImport(true);
+              }}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
+            >
+              Paste JSON
+            </button>
             <button
               type="button"
               onClick={() => setShowSettings(true)}
@@ -2665,7 +2659,7 @@ Rules (MathJax-friendly):
               </button>
             </div>
             <p className="mt-2 text-sm text-white/70">
-              Paste your questions JSON and we will add them as draft questions. Admin only. You can still crop diagrams manually.
+              Paste your questions JSON and we will add them as draft questions. You can still crop diagrams manually.
             </p>
 
             <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">
