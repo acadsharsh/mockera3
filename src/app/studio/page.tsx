@@ -1082,20 +1082,9 @@ const [isPanning, setIsPanning] = useState(false);
     }
   };
 
-  const jsonPrompt = `Extract questions into strict JSON with this shape (include full details per question):
+  const adminJsonPrompt = `Extract questions into strict JSON with this shape (include full details per question):
 
 {
-  "meta": {
-    "exam": "JEE Main",
-    "year": 2024,
-    "shift": "Jan 27 S1",
-    "subject": "Physics",
-    "chapter": "Units & Measurements",
-    "topic": "Dimensions",
-    "difficulty": "Easy|Moderate|Tough",
-    "marksCorrect": 4,
-    "marksIncorrect": -1
-  },
   "questions": [
     {
       "number": 1,
@@ -1105,6 +1094,9 @@ const [isPanning, setIsPanning] = useState(false);
       "questionType": "MCQ|MSQ|NUM",
       "correctOptions": ["A","C"],
       "correctNumeric": "42",
+      "exam": "JEE Main",
+      "year": 2024,
+      "shift": "Jan 27 S1",
       "subject": "Physics|Chemistry|Maths",
       "chapter": "Thermodynamics",
       "topic": "First Law",
@@ -1124,9 +1116,37 @@ Rules (MathJax-friendly):
 - Use \\times for multiplication, \\cdot for dot product.
 - Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
 - If a question has a diagram, set hasDiagram: true.
-- Use meta for shared tags (exam/year/shift/subject/chapter/topic/difficulty/marks).
+- Provide exam/year/shift/subject/chapter/topic/difficulty/marks for every question.
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
+
+  const userJsonPrompt = `Extract questions into strict JSON with this shape:
+
+{
+  "questions": [
+    {
+      "number": 1,
+      "text": "Question text only (remove Section labels like [Section 1])",
+      "options": ["A", "B", "C", "D"],
+      "answer": "A",
+      "subject": "Physics|Chemistry|Maths",
+      "hasDiagram": true|false
+    }
+  ]
+}
+
+Rules (MathJax-friendly):
+- Use LaTeX commands with backslashes: \\pi, \\sin, \\cos, \\tan, \\log.
+- Use fractions as \\frac{a}{b} (do NOT use a/b or fracpi3).
+- Use vectors as \\vec{a}, hats as \\hat{a}.
+- Use exponents as x^2, (a+b)^2, 10^{-3}.
+- Use \\times for multiplication, \\cdot for dot product.
+- Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
+- If a question has a diagram, set hasDiagram: true.
+- Do NOT include section labels in the question text.
+- One JSON object only, no extra commentary.`;
+
+  const jsonPrompt = isAdmin ? adminJsonPrompt : userJsonPrompt;
 
   const handleCopyJsonPrompt = async () => {
     try {
@@ -2419,48 +2439,52 @@ Rules (MathJax-friendly):
                   placeholder="Enter test title"
                 />
               </div>
-              <div>
-                <label className="text-white/60">Exam (PYQ)</label>
-                <select
-                  value={pyqExamId ?? ""}
-                  onChange={(event) => {
-                    const nextId = event.target.value || null;
-                    const match = examDirectory.find((exam) => exam.id === nextId);
-                    setPyqExamId(nextId);
-                    setPyqExamName(match?.name ?? null);
-                  }}
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                >
-                  <option value="">Select exam</option>
-                  {examDirectory.map((exam) => (
-                    <option key={exam.id} value={exam.id}>
-                      {exam.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-white/60">Year</label>
-                  <input
-                    type="number"
-                    value={pyqYear ?? ""}
-                    onChange={(event) =>
-                      setPyqYear(event.target.value ? Number(event.target.value) : null)
-                    }
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-white/60">Shift</label>
-                  <input
-                    value={pyqShift ?? ""}
-                    onChange={(event) => setPyqShift(event.target.value || null)}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                    placeholder="optional"
-                  />
-                </div>
-              </div>
+              {isAdmin && (
+                <>
+                  <div>
+                    <label className="text-white/60">Exam (PYQ)</label>
+                    <select
+                      value={pyqExamId ?? ""}
+                      onChange={(event) => {
+                        const nextId = event.target.value || null;
+                        const match = examDirectory.find((exam) => exam.id === nextId);
+                        setPyqExamId(nextId);
+                        setPyqExamName(match?.name ?? null);
+                      }}
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                    >
+                      <option value="">Select exam</option>
+                      {examDirectory.map((exam) => (
+                        <option key={exam.id} value={exam.id}>
+                          {exam.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-white/60">Year</label>
+                      <input
+                        type="number"
+                        value={pyqYear ?? ""}
+                        onChange={(event) =>
+                          setPyqYear(event.target.value ? Number(event.target.value) : null)
+                        }
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-white/60">Shift</label>
+                      <input
+                        value={pyqShift ?? ""}
+                        onChange={(event) => setPyqShift(event.target.value || null)}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                        placeholder="optional"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
               <div>
                 <label className="text-white/60">Duration (minutes)</label>
                 <input
