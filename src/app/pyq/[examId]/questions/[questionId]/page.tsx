@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 type QuestionDetail = {
   id: string;
   prompt?: string | null;
+  solution?: string | null;
   subject?: string | null;
   chapter?: string | null;
   topic?: string | null;
@@ -15,6 +16,17 @@ type QuestionDetail = {
   correctOption?: string | null;
   correctNumeric?: string | null;
   test?: { id: string; title?: string | null; year?: number | null; shift?: string | null; exam?: string | null };
+};
+
+type OptionStats = {
+  value: string;
+  count: number;
+  percent: number;
+};
+
+type QuestionStats = {
+  total: number;
+  distribution: OptionStats[];
 };
 
 const optionLabels = ["A", "B", "C", "D", "E"] as const;
@@ -111,6 +123,7 @@ export default function PyqQuestionAttempt({
   const topic = searchParams.get("topic") ?? "";
 
   const [question, setQuestion] = useState<QuestionDetail | null>(null);
+  const [stats, setStats] = useState<QuestionStats | null>(null);
   const [questionIds, setQuestionIds] = useState<string[]>([]);
   const [elapsed, setElapsed] = useState(0);
   const [answer, setAnswer] = useState<string>("");
@@ -125,6 +138,7 @@ export default function PyqQuestionAttempt({
       .then((data) => {
         if (!active) return;
         setQuestion(data?.item ?? null);
+        setStats(data?.stats ?? null);
       })
       .catch(() => null);
     return () => {
@@ -173,6 +187,7 @@ export default function PyqQuestionAttempt({
 
   const options = useMemo(() => normalizeOptions(question?.options), [question?.options]);
   const isNumeric = question?.questionType === "NUM";
+  const isMulti = question?.questionType === "MSQ";
   const metaLine = useMemo(() => {
     if (!question?.test) return subject || "PYQ";
     const meta = `${question.test.exam ?? "PYQ"}${question.test.year ? ` ${question.test.year}` : ""}`;
@@ -195,6 +210,34 @@ export default function PyqQuestionAttempt({
     if (question.questionType === "NUM") return question.correctNumeric ?? "";
     return question.correctOption ?? "";
   }, [question]);
+
+  const correctSet = useMemo(() => {
+    if (!correctAnswer) return new Set<string>();
+    return new Set(
+      correctAnswer
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    );
+  }, [correctAnswer]);
+
+  const selectedSet = useMemo(() => {
+    if (!answer) return new Set<string>();
+    return new Set(
+      answer
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    );
+  }, [answer]);
+
+  const statsByValue = useMemo(() => {
+    const map = new Map<string, OptionStats>();
+    (stats?.distribution ?? []).forEach((entry) => {
+      map.set(entry.value, entry);
+    });
+    return map;
+  }, [stats]);
 
   return (
     <div className="min-h-screen bg-[#0f1218] text-white font-neue">
@@ -228,33 +271,116 @@ export default function PyqQuestionAttempt({
             <MathBlock value={question?.prompt ?? "Loading question..."} className="text-base text-white" />
 
             {isNumeric ? (
-              <div className="space-y-2">
-                <label className="text-xs uppercase text-white/50">Numeric Answer</label>
-                <input
-                  value={answer}
-                  onChange={(event) => setAnswer(event.target.value)}
-                  className="w-full max-w-[240px] rounded-md border border-white/10 bg-[#10141d] px-3 py-2 text-white outline-none focus:border-white/40"
-                  placeholder="Enter answer"
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs uppercase text-white/50">Numeric Answer</label>
+                  <input
+                    value={answer}
+                    onChange={(event) => setAnswer(event.target.value)}
+                    className="w-full max-w-[240px] rounded-md border border-white/10 bg-[#10141d] px-3 py-2 text-white outline-none focus:border-white/40"
+                    placeholder="Enter answer"
+                  />
+                </div>
+                {stats?.distribution?.length ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {stats.distribution.slice(0, 4).map((entry) => {
+                      const showMarked = showAnswer && answer.trim() === entry.value;
+                      const showCorrect = showAnswer && correctAnswer && correctAnswer.trim() === entry.value;
+                      return (
+                        <div
+                          key={entry.value}
+                          className={`rounded-[12px] border px-4 py-4 text-left ${
+                            showCorrect
+                              ? "border-emerald-400/70 bg-emerald-400/10"
+                              : showMarked
+                              ? "border-rose-400/70 bg-rose-400/10"
+                              : "border-white/10 bg-[#10141d]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/5 text-xs text-white/80">
+                                {entry.percent ? `${entry.percent}%` : "--"}
+                              </span>
+                              <div className="text-sm font-semibold text-white">{entry.value}</div>
+                            </div>
+                            {showCorrect && (
+                              <span className="rounded-full bg-emerald-400 px-3 py-1 text-[11px] font-semibold text-[#0b1118]">
+                                Correct
+                              </span>
+                            )}
+                            {showMarked && (
+                              <span className="rounded-full bg-rose-400 px-3 py-1 text-[11px] font-semibold text-[#0b1118]">
+                                You Marked
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {options.length ? (
                   options.map((option, index) => {
                     const label = optionLabels[index] ?? String.fromCharCode(65 + index);
-                    const isSelected = answer === label;
+                    const isSelected = isMulti ? selectedSet.has(label) : answer === label;
+                    const isCorrect = correctSet.has(label);
+                    const statsEntry = statsByValue.get(label);
+                    const percent = statsEntry?.percent ?? 0;
+                    const showMarked = showAnswer && isSelected && !isCorrect;
+                    const showCorrect = showAnswer && isCorrect;
                     return (
                       <button
                         key={`${label}-${index}`}
                         type="button"
-                        onClick={() => setAnswer(label)}
-                        className={`rounded-[10px] border px-4 py-3 text-left ${isSelected ? "border-white/60 bg-white/5" : "border-white/10 bg-[#10141d]"}`}
+                        onClick={() => {
+                          if (isMulti) {
+                            const next = new Set(selectedSet);
+                            if (next.has(label)) {
+                              next.delete(label);
+                            } else {
+                              next.add(label);
+                            }
+                            setAnswer(Array.from(next).sort().join(","));
+                            return;
+                          }
+                          setAnswer(label);
+                        }}
+                        className={`rounded-[12px] border px-4 py-4 text-left transition ${
+                          showCorrect
+                            ? "border-emerald-400/70 bg-emerald-400/10"
+                            : showMarked
+                            ? "border-rose-400/70 bg-rose-400/10"
+                            : isSelected
+                            ? "border-white/60 bg-white/5"
+                            : "border-white/10 bg-[#10141d]"
+                        }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="grid h-7 w-7 place-items-center rounded-full border border-white/20 text-xs text-white/80">
-                            {label}
-                          </span>
-                          <MathBlock value={option} className="text-sm text-white/90" />
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <span className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/5 text-xs text-white/80">
+                              {percent ? `${percent}%` : "--"}
+                            </span>
+                            <div>
+                              <div className="text-sm font-semibold text-white">
+                                {label}
+                              </div>
+                              <MathBlock value={option} className="text-sm text-white/90" />
+                            </div>
+                          </div>
+                          {showCorrect && (
+                            <span className="rounded-full bg-emerald-400 px-3 py-1 text-[11px] font-semibold text-[#0b1118]">
+                              Correct
+                            </span>
+                          )}
+                          {showMarked && (
+                            <span className="rounded-full bg-rose-400 px-3 py-1 text-[11px] font-semibold text-[#0b1118]">
+                              You Marked
+                            </span>
+                          )}
                         </div>
                       </button>
                     );
@@ -298,8 +424,16 @@ export default function PyqQuestionAttempt({
         </div>
 
         {showAnswer && correctAnswer ? (
-          <div className="mt-4 rounded-[8px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/80">
-            Correct answer: <span className="font-semibold text-white">{correctAnswer}</span>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-[8px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/80">
+              Correct answer: <span className="font-semibold text-white">{correctAnswer}</span>
+            </div>
+            {question?.solution ? (
+              <div className="rounded-[8px] border border-white/10 bg-[#171c24] px-4 py-4 text-sm text-white/80">
+                <div className="text-xs uppercase tracking-[0.2em] text-white/50">Solution</div>
+                <MathBlock value={question.solution} className="mt-2 text-sm text-white/90" />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

@@ -16,6 +16,7 @@ type Crop = {
   correctOption: "" | "A" | "B" | "C" | "D";
   correctOptions?: Array<"A" | "B" | "C" | "D">;
   correctNumeric?: string;
+  solution?: string;
   marks: "+4/-1";
   difficulty: "Easy" | "Moderate" | "Tough";
   imageDataUrl: string;
@@ -57,6 +58,7 @@ const mapTest = (test: any) => ({
     difficulty: q.difficulty,
     imageDataUrl: q.imageUrl,
     questionText: q.prompt ?? "",
+    solution: q.solution ?? "",
     options: (q.options as string[]) ?? [],
     questionType: q.questionType as Crop["questionType"],
     correctOptions: q.correctOption ? (q.correctOption as string).split(",") : [],
@@ -181,6 +183,7 @@ export async function POST(request: Request) {
           cropW: crop.w,
           cropH: crop.h,
           prompt: crop.questionText ?? "",
+          solution: crop.solution ?? null,
           options: crop.options ?? [],
         })),
       },
@@ -299,6 +302,7 @@ export async function PUT(request: Request) {
             cropW: crop.w,
             cropH: crop.h,
             prompt: crop.questionText ?? "",
+            solution: crop.solution ?? null,
             options: crop.options ?? [],
           })),
         },

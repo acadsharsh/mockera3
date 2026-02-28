@@ -124,6 +124,7 @@ model Question {
   cropW          Float
   cropH          Float
   prompt         String?
+  solution       String?
   options        Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

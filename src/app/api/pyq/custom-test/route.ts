@@ -87,6 +87,7 @@ export async function POST(req: Request) {
           cropW: q.cropW,
           cropH: q.cropH,
           prompt: q.prompt,
+          solution: q.solution ?? null,
           options: q.options ?? Prisma.JsonNull,
           chapter: q.chapter,
           topic: q.topic,

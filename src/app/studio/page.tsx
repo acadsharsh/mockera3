@@ -40,6 +40,7 @@ type CropMeta = {
   correctOption: "" | "A" | "B" | "C" | "D";
   correctOptions?: Array<"A" | "B" | "C" | "D">;
   correctNumeric?: string;
+  solution?: string;
   marks: "+4/-1";
   difficulty: "Easy" | "Moderate" | "Tough";
   chapter?: string;
@@ -313,6 +314,7 @@ const [isPanning, setIsPanning] = useState(false);
         topic: crop.topic ?? "",
         imageDataUrl: crop.imageDataUrl ?? "",
         questionText: crop.questionText ?? "",
+        solution: crop.solution ?? "",
         options: crop.options ?? [],
         hasDiagram: Boolean(crop.imageDataUrl),
       }));
@@ -1047,6 +1049,7 @@ const [isPanning, setIsPanning] = useState(false);
           text?: string;
           options?: string[];
           answer?: string;
+          solution?: string;
           subject?: CropMeta["subject"];
           chapter?: string;
           topic?: string;
@@ -1113,6 +1116,7 @@ const [isPanning, setIsPanning] = useState(false);
           topic: q.topic ?? metaTopic ?? "",
           imageDataUrl: "",
           questionText: String(q.text ?? ""),
+          solution: q.solution ? String(q.solution) : "",
           options,
           hasDiagram: Boolean(q.hasDiagram),
         } as CropMeta;
@@ -1138,6 +1142,7 @@ const [isPanning, setIsPanning] = useState(false);
       "questionType": "MCQ|MSQ|NUM",
       "correctOptions": ["A","C"],
       "correctNumeric": "42",
+      "solution": "Step-by-step solution in plain text or LaTeX",
       "exam": "JEE Main",
       "year": 2024,
       "shift": "Jan 27 S1",
