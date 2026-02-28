@@ -14,7 +14,7 @@ export default function LandingPage() {
           <Link className="rounded-full border border-white/15 px-4 py-2 text-white/80 hover:border-white/30" href="/login">
             Sign in
           </Link>
-          <Link className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[#0d1117]" href="/studio">
+          <Link className="inline-flex items-center gap-2 rounded-full bg-[#58a6ff] px-4 py-2 text-[#0d1117] hover:bg-[#74b7ff]" href="/studio">
             Open Studio
             <ArrowRight className="h-4 w-4" />
           </Link>
