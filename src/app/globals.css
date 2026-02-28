@@ -1210,6 +1210,17 @@ a {
 }
 
 .app-light {
+  --bg: #e8e8e2;
+  --text: #16133f;
+  --panel: rgba(255, 255, 255, 0.7);
+  --glass: rgba(255, 255, 255, 0.6);
+  --stroke: rgba(31, 23, 72, 0.18);
+  --muted: rgba(22, 19, 63, 0.6);
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.app-light-body {
   background: #e8e8e2;
   color: #16133f;
 }
