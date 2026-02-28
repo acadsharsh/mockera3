@@ -22,12 +22,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, [useDark]);
 
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem={false}
-      forcedTheme={useDark ? "dark" : "light"}
-    >
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <div className={useDark ? "" : "app-light"}>{children}</div>
     </ThemeProvider>
   );
