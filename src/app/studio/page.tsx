@@ -137,6 +137,7 @@ export default function CreatorStudio() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
+  const [bulkApplyStatus, setBulkApplyStatus] = useState<string | null>(null);
   const [promptCopied, setPromptCopied] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
     x: number;
@@ -1792,6 +1793,8 @@ Rules (MathJax-friendly):
     );
     setLastSubject(bulkSubject);
     setLastDifficulty(bulkDifficulty);
+    setBulkApplyStatus(`Applied to ${selectedCropIds.size} question${selectedCropIds.size > 1 ? "s" : ""}.`);
+    setTimeout(() => setBulkApplyStatus(null), 1500);
   };
 
   const updateOption = (index: number, value: string) => {
@@ -2830,6 +2833,11 @@ Rules (MathJax-friendly):
               Clear
             </button>
           </div>
+          {bulkApplyStatus && (
+            <div className="mt-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-[11px] text-emerald-200">
+              {bulkApplyStatus}
+            </div>
+          )}
           <button
             className="mt-3 w-full rounded-full bg-rose-500/20 px-3 py-2 text-[11px] text-rose-200 transition hover:bg-rose-500/30"
             type="button"
