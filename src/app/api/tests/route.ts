@@ -59,6 +59,8 @@ const mapTest = (test: any) => ({
     questionType: q.questionType as Crop["questionType"],
     correctOptions: q.correctOption ? (q.correctOption as string).split(",") : [],
     correctNumeric: q.correctNumeric ?? undefined,
+    chapter: q.chapter ?? "",
+    topic: q.topic ?? "",
     x: q.cropX,
     y: q.cropY,
     w: q.cropW,
@@ -158,6 +160,8 @@ export async function POST(request: Request) {
           subject: crop.subject,
           difficulty: crop.difficulty,
           questionType: crop.questionType ?? "MCQ",
+          chapter: crop.chapter ?? null,
+          topic: crop.topic ?? null,
           correctOption:
             crop.questionType === "MSQ"
               ? (crop.correctOptions ?? []).length
@@ -277,14 +281,16 @@ export async function PUT(request: Request) {
             marksCorrect: payload.markingCorrect,
             marksIncorrect: payload.markingIncorrect,
             correctOption:
-              crop.questionType === "MSQ"
-                ? (crop.correctOptions ?? []).length
-                  ? (crop.correctOptions ?? []).join(",")
-                  : null
-                : crop.questionType === "NUM"
-                ? null
-                : crop.correctOption || null,
+            crop.questionType === "MSQ"
+              ? (crop.correctOptions ?? []).length
+                ? (crop.correctOptions ?? []).join(",")
+                : null
+              : crop.questionType === "NUM"
+              ? null
+              : crop.correctOption || null,
             correctNumeric: crop.questionType === "NUM" ? crop.correctNumeric ?? "" : null,
+            chapter: crop.chapter ?? null,
+            topic: crop.topic ?? null,
             imageUrl: crop.imageDataUrl,
             cropX: crop.x,
             cropY: crop.y,
