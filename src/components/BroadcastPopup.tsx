@@ -38,6 +38,18 @@ export default function BroadcastPopup() {
       }
     };
     load();
+
+    const handleRefresh = () => {
+      load();
+    };
+
+    window.addEventListener("broadcast:refresh", handleRefresh);
+    const interval = window.setInterval(load, 60000);
+
+    return () => {
+      window.removeEventListener("broadcast:refresh", handleRefresh);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const handleClose = () => {

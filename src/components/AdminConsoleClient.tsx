@@ -164,6 +164,7 @@ export default function AdminConsoleClient() {
     setBody("");
     setStartsAt("");
     setEndsAt("");
+    window.dispatchEvent(new Event("broadcast:refresh"));
     await load();
   };
 
