@@ -1210,18 +1210,18 @@ a {
 }
 
 .app-light {
-  --bg: #e2ded4;
+  --bg: #e8e8e2;
   --text: #16133f;
-  --panel: rgba(255, 255, 255, 0.78);
-  --glass: rgba(255, 255, 255, 0.68);
-  --stroke: rgba(31, 23, 72, 0.22);
-  --muted: rgba(22, 19, 63, 0.7);
+  --panel: rgba(255, 255, 255, 0.7);
+  --glass: rgba(255, 255, 255, 0.6);
+  --stroke: rgba(31, 23, 72, 0.18);
+  --muted: rgba(22, 19, 63, 0.6);
   background: var(--bg);
   color: var(--text);
 }
 
 body.app-light-body {
-  background: #e2ded4;
+  background: #e8e8e2;
   color: #16133f;
 }
 
@@ -1231,11 +1231,8 @@ body.app-light-body {
 
 .app-light .bg-\[\#171c24\],
 .app-light .bg-\[\#10141d\],
-.app-light .bg-\[\#0f0f10\],
-.app-light .bg-\[\#111318\],
-.app-light .bg-black\/40,
 .app-light .bg-\[\#0f1218\] .bg-\[\#171c24\] {
-  background-color: #f1ece2 !important;
+  background-color: #f4f1ea !important;
 }
 
 .app-light .bg-white {
@@ -1247,7 +1244,7 @@ body.app-light-body {
 .app-light .bg-white\/20,
 .app-light .bg-white\/30,
 .app-light .bg-white\/50 {
-  background-color: rgba(22, 19, 63, 0.08) !important;
+  background-color: rgba(22, 19, 63, 0.05) !important;
 }
 
 .app-light .text-white,
@@ -1256,28 +1253,19 @@ body.app-light-body {
   color: #16133f !important;
 }
 
-.app-light .text-white\/70 {
-  color: rgba(22, 19, 63, 0.8) !important;
-}
-
+.app-light .text-white\/70,
 .app-light .text-white\/60 {
-  color: rgba(22, 19, 63, 0.74) !important;
+  color: rgba(22, 19, 63, 0.7) !important;
 }
 
-.app-light .text-white\/50 {
-  color: rgba(22, 19, 63, 0.68) !important;
-}
-
+.app-light .text-white\/50,
 .app-light .text-white\/40 {
-  color: rgba(22, 19, 63, 0.6) !important;
+  color: rgba(22, 19, 63, 0.5) !important;
 }
 
-.app-light .text-white\/30 {
-  color: rgba(22, 19, 63, 0.52) !important;
-}
-
+.app-light .text-white\/30,
 .app-light .text-white\/20 {
-  color: rgba(22, 19, 63, 0.44) !important;
+  color: rgba(22, 19, 63, 0.35) !important;
 }
 
 .app-light .border-white\/10,
@@ -1285,7 +1273,7 @@ body.app-light-body {
 .app-light .border-white\/30,
 .app-light .border-white\/40,
 .app-light .border-white\/50 {
-  border-color: rgba(31, 23, 72, 0.28) !important;
+  border-color: rgba(31, 23, 72, 0.2) !important;
 }
 
 .app-light .hover\:border-white\/30:hover,
