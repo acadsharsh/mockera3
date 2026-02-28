@@ -654,7 +654,7 @@ const [isPanning, setIsPanning] = useState(false);
         return;
       }
       const key = event.key.toLowerCase();
-      if ((event.metaKey || event.ctrlKey) && key === "a") {
+      if (isAdmin && (event.metaKey || event.ctrlKey) && key === "a") {
         event.preventDefault();
         setSelectedCropIds(new Set(cropRects.map((crop) => crop.id)));
         return;
