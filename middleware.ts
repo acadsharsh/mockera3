@@ -15,6 +15,7 @@ const allowedPrefixes = [
   "/_next",
 ];
 const allowedPaths = ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/site.webmanifest"];
+const adminOnlyPrefixes = ["/studio", "/api/pyq", "/api/tests", "/api/upload"];
 
 export async function middleware(req: NextRequest) {
   let maintenanceEnabled = MAINTENANCE_MODE;
@@ -43,6 +44,20 @@ export async function middleware(req: NextRequest) {
 
   if (allowedPaths.includes(pathname) || allowedPrefixes.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();
+  }
+
+  if (adminOnlyPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+    try {
+      const adminRes = await fetch(new URL("/api/admin/check", req.url), {
+        cache: "no-store",
+        headers: {
+          cookie: req.headers.get("cookie") ?? "",
+        },
+      });
+      if (adminRes.ok) {
+        return NextResponse.next();
+      }
+    } catch {}
   }
 
   if (BYPASS_TOKEN) {
