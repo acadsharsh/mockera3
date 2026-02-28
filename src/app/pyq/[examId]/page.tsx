@@ -153,8 +153,9 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
                   .filter((entry) => entry.count > 0);
 
                 return (
-                  <div
+                  <Link
                     key={chapter.name}
+                    href={`/pyq/${examId}/questions?subject=${encodeURIComponent(currentSubject?.name ?? "")}&chapter=${encodeURIComponent(chapter.name)}`}
                     className="flex flex-wrap items-center justify-between gap-4 rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-4"
                   >
                     <div className="flex items-center gap-3">
@@ -177,7 +178,7 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
                         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">No recent data</span>
                       )}
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
 
