@@ -8,6 +8,9 @@ const parseIntMaybe = (value: string | null) => {
 };
 
 export async function GET(req: Request) {
+  const cacheHeaders = {
+    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+  };
   const { searchParams } = new URL(req.url);
   const examId = searchParams.get("examId");
   const exam = searchParams.get("exam");
@@ -47,5 +50,5 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  return NextResponse.json({ total, items });
+  return NextResponse.json({ total, items }, { headers: cacheHeaders });
 }

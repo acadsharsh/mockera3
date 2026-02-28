@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
+  const cacheHeaders = {
+    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+  };
   const [questionCount, chapterRows, examRows, maxYear] = await Promise.all([
     prisma.question.count({
       where: { test: { isPyq: true } },
@@ -30,5 +33,5 @@ export async function GET() {
     chapters: chapterRows.length,
     exams: examRows.length,
     latestYear: maxYear._max.year ?? null,
-  });
+  }, { headers: cacheHeaders });
 }

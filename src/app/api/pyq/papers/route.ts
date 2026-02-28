@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
+  const cacheHeaders = {
+    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+  };
   const { searchParams } = new URL(req.url);
   const examId = searchParams.get("examId");
   const year = searchParams.get("year");
@@ -16,5 +19,5 @@ export async function GET(req: Request) {
     orderBy: [{ year: "desc" }, { createdAt: "desc" }],
     include: { exam: true, test: true },
   });
-  return NextResponse.json(rows);
+  return NextResponse.json(rows, { headers: cacheHeaders });
 }

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ questionId: string }> }) {
+  const cacheHeaders = {
+    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+  };
   const { questionId } = await params;
   if (!questionId) {
     return NextResponse.json({ error: "Missing question id." }, { status: 400 });
@@ -17,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ questio
   });
 
   if (!item) {
-    return NextResponse.json({ error: "Question not found." }, { status: 404 });
+    return NextResponse.json({ error: "Question not found." }, { status: 404, headers: cacheHeaders });
   }
 
   const attempts = await prisma.attempt.findMany({
@@ -60,5 +63,5 @@ export async function GET(_req: Request, { params }: { params: Promise<{ questio
     percent: total ? Math.round((count / total) * 100) : 0,
   }));
 
-  return NextResponse.json({ item, stats: { total, distribution } });
+  return NextResponse.json({ item, stats: { total, distribution } }, { headers: cacheHeaders });
 }

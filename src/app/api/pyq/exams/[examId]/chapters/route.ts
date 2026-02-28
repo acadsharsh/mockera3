@@ -17,6 +17,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ examId: string }> }
 ) {
+  const cacheHeaders = {
+    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+  };
   const { examId } = await params;
   const exam = await prisma.exam.findUnique({
     where: { id: examId },
@@ -24,7 +27,7 @@ export async function GET(
   });
 
   if (!exam) {
-    return NextResponse.json({ error: "Exam not found" }, { status: 404 });
+    return NextResponse.json({ error: "Exam not found" }, { status: 404, headers: cacheHeaders });
   }
 
   const papers = await prisma.examPaper.findMany({
@@ -106,7 +109,8 @@ export async function GET(
     })
     .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
-  return NextResponse.json({
+  return NextResponse.json(
+    {
     exam,
     summary: {
       papers: papers.length,
@@ -117,5 +121,7 @@ export async function GET(
     years,
     latestYears,
     subjects,
-  });
+    },
+    { headers: cacheHeaders }
+  );
 }
