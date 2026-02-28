@@ -21,6 +21,8 @@ type Crop = {
   imageDataUrl: string;
   questionText?: string;
   options?: string[];
+  chapter?: string;
+  topic?: string;
   x: number;
   y: number;
   w: number;
