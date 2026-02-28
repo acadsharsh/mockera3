@@ -2105,7 +2105,7 @@ Rules (MathJax-friendly):
                           }}
                           onClick={(event) => {
                             event.stopPropagation();
-                            if (event.shiftKey) {
+                            if (event.shiftKey || event.ctrlKey || event.metaKey) {
                               toggleSelection(rect.id);
                               return;
                             }
@@ -2168,7 +2168,11 @@ Rules (MathJax-friendly):
                     <button
                       key={crop.id}
                       type="button"
-                            onClick={() => {
+                            onClick={(event) => {
+                              if (event.ctrlKey || event.metaKey) {
+                                toggleSelection(crop.id);
+                                return;
+                              }
                               focusCrop(crop.id);
                             }}
                             draggable
@@ -2186,6 +2190,8 @@ Rules (MathJax-friendly):
                       className={`rounded-full px-3 py-1 text-[11px] ${
                         crop.id === activeCropId
                           ? "bg-white text-black"
+                          : selectedCropIds.has(crop.id)
+                          ? "border border-emerald-300/80 text-emerald-100"
                           : "border border-white/10 text-white/70 hover:border-white/30"
                       }`}
                     >

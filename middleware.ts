@@ -46,18 +46,20 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  try {
+    const adminRes = await fetch(new URL("/api/admin/check", req.url), {
+      cache: "no-store",
+      headers: {
+        cookie: req.headers.get("cookie") ?? "",
+      },
+    });
+    if (adminRes.ok) {
+      return NextResponse.next();
+    }
+  } catch {}
+
   if (adminOnlyPrefixes.some((prefix) => pathname.startsWith(prefix))) {
-    try {
-      const adminRes = await fetch(new URL("/api/admin/check", req.url), {
-        cache: "no-store",
-        headers: {
-          cookie: req.headers.get("cookie") ?? "",
-        },
-      });
-      if (adminRes.ok) {
-        return NextResponse.next();
-      }
-    } catch {}
+    // Non-admins blocked below.
   }
 
   if (BYPASS_TOKEN) {
