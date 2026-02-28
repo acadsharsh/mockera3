@@ -45,6 +45,48 @@
   --glow: rgba(88, 166, 255, 0.55);
 }
 
+.tinted-dark {
+  background: #0d1117;
+  color: #e6edf3;
+}
+
+.tinted-dark .bg-\[\#0f0f10\],
+.tinted-dark .bg-\[\#0f1218\],
+.tinted-dark .bg-\[\#0b1323\],
+.tinted-dark .bg-\[\#0a0f1c\],
+.tinted-dark .bg-black,
+.tinted-dark .bg-black\/60 {
+  background-color: #0d1117 !important;
+}
+
+.tinted-dark .bg-\[\#171c24\],
+.tinted-dark .bg-\[\#101624\],
+.tinted-dark .bg-\[\#0f1624\],
+.tinted-dark .bg-\[\#1a1f27\],
+.tinted-dark .bg-\[\#0a1220\] {
+  background-color: #111827 !important;
+}
+
+.tinted-dark .bg-white\/5,
+.tinted-dark .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.tinted-dark .border-white\/10,
+.tinted-dark .border-white\/20,
+.tinted-dark .border-white\/30 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.tinted-dark .text-\[\#2D5BFF\],
+.tinted-dark .text-\[\#6aa8ff\] {
+  color: #58a6ff !important;
+}
+
+.tinted-dark .bg-\[\#2D5BFF\] {
+  background-color: #58a6ff !important;
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
