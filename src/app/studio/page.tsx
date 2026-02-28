@@ -639,19 +639,6 @@ const [isPanning, setIsPanning] = useState(false);
     return () => window.removeEventListener("keydown", handler);
   }, [saveTest]);
 
-  const activeCrop = cropRects.find((rect) => rect.id === activeCropId) || null;
-  const activeAccent = activeCrop ? subjectAccents[activeCrop.subject] : subjectAccents.Physics;
-  const activeChapter = activeCrop
-    ? resolveChapter(activeCrop.chapter, activeCrop.subject)
-    : undefined;
-  const activeChapterId = activeChapter?.id ?? "";
-  const activeTopics = activeChapterId ? topicsByChapterId.get(activeChapterId) ?? [] : [];
-  const activeTopic = activeCrop ? resolveTopic(activeCrop.topic, activeChapterId) : undefined;
-  const activeTopicId = activeTopic?.id ?? "";
-  const activeChaptersForSubject = activeCrop
-    ? chaptersBySubject.get(activeCrop.subject) ?? chapterDirectory
-    : chapterDirectory;
-
   const renderPdfPage = async (pageNumber: number) => {
     if (!pdfDoc || !canvasRef.current) {
       return;
@@ -982,6 +969,19 @@ const [isPanning, setIsPanning] = useState(false);
     const topics = topicsByChapterId.get(chapterId) ?? [];
     return topics.find((topic) => topic.name.toLowerCase() === name.toLowerCase());
   };
+
+  const activeCrop = cropRects.find((rect) => rect.id === activeCropId) || null;
+  const activeAccent = activeCrop ? subjectAccents[activeCrop.subject] : subjectAccents.Physics;
+  const activeChapter = activeCrop
+    ? resolveChapter(activeCrop.chapter, activeCrop.subject)
+    : undefined;
+  const activeChapterId = activeChapter?.id ?? "";
+  const activeTopics = activeChapterId ? topicsByChapterId.get(activeChapterId) ?? [] : [];
+  const activeTopic = activeCrop ? resolveTopic(activeCrop.topic, activeChapterId) : undefined;
+  const activeTopicId = activeTopic?.id ?? "";
+  const activeChaptersForSubject = activeCrop
+    ? chaptersBySubject.get(activeCrop.subject) ?? chapterDirectory
+    : chapterDirectory;
 
   const handleJsonImport = () => {
     if (!isAdmin) {
