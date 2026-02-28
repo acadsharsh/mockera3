@@ -64,7 +64,6 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
   const subject = searchParams.get("subject") ?? "";
   const chapter = searchParams.get("chapter") ?? "";
   const [items, setItems] = useState<QuestionItem[]>([]);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -99,79 +98,123 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
     return "All PYQs";
   }, [subject, chapter]);
 
-  const startSingle = async (questionId: string) => {
-    if (loadingId) return;
-    setLoadingId(questionId);
-    try {
-      const res = await fetch("/api/pyq/custom-test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          questionIds: [questionId],
-          title: title,
-          durationMinutes: 30,
-        }),
-      });
-      const data = await res.json().catch(() => null);
-      if (data?.testId) {
-        router.push(`/cbt?testId=${data.testId}`);
-      }
-    } finally {
-      setLoadingId(null);
-    }
+  const topicCount = useMemo(() => {
+    const set = new Set(items.map((item) => item.topic).filter(Boolean));
+    return set.size;
+  }, [items]);
+
+  const goToQuestion = (questionId: string) => {
+    const next = new URLSearchParams();
+    if (subject) next.set("subject", subject);
+    if (chapter) next.set("chapter", chapter);
+    const query = next.toString();
+    router.push(query ? `/pyq/${examId}/questions/${questionId}?${query}` : `/pyq/${examId}/questions/${questionId}`);
   };
 
   return (
     <div className="min-h-screen bg-[#0f1218] text-white font-neue">
-      <div className="mx-auto w-full max-w-[1200px] px-6 pb-12 pt-6">
+      <div className="mx-auto w-full max-w-[1280px] px-6 pb-12 pt-6">
         <div className="mb-6 flex items-center gap-3 text-sm text-white/60">
           <Link className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 hover:border-white/30" href={`/pyq/${examId}`}>
-            ← Back
+            {"<-"} Back
           </Link>
           <span className="text-white/40">/</span>
           <span className="text-white/80">{title}</span>
         </div>
 
-        <div className="rounded-[6px] border border-white/10 bg-[#171c24] px-6 py-4">
-          <p className="text-sm text-white/60">All PYQs</p>
-          <h1 className="mt-1 text-2xl font-semibold text-white">{title}</h1>
-          <p className="mt-2 text-xs text-white/50">Showing {items.length} questions</p>
-        </div>
-
-        <div ref={listRef} className="mt-6 space-y-4">
-          {items.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => startSingle(item.id)}
-              className="w-full rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-4 text-left transition hover:border-white/30"
-            >
-              <div className="flex items-start gap-3">
-                <div className="mt-1 grid h-7 w-7 place-items-center rounded-full bg-white/10 text-xs text-white/70">
-                  {index + 1}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-white">
-                    {cleanupLatex(item.prompt || "").slice(0, 220) || "Question"}
-                  </p>
-                  <p className="mt-2 text-xs text-white/50">
-                    {item.test?.exam ?? ""} {item.test?.year ? `${item.test?.year}` : ""} {item.test?.shift ? `(${item.test?.shift})` : ""}
-                  </p>
-                </div>
-                <span className="text-[11px] text-white/50">
-                  {loadingId === item.id ? "Opening..." : "Attempt"}
-                </span>
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+          <aside className="space-y-4">
+            <div className="rounded-[6px] border border-white/10 bg-[#171c24] p-4">
+              <div className="text-sm font-semibold text-white">{chapter || "All PYQs"}</div>
+              <div className="mt-2 text-xs text-white/50">
+                {itemCountText(items.length, topicCount)}
               </div>
-            </button>
-          ))}
-
-          {items.length === 0 && (
-            <div className="rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-6 text-sm text-white/60">
-              No questions found for this chapter yet.
             </div>
-          )}
+
+            <div className="space-y-2">
+              <Link
+                href={`/pyq/${examId}`}
+                className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/80 hover:border-white/30"
+              >
+                Overview
+                <span>{">"}</span>
+              </Link>
+              <div className="flex items-center justify-between rounded-[6px] border border-white/30 bg-white text-[#0f1218] px-4 py-3 text-sm font-semibold">
+                All PYQs
+                <span>{">"}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50">
+                Topic-wise PYQs
+                <span>{">"}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50">
+                Bookmarked Qs
+                <span>{">"}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50">
+                My Mistakes
+                <span>{">"}</span>
+              </div>
+            </div>
+          </aside>
+
+          <section className="space-y-4">
+            <div className="rounded-[6px] border border-white/10 bg-[#171c24] px-6 py-4">
+              <p className="text-sm text-white/60">All PYQs</p>
+              <h1 className="mt-1 text-2xl font-semibold text-white">{title}</h1>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Filter</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Years</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Difficulty</span>
+            </div>
+
+            <div className="flex items-center justify-between text-sm text-white/60">
+              <span>Showing all Qs ({items.length})</span>
+              <button className="text-xs uppercase tracking-[0.2em] text-[#6aa8ff]">Sort</button>
+            </div>
+
+            <div ref={listRef} className="space-y-4">
+              {items.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => goToQuestion(item.id)}
+                  className="w-full rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-4 text-left transition hover:border-white/30"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 grid h-7 w-7 place-items-center rounded-full bg-white/10 text-xs text-white/70">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-white">
+                        {cleanupLatex(item.prompt || "").slice(0, 220) || "Question"}
+                      </p>
+                      <p className="mt-2 text-xs text-white/50">
+                        {item.test?.exam ?? ""} {item.test?.year ? `${item.test?.year}` : ""} {item.test?.shift ? `(${item.test?.shift})` : ""}
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-white/50">Attempt</span>
+                  </div>
+                </button>
+              ))}
+
+              {items.length === 0 && (
+                <div className="rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-6 text-sm text-white/60">
+                  No questions found for this chapter yet.
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </div>
   );
+}
+
+function itemCountText(questionCount: number, topicCount: number) {
+  const questions = `${questionCount} PYQs`;
+  const topics = `${topicCount} Topics`;
+  return [questions, topics].filter(Boolean).join(" | ");
 }
