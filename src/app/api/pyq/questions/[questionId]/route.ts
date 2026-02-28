@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(_req: Request, { params }: { params: { questionId: string } }) {
-  const questionId = params.questionId;
+export async function GET(_req: Request, { params }: { params: Promise<{ questionId: string }> }) {
+  const { questionId } = await params;
   if (!questionId) {
     return NextResponse.json({ error: "Missing question id." }, { status: 400 });
   }
