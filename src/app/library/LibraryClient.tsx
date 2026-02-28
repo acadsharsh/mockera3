@@ -53,13 +53,6 @@ type LibraryClientProps = {
   initialAuthError?: boolean;
 };
 
-type PyqStats = {
-  questions: number;
-  chapters: number;
-  exams: number;
-  latestYear: number | null;
-};
-
 const tabs = ["All Tests", "Public", "My Batches", "Starred"] as const;
 
 const subjectStyles = {
@@ -137,8 +130,6 @@ export default function LibraryClient({
   const [editDescription, setEditDescription] = useState("");
   const [editTags, setEditTags] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
-  const [pyqStats, setPyqStats] = useState<PyqStats | null>(null);
-  const [pyqPapers, setPyqPapers] = useState<any[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -200,32 +191,6 @@ export default function LibraryClient({
     };
   }, []);
 
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/pyq/stats")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!active || !data) return;
-        setPyqStats({
-          questions: Number(data.questions) || 0,
-          chapters: Number(data.chapters) || 0,
-          exams: Number(data.exams) || 0,
-          latestYear: data.latestYear ? Number(data.latestYear) : null,
-        });
-      })
-      .catch(() => null);
-    fetch("/api/pyq/papers")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (!active) return;
-        setPyqPapers(Array.isArray(data) ? data.slice(0, 3) : []);
-      })
-      .catch(() => null);
-    return () => {
-      active = false;
-    };
-  }, []);
   const attemptsByTest = useMemo(() => {
     return attempts.reduce((acc, attempt) => {
       acc[attempt.testId] = acc[attempt.testId] || [];
@@ -492,62 +457,6 @@ export default function LibraryClient({
       )}
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 pb-10 pt-24 md:px-8">
-        <header className="rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-[#0f1626] to-[#0a0f1c] p-6 shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_20px_80px_rgba(2,6,23,0.65)]">
-          <div>
-            <h1 className="text-3xl font-semibold font-everett text-slate-50">Course Library</h1>
-          </div>
-          <div className="flex items-center gap-3">
-                        <a className="rounded-full border border-cyan-300/25 bg-cyan-500/15 px-4 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/25" href="/studio">
-              + Create Test
-            </a>
-          </div>
-        </header>
-
-        
-        <section className="rounded-3xl border border-cyan-400/20 bg-[#0b1323] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.08)]">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-white/50">PYQ Bank</p>
-              <h2 className="mt-2 text-xl font-semibold font-everett">Chapter-wise PYQs + Year-wise papers</h2>
-              <p className="mt-1 text-sm text-white/60">Filter by exam, year, shift, chapter and difficulty. Build mocks fast.</p>
-            </div>
-            <a className="rounded-full border border-cyan-300/25 bg-cyan-500/10 px-4 py-2 text-xs font-semibold text-cyan-100" href="/pyq">
-              Open PYQ Bank
-            </a>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase text-white/50">Questions</p>
-              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.questions) : "-"}</p>
-            </div>
-            <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase text-white/50">Chapters</p>
-              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.chapters) : "-"}</p>
-            </div>
-            <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase text-white/50">Exams</p>
-              <p className="mt-2 text-lg font-semibold">{pyqStats ? formatCount(pyqStats.exams) : "-"}</p>
-            </div>
-            <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase text-white/50">Latest Year</p>
-              <p className="mt-2 text-lg font-semibold">{pyqStats?.latestYear ?? "-"}</p>
-            </div>
-          </div>
-          <div className="mt-4 grid gap-2 md:grid-cols-3">
-            {(pyqPapers.length ? pyqPapers : []).map((paper) => (
-              <div key={paper.id} className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3 text-xs">
-                <div className="font-semibold text-white">{paper.exam?.name ?? "Exam"} ? {paper.year}{paper.shift ? ` ? ${paper.shift}` : ""}</div>
-                <a className="mt-2 inline-flex text-[11px] uppercase tracking-wide text-cyan-200" href={paper.test?.id ? `/cbt?testId=${paper.test.id}` : paper.pdfUrl}>
-                  {paper.test?.id ? "Open test" : "View PDF"}
-                </a>
-              </div>
-            ))}
-            {pyqPapers.length === 0 ? (
-              <div className="rounded-2xl border border-cyan-400/20 bg-white/5 px-4 py-3 text-xs text-white/60">No year-wise papers yet.</div>
-            ) : null}
-          </div>
-        </section>
-
 <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="rounded-full border border-cyan-400/20 bg-[#0b1323] p-1">
             <div className="flex items-center gap-1">
