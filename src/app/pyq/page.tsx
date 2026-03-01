@@ -43,48 +43,6 @@ type ExamItem = {
   shortCode?: string | null;
 };
 
-type AnalysisDistribution = {
-  key: string;
-  count: number;
-};
-
-type AnalysisYear = {
-  year: number;
-  count: number;
-};
-
-type AnalysisShift = {
-  shift: string;
-  count: number;
-};
-
-type PyqAnalysis = {
-  exam: { id: string; name: string };
-  totals: {
-    questions: number;
-    chapters: number;
-    topics: number;
-    papers: number;
-    avgQuestionsPerPaper: number;
-  };
-  coverage: {
-    chapterTagged: number;
-    topicTagged: number;
-  };
-  distribution: {
-    subjects: AnalysisDistribution[];
-    difficulty: AnalysisDistribution[];
-    types: AnalysisDistribution[];
-    years: AnalysisYear[];
-    shifts: AnalysisShift[];
-  };
-  years: {
-    earliest: number | null;
-    latest: number | null;
-    span: number;
-  };
-};
-
 type UserAnalysis = {
   summary: {
     attempts: number;
@@ -131,8 +89,6 @@ export default function PyqPage() {
   const [stats, setStats] = useState<PyqStats>(fallbackStats);
   const [examItems, setExamItems] = useState<ExamItem[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string>("");
-  const [analysis, setAnalysis] = useState<PyqAnalysis | null>(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
   const [userRange, setUserRange] = useState("30d");
   const [userAnalysis, setUserAnalysis] = useState<UserAnalysis | null>(null);
   const [userLoading, setUserLoading] = useState(false);
@@ -173,25 +129,6 @@ export default function PyqPage() {
   useEffect(() => {
     if (!selectedExamId) return;
     let active = true;
-    setAnalysisLoading(true);
-    fetch(`/api/pyq/analysis?examId=${encodeURIComponent(selectedExamId)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!active) return;
-        setAnalysis(data);
-      })
-      .catch(() => null)
-      .finally(() => {
-        if (active) setAnalysisLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [selectedExamId]);
-
-  useEffect(() => {
-    if (!selectedExamId) return;
-    let active = true;
     setUserLoading(true);
     fetch(`/api/pyq/user-analysis?examId=${encodeURIComponent(selectedExamId)}&range=${userRange}`)
       .then((res) => (res.ok ? res.json() : null))
@@ -209,16 +146,6 @@ export default function PyqPage() {
   }, [selectedExamId, userRange]);
 
   const examCards = examItems.length ? examItems : fallbackExams;
-  const totalFor = (value: number, total: number) =>
-    total > 0 ? Math.round((value / total) * 100) : 0;
-
-  const topWithOther = (items: AnalysisDistribution[], limit: number) => {
-    if (items.length <= limit) return items;
-    const sorted = [...items].sort((a, b) => b.count - a.count);
-    const top = sorted.slice(0, limit);
-    const other = sorted.slice(limit).reduce((sum, item) => sum + item.count, 0);
-    return other > 0 ? [...top, { key: "Other", count: other }] : top;
-  };
 
   return (
     <div className="min-h-screen bg-[#0f1218] text-white font-neue">
@@ -314,218 +241,38 @@ export default function PyqPage() {
         <div className="mt-6 rounded-[6px] border border-white/10 bg-[#161b22] px-5 py-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-white/60">PYQ Deep Analysis</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">
-                Exam Intelligence Console
-              </h2>
-              <p className="mt-1 text-sm text-white/60">
-                Select exam to see coverage, difficulty mix, and year/shift trends.
-              </p>
-            </div>
-            <select
-              value={selectedExamId}
-              onChange={(event) => setSelectedExamId(event.target.value)}
-              className="rounded-md border border-white/10 bg-[#0f141d] px-3 py-2 text-sm text-white"
-            >
-              <option value="" disabled>
-                Select exam
-              </option>
-              {examItems.map((exam) => (
-                <option key={exam.id} value={exam.id}>
-                  {exam.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {analysisLoading ? (
-            <div className="mt-6 rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4 text-sm text-white/60">
-              Loading analysis...
-            </div>
-          ) : analysis ? (
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-              <div className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/50">Questions</p>
-                    <p className="mt-2 text-lg font-semibold text-white">
-                      {formatCount(analysis.totals.questions)}
-                    </p>
-                  </div>
-                  <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/50">Chapters</p>
-                    <p className="mt-2 text-lg font-semibold text-white">
-                      {formatCount(analysis.totals.chapters)}
-                    </p>
-                  </div>
-                  <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/50">Topics</p>
-                    <p className="mt-2 text-lg font-semibold text-white">
-                      {formatCount(analysis.totals.topics)}
-                    </p>
-                  </div>
-                  <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/50">Papers</p>
-                    <p className="mt-2 text-lg font-semibold text-white">
-                      {formatCount(analysis.totals.papers)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Coverage Health</p>
-                  <div className="mt-3 space-y-3 text-sm text-white/70">
-                    <div className="flex items-center justify-between">
-                      <span>Chapter tagged</span>
-                      <span>{totalFor(analysis.coverage.chapterTagged, analysis.totals.questions)}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-white/5">
-                      <div
-                        className="h-2 rounded-full bg-[#6aa8ff]"
-                        style={{ width: `${totalFor(analysis.coverage.chapterTagged, analysis.totals.questions)}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Topic tagged</span>
-                      <span>{totalFor(analysis.coverage.topicTagged, analysis.totals.questions)}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-white/5">
-                      <div
-                        className="h-2 rounded-full bg-[#8be9fd]"
-                        style={{ width: `${totalFor(analysis.coverage.topicTagged, analysis.totals.questions)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Year Coverage</p>
-                  <div className="mt-2 text-sm text-white/70">
-                    {analysis.years.earliest ? (
-                      <>
-                        {analysis.years.earliest} - {analysis.years.latest} ({analysis.years.span} yrs)
-                      </>
-                    ) : (
-                      "No year data"
-                    )}
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {analysis.distribution.years.map((item) => (
-                      <div key={item.year} className="flex items-center gap-3 text-xs text-white/70">
-                        <span className="w-12">{item.year}</span>
-                        <div className="h-2 flex-1 rounded-full bg-white/5">
-                          <div
-                            className="h-2 rounded-full bg-white/30"
-                            style={{ width: `${totalFor(item.count, analysis.totals.questions)}%` }}
-                          />
-                        </div>
-                        <span className="w-10 text-right">{item.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Subject Balance</p>
-                  <div className="mt-3 space-y-2">
-                    {topWithOther(analysis.distribution.subjects, 5).map((item) => (
-                      <div key={item.key} className="flex items-center gap-3 text-xs text-white/70">
-                        <span className="w-20 truncate">{item.key}</span>
-                        <div className="h-2 flex-1 rounded-full bg-white/5">
-                          <div
-                            className="h-2 rounded-full bg-emerald-400/70"
-                            style={{ width: `${totalFor(item.count, analysis.totals.questions)}%` }}
-                          />
-                        </div>
-                        <span className="w-10 text-right">{item.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Difficulty Mix</p>
-                  <div className="mt-3 space-y-2">
-                    {analysis.distribution.difficulty.map((item) => (
-                      <div key={item.key} className="flex items-center gap-3 text-xs text-white/70">
-                        <span className="w-20">{item.key}</span>
-                        <div className="h-2 flex-1 rounded-full bg-white/5">
-                          <div
-                            className="h-2 rounded-full bg-orange-300/70"
-                            style={{ width: `${totalFor(item.count, analysis.totals.questions)}%` }}
-                          />
-                        </div>
-                        <span className="w-10 text-right">{item.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Question Types</p>
-                  <div className="mt-3 space-y-2">
-                    {analysis.distribution.types.map((item) => (
-                      <div key={item.key} className="flex items-center gap-3 text-xs text-white/70">
-                        <span className="w-20">{item.key}</span>
-                        <div className="h-2 flex-1 rounded-full bg-white/5">
-                          <div
-                            className="h-2 rounded-full bg-purple-400/70"
-                            style={{ width: `${totalFor(item.count, analysis.totals.questions)}%` }}
-                          />
-                        </div>
-                        <span className="w-10 text-right">{item.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Shift Heat</p>
-                  <div className="mt-3 space-y-2">
-                    {analysis.distribution.shifts.map((item) => (
-                      <div key={item.shift} className="flex items-center gap-3 text-xs text-white/70">
-                        <span className="w-24 truncate">{item.shift}</span>
-                        <div className="h-2 flex-1 rounded-full bg-white/5">
-                          <div
-                            className="h-2 rounded-full bg-sky-400/70"
-                            style={{ width: `${totalFor(item.count, analysis.totals.questions)}%` }}
-                          />
-                        </div>
-                        <span className="w-10 text-right">{item.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-6 rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4 text-sm text-white/60">
-              Select an exam to see detailed analysis.
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 rounded-[6px] border border-white/10 bg-[#161b22] px-5 py-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
               <p className="text-xs uppercase tracking-[0.2em] text-white/60">Your PYQ Analytics</p>
               <h2 className="mt-2 text-2xl font-semibold text-white">Personal Performance Lens</h2>
               <p className="mt-1 text-sm text-white/60">
                 Exam-specific stats from your attempts in the selected range.
               </p>
             </div>
-            <select
-              value={userRange}
-              onChange={(event) => setUserRange(event.target.value)}
-              className="rounded-md border border-white/10 bg-[#0f141d] px-3 py-2 text-sm text-white"
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="all">All time</option>
-            </select>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={selectedExamId}
+                onChange={(event) => setSelectedExamId(event.target.value)}
+                className="rounded-md border border-white/10 bg-[#0f141d] px-3 py-2 text-sm text-white"
+              >
+                <option value="" disabled>
+                  Select exam
+                </option>
+                {examItems.map((exam) => (
+                  <option key={exam.id} value={exam.id}>
+                    {exam.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={userRange}
+                onChange={(event) => setUserRange(event.target.value)}
+                className="rounded-md border border-white/10 bg-[#0f141d] px-3 py-2 text-sm text-white"
+              >
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="all">All time</option>
+              </select>
+            </div>
           </div>
 
           {userLoading ? (
@@ -675,7 +422,7 @@ export default function PyqPage() {
                     <div key={item.topic} className="rounded-[6px] border border-white/10 bg-[#0f141d] px-3 py-2">
                       <div className="text-sm text-white">{item.topic}</div>
                       <div className="text-[11px] text-white/50">
-                        {item.subject} • {item.accuracy}% • {item.attempted} attempts
+                        {item.subject}  -  {item.accuracy}%  -  {item.attempted} attempts
                       </div>
                     </div>
                   ))}
