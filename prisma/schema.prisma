@@ -34,6 +34,7 @@ model User {
   hostedMatches     MatchRoom[] @relation("MatchRoomHost")
   matchParticipants MatchParticipant[]
   matchAnswers      MatchAnswer[]
+  pyqAttempts       PyqAttempt[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -135,6 +136,7 @@ model Question {
   savedBy       SavedQuestion[]
   matchQuestions MatchQuestion[]
   matchAnswers   MatchAnswer[]
+  pyqAttempts    PyqAttempt[]
 }
 
 model Attempt {
