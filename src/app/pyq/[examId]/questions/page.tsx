@@ -227,7 +227,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
 
             <div
               ref={listRef}
-              className="rounded-[10px] border border-white/10 bg-[#222830] p-3 pr-2 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]"
+              className="rounded-[10px] border border-white/10 bg-transparent p-3 pr-2"
             >
               <div
                 className="space-y-4 overflow-y-auto pr-2"
