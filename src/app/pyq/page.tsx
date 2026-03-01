@@ -72,6 +72,7 @@ type UserAnalysis = {
     strongest: { topic: string; subject: string; attempted: number; correct: number; accuracy: number } | null;
     weakest: { topic: string; subject: string; attempted: number; correct: number; accuracy: number } | null;
   };
+  trend: { date: string; score: number; accuracy: number; timeTaken: number }[];
 };
 
 const fallbackStats: PyqStats = {
@@ -281,6 +282,47 @@ export default function PyqPage() {
             </div>
           ) : userAnalysis ? (
             <div className="mt-6 space-y-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Score Trend</p>
+                  <div className="mt-3 h-24">
+                    <svg viewBox="0 0 100 40" className="h-full w-full">
+                      <polyline
+                        fill="none"
+                        stroke="#6aa8ff"
+                        strokeWidth="2"
+                        points={userAnalysis.trend
+                          .map((item, index) => {
+                            const x = (index / Math.max(1, userAnalysis.trend.length - 1)) * 100;
+                            const max = Math.max(...userAnalysis.trend.map((t) => t.score), 1);
+                            const y = 40 - (item.score / max) * 36;
+                            return `${x},${y}`;
+                          })
+                          .join(" ")}
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Accuracy Trend</p>
+                  <div className="mt-3 h-24">
+                    <svg viewBox="0 0 100 40" className="h-full w-full">
+                      <polyline
+                        fill="none"
+                        stroke="#8be9fd"
+                        strokeWidth="2"
+                        points={userAnalysis.trend
+                          .map((item, index) => {
+                            const x = (index / Math.max(1, userAnalysis.trend.length - 1)) * 100;
+                            const y = 40 - (item.accuracy / 100) * 36;
+                            return `${x},${y}`;
+                          })
+                          .join(" ")}
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Score Avg</p>

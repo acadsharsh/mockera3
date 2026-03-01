@@ -48,12 +48,23 @@ export async function GET(request: Request) {
 
   const startAt = parseRange(range);
 
+  const exam = await prisma.exam.findUnique({
+    where: { id: examId },
+    select: { id: true, name: true },
+  });
+
   const attempts = await prisma.attempt.findMany({
     where: {
       userId: session.user.id,
       status: "SUBMITTED",
       ...(startAt ? { createdAt: { gte: startAt } } : {}),
-      test: { isPyq: true, examId },
+      test: {
+        isPyq: true,
+        OR: [
+          { examId },
+          ...(exam?.name ? [{ exam: exam.name }] : []),
+        ],
+      },
     },
     include: {
       test: {
@@ -67,7 +78,13 @@ export async function GET(request: Request) {
     where: {
       status: "SUBMITTED",
       ...(startAt ? { createdAt: { gte: startAt } } : {}),
-      test: { isPyq: true, examId },
+      test: {
+        isPyq: true,
+        OR: [
+          { examId },
+          ...(exam?.name ? [{ exam: exam.name }] : []),
+        ],
+      },
     },
     select: { score: true },
   });
@@ -196,6 +213,16 @@ export async function GET(request: Request) {
     }))
     .sort((a, b) => b.accuracy - a.accuracy);
 
+  const trend = attempts
+    .slice(0, 12)
+    .map((attempt) => ({
+      date: attempt.createdAt.toISOString(),
+      score: attempt.score ?? 0,
+      accuracy: Math.round((attempt.accuracy ?? 0) * 100),
+      timeTaken: attempt.timeTaken ?? 0,
+    }))
+    .reverse();
+
   return NextResponse.json({
     summary: {
       attempts: attemptsCount,
@@ -213,6 +240,7 @@ export async function GET(request: Request) {
       rank,
       peerCount,
     },
+    trend,
     time: {
       bySubject: subjectTimeList,
       slowest: questionTimeList.slice(0, 5),
