@@ -118,9 +118,9 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
   }, [items]);
 
   const title = useMemo(() => {
-    if (subject && chapter) return `${subject} > ${chapter}`;
-    if (subject) return `${subject} PYQs`;
-    return "All PYQs";
+    if (subject && chapter) return `${chapter}`;
+    if (subject) return `${subject}`;
+    return "All Questions";
   }, [subject, chapter]);
 
   const topicCount = useMemo(() => {
@@ -175,7 +175,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <aside className="space-y-4">
             <div className="rounded-[6px] border border-white/10 bg-[#222830] p-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
-              <div className="text-sm font-semibold text-white">{chapter || "All PYQs"}</div>
+              <div className="text-sm font-semibold text-white">{chapter || "All Questions"}</div>
               <div className="mt-2 text-xs text-white/50">
                 {itemCountText(items.length, topicCount)}
               </div>
@@ -184,13 +184,13 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
             <div className="space-y-2">
               <Link
                 href={`/pyq/${examId}`}
-                className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/80 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 text-sm text-white/80 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
               >
                 Overview
                 <span>{">"}</span>
               </Link>
-              <div className="flex items-center justify-between rounded-[6px] border border-white/30 bg-white text-[#0f1218] px-4 py-3 text-sm font-semibold transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
-                All PYQs
+              <div className="flex items-center justify-between rounded-[6px] border border-white/30 bg-[#222830] px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
+                Questions
                 <span>{">"}</span>
               </div>
               <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
@@ -210,7 +210,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
 
           <section className="flex min-h-[calc(100vh-180px)] flex-col space-y-4">
             <div className="rounded-[6px] border border-white/10 bg-[#222830] px-6 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
-              <p className="text-sm text-white/60">All PYQs</p>
+              <p className="text-sm text-white/60">Questions</p>
               <h1 className="mt-1 text-2xl font-semibold text-white">{title}</h1>
             </div>
 

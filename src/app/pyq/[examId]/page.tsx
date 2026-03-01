@@ -119,7 +119,7 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
 
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <aside className="space-y-4">
-            <div className="rounded-[6px] border border-white/10 bg-[#171c24] p-4">
+            <div className="rounded-[6px] border border-white/10 bg-[#222830] p-4">
               <div className="flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-500/20 text-sm font-semibold text-emerald-200">
                   {(data?.exam.shortCode ?? data?.exam.name?.slice(0, 2) ?? "EX").toUpperCase()}
@@ -144,8 +144,8 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
                     key={subject.name}
                     className={`flex w-full items-center justify-between rounded-[6px] border px-4 py-3 text-left transition ${
                       active
-                        ? "border-white/30 bg-white text-[#0f1218]"
-                        : "border-white/10 bg-[#171c24] text-white hover:border-white/30"
+                        ? "border-white/30 bg-[#222830] text-white"
+                        : "border-white/10 bg-[#222830] text-white hover:border-white/30"
                     }`}
                     onClick={() => setActiveSubject(subject.name)}
                   >
@@ -166,9 +166,9 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
 
           <section className="space-y-4">
             <div className="rounded-[6px] border border-white/10 bg-transparent px-6 py-4">
-              <p className="text-sm text-white/60">{currentSubject?.name ?? "Subject"} PYQs</p>
+              <p className="text-sm text-white/60">PYQ Bank</p>
               <h1 className="mt-1 text-2xl font-semibold text-white">
-                Chapter-wise Collection of {currentSubject?.name ?? "Subject"} PYQs
+                Chapter-wise Collection
               </h1>
             </div>
 
