@@ -93,7 +93,7 @@ export default function PyqPapersPage() {
   }, [filtered]);
 
   return (
-    <div className="min-h-screen bg-[#0f1218] text-white font-neue">
+    <div className="min-h-screen bg-[#222830] text-white font-neue">
       <div className="mx-auto w-full max-w-[1240px] px-6 pb-10 pt-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -117,7 +117,7 @@ export default function PyqPapersPage() {
           <select
             value={filters.examId}
             onChange={(e) => setFilters((prev) => ({ ...prev, examId: e.target.value }))}
-            className="rounded-[4px] border border-white/10 bg-[#171c24] px-3 py-2 text-sm text-white"
+            className="rounded-[4px] border border-white/10 bg-[#171c24] px-3 py-2 text-sm text-white transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
           >
             <option value="">All Exams</option>
             {exams.map((exam) => (
@@ -129,7 +129,7 @@ export default function PyqPapersPage() {
           <select
             value={filters.year}
             onChange={(e) => setFilters((prev) => ({ ...prev, year: e.target.value }))}
-            className="rounded-[4px] border border-white/10 bg-[#171c24] px-3 py-2 text-sm text-white"
+            className="rounded-[4px] border border-white/10 bg-[#171c24] px-3 py-2 text-sm text-white transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
           >
             <option value="">All Years</option>
             {years.map((year) => (
@@ -141,7 +141,7 @@ export default function PyqPapersPage() {
           <select
             value={filters.shift}
             onChange={(e) => setFilters((prev) => ({ ...prev, shift: e.target.value }))}
-            className="rounded-[4px] border border-white/10 bg-[#171c24] px-3 py-2 text-sm text-white"
+            className="rounded-[4px] border border-white/10 bg-[#171c24] px-3 py-2 text-sm text-white transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
           >
             <option value="">All Shifts</option>
             <option value="Morning">Morning</option>
@@ -178,7 +178,7 @@ export default function PyqPapersPage() {
                     {group.papers.map((paper) => (
                       <div
                         key={paper.id}
-                        className="flex flex-col justify-between rounded-[4px] border border-white/10 bg-[#171c24] px-4 py-3"
+                        className="flex flex-col justify-between rounded-[4px] border border-white/10 bg-[#171c24] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                       >
                         <div>
                           <div className="text-xs uppercase tracking-[0.2em] text-white/50">{paper.year}</div>

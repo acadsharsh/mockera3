@@ -73,7 +73,7 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
   }, [data]);
 
   return (
-    <div className="min-h-screen bg-[#0f1218] text-white font-neue">
+    <div className="min-h-screen bg-[#222830] text-white font-neue">
       <div className="mx-auto w-full max-w-[1280px] px-6 pb-12 pt-6">
         <div className="mb-6 flex items-center gap-3 text-sm text-white/60">
           <Link className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 hover:border-white/30" href="/pyq">
@@ -156,7 +156,7 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
                   <Link
                     key={chapter.name}
                     href={`/pyq/${examId}/questions?subject=${encodeURIComponent(currentSubject?.name ?? "")}&chapter=${encodeURIComponent(chapter.name)}`}
-                    className="flex flex-wrap items-center justify-between gap-4 rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-4"
+                    className="flex flex-wrap items-center justify-between gap-4 rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-4 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                   >
                     <div className="flex items-center gap-3">
                       <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-xs font-semibold text-white/70">

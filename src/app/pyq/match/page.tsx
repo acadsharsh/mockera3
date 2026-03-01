@@ -296,7 +296,7 @@ export default function PyqMatchPage() {
   const options = useMemo(() => normalizeOptions(currentQuestion?.options), [currentQuestion?.options]);
 
   return (
-    <div className="min-h-screen bg-[#0f1218] text-white font-neue">
+    <div className="min-h-screen bg-[#222830] text-white font-neue">
       <div className="mx-auto w-full max-w-[1100px] px-6 pb-10 pt-6">
         <div className="flex items-center justify-between">
           <div>
@@ -413,7 +413,7 @@ export default function PyqMatchPage() {
                   onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
                 />
                 <button
-                  className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white"
+                  className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                   disabled={loading}
                   onClick={handleJoin}
                 >
@@ -452,7 +452,7 @@ export default function PyqMatchPage() {
                   {loading ? "Starting..." : "Start Match"}
                 </button>
                 <button
-                  className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white/70"
+                  className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white/70 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                   onClick={() => setView("join")}
                 >
                   Invite More
@@ -503,7 +503,7 @@ export default function PyqMatchPage() {
                   Submit Answer
                 </button>
                 <button
-                  className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white/70"
+                  className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white/70 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                   onClick={() => {
                     setAnswer("");
                     setCurrentIndex((prev) => Math.min(prev + 1, state.questions.length - 1));
@@ -512,7 +512,7 @@ export default function PyqMatchPage() {
                   Next
                 </button>
                 <button
-                  className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white/70"
+                  className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white/70 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                   onClick={handleEnd}
                 >
                   End Match
@@ -546,7 +546,7 @@ export default function PyqMatchPage() {
                 ))}
               </div>
               <button
-                className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white/70"
+                className="rounded-md border border-white/10 bg-[#171c24] px-4 py-2 text-sm text-white/70 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                 onClick={() => {
                   setView("create");
                   setState(null);

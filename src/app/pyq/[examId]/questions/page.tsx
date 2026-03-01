@@ -65,6 +65,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
   const chapter = searchParams.get("chapter") ?? "";
   const [items, setItems] = useState<QuestionItem[]>([]);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const prefetchedRef = useRef<Set<string>>(new Set());
   const cacheKey = useMemo(
     () => `pyq_list_v1_${examId}_${subject}_${chapter}`,
     [examId, subject, chapter]
@@ -135,8 +136,33 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
     router.push(query ? `/pyq/${examId}/questions/${questionId}?${query}` : `/pyq/${examId}/questions/${questionId}`);
   };
 
+  const prefetchQuestion = (questionId: string) => {
+    if (prefetchedRef.current.has(questionId)) return;
+    prefetchedRef.current.add(questionId);
+    const next = new URLSearchParams();
+    if (subject) next.set("subject", subject);
+    if (chapter) next.set("chapter", chapter);
+    const query = next.toString();
+    const path = query ? `/pyq/${examId}/questions/${questionId}?${query}` : `/pyq/${examId}/questions/${questionId}`;
+    router.prefetch(path);
+    fetch(`/api/pyq/questions/${questionId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data?.item) return;
+        try {
+          window.localStorage.setItem(
+            `pyq_question_v1_${questionId}`,
+            JSON.stringify({ ts: Date.now(), item: data.item, stats: data.stats ?? null })
+          );
+        } catch {
+          // ignore cache errors
+        }
+      })
+      .catch(() => null);
+  };
+
   return (
-    <div className="min-h-screen bg-[#0f1218] text-white font-neue">
+    <div className="min-h-screen bg-[#222830] text-white font-neue">
       <div className="mx-auto w-full max-w-[1280px] px-6 pb-12 pt-6">
         <div className="mb-6 flex items-center gap-3 text-sm text-white/60">
           <Link className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 hover:border-white/30" href={`/pyq/${examId}`}>
@@ -158,7 +184,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
             <div className="space-y-2">
               <Link
                 href={`/pyq/${examId}`}
-                className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/80 hover:border-white/30"
+                className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/80 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
               >
                 Overview
                 <span>{">"}</span>
@@ -167,15 +193,15 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
                 All PYQs
                 <span>{">"}</span>
               </div>
-              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50">
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
                 Topic-wise PYQs
                 <span>{">"}</span>
               </div>
-              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50">
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
                 Bookmarked Qs
                 <span>{">"}</span>
               </div>
-              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50">
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
                 My Mistakes
                 <span>{">"}</span>
               </div>
@@ -211,8 +237,9 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
                 <button
                   key={item.id}
                   type="button"
+                  onMouseEnter={() => prefetchQuestion(item.id)}
                   onClick={() => goToQuestion(item.id)}
-                  className="w-full rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-4 text-left transition hover:border-white/30"
+                  className="w-full rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-4 text-left transition hover:-translate-y-0.5 hover:border-white/30 active:translate-y-0"
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-1 grid h-7 w-7 place-items-center rounded-full bg-white/10 text-xs text-white/70">

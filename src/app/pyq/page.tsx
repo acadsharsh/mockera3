@@ -246,7 +246,7 @@ export default function PyqPage() {
   }, [activityMap]);
 
   return (
-    <div className="min-h-screen bg-[#0f1218] text-white font-neue">
+    <div className="min-h-screen bg-[#222830] text-white font-neue">
       <div className="mx-auto w-full max-w-[1240px] px-6 pb-4 pt-4">
         <div className="flex items-center justify-between">
           <div>
@@ -275,7 +275,7 @@ export default function PyqPage() {
               <Link
                 key={exam.name}
                 href={examId ? `/pyq/${examId}` : "#"}
-                className={`group relative flex h-[86px] items-center justify-between rounded-[4px] border border-white/10 bg-[#171c24] px-4 py-3 transition-all duration-150 hover:border-white/30 hover:bg-[#1a2030] ${
+                className={`group relative flex h-[86px] items-center justify-between rounded-[4px] border border-white/10 bg-[#171c24] px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)] ${
                   examId ? "" : "pointer-events-none opacity-60"
                 }`}
               >

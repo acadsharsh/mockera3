@@ -43,6 +43,10 @@ const ensureMathJax = (() => {
         displayMath: [["$$", "$$"], ["\\[", "\\]"]],
         processEscapes: true,
       },
+      chtml: {
+        scale: 1,
+        matchFontHeight: false,
+      },
       options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
     };
     loading = new Promise((resolve) => {
@@ -305,7 +309,7 @@ export default function PyqQuestionAttempt({
   }, [stats]);
 
   return (
-    <div className="min-h-screen bg-[#0f1218] text-white font-neue">
+    <div className="min-h-screen bg-[#222830] text-white font-neue">
       <div className="mx-auto w-full max-w-[1200px] px-6 pb-12 pt-6">
         <div className="mb-6 flex items-center justify-between text-sm text-white/60">
           <div className="flex items-center gap-3">
