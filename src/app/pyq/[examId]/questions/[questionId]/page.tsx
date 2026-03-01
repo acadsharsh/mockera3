@@ -129,6 +129,7 @@ export default function PyqQuestionAttempt({
   const [answer, setAnswer] = useState<string>("");
   const [showAnswer, setShowAnswer] = useState(false);
   const [navTarget, setNavTarget] = useState<"prev" | "next" | null>(null);
+  const [loggedAttempt, setLoggedAttempt] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cacheHitRef = useRef(false);
   const questionCacheKey = useMemo(
@@ -233,6 +234,7 @@ export default function PyqQuestionAttempt({
     setAnswer("");
     setShowAnswer(false);
     setNavTarget(null);
+    setLoggedAttempt(false);
     const timer = window.setInterval(() => setElapsed((prev) => prev + 1), 1000);
     return () => window.clearInterval(timer);
   }, [questionId]);
@@ -473,7 +475,29 @@ export default function PyqQuestionAttempt({
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setShowAnswer((prev) => !prev)}
+              onClick={() => {
+                setShowAnswer((prev) => {
+                  const next = !prev;
+                  if (next && !loggedAttempt) {
+                    setLoggedAttempt(true);
+                    fetch("/api/pyq/attempts", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        examId,
+                        examName: question?.test?.exam ?? null,
+                        questionId,
+                        subject: question?.subject ?? subject,
+                        chapter: question?.chapter ?? chapter,
+                        topic: question?.topic ?? topic,
+                        answer,
+                        timeSpent: elapsed,
+                      }),
+                    }).catch(() => null);
+                  }
+                  return next;
+                });
+              }}
               className="min-w-[180px] rounded-[10px] border border-white/10 bg-[#2a3f63] px-6 py-3 text-sm text-white"
             >
               Check Answer

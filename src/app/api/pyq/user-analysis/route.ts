@@ -53,6 +53,153 @@ export async function GET(request: Request) {
     select: { id: true, name: true },
   });
 
+  const pyqAttempts = await prisma.pyqAttempt.findMany({
+    where: {
+      userId: session.user.id,
+      ...(startAt ? { createdAt: { gte: startAt } } : {}),
+      OR: [
+        { examId },
+        ...(exam?.name ? [{ examName: exam.name }] : []),
+      ],
+    },
+    include: {
+      question: {
+        select: {
+          id: true,
+          subject: true,
+          chapter: true,
+          topic: true,
+          marksIncorrect: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (pyqAttempts.length > 0) {
+    const totalQuestions = pyqAttempts.length;
+    const attempted = totalQuestions;
+    const correct = pyqAttempts.filter((item) => item.isCorrect).length;
+    const wrong = attempted - correct;
+    const skipped = 0;
+    const accuracy = attempted ? Math.round((correct / attempted) * 100) : 0;
+    const attemptRate = 100;
+    const scoreSum = correct;
+    const avgScore = correct;
+    const negativeMarks = 0;
+
+    const subjectTime = new Map<string, number>();
+    const topicStats = new Map<string, { attempted: number; correct: number; subject?: string }>();
+    const questionTime = new Map<string, { time: number; count: number; label: string }>();
+    const fatigue = [
+      { attempted: 0, correct: 0 },
+      { attempted: 0, correct: 0 },
+      { attempted: 0, correct: 0 },
+      { attempted: 0, correct: 0 },
+    ];
+
+    const dailyCounts = new Map<string, number>();
+    pyqAttempts.forEach((item, index) => {
+      const subject = item.subject ?? item.question?.subject ?? "Unknown";
+      const topic = item.topic ?? item.question?.topic;
+      const timeSpent = item.timeSpent ?? 0;
+      subjectTime.set(subject, (subjectTime.get(subject) ?? 0) + timeSpent);
+
+      if (topic) {
+        const entry = topicStats.get(topic) ?? { attempted: 0, correct: 0, subject };
+        entry.attempted += 1;
+        if (item.isCorrect) entry.correct += 1;
+        topicStats.set(topic, entry);
+      }
+
+      const label = topic ?? item.chapter ?? subject;
+      const qEntry = questionTime.get(item.questionId) ?? { time: 0, count: 0, label };
+      qEntry.time += timeSpent;
+      qEntry.count += timeSpent > 0 ? 1 : 0;
+      questionTime.set(item.questionId, qEntry);
+
+      const dayKey = item.createdAt.toISOString().slice(0, 10);
+      dailyCounts.set(dayKey, (dailyCounts.get(dayKey) ?? 0) + 1);
+
+      const bucket = Math.min(3, Math.floor(index / Math.max(1, Math.ceil(pyqAttempts.length / 4))));
+      fatigue[bucket].attempted += 1;
+      if (item.isCorrect) fatigue[bucket].correct += 1;
+    });
+
+    const fatigueAccuracy = fatigue.map((bucket) =>
+      bucket.attempted ? Math.round((bucket.correct / bucket.attempted) * 100) : 0
+    );
+
+    const topics = Array.from(topicStats.entries())
+      .map(([topic, data]) => ({
+        topic,
+        subject: data.subject ?? "Unknown",
+        attempted: data.attempted,
+        correct: data.correct,
+        accuracy: data.attempted ? Math.round((data.correct / data.attempted) * 100) : 0,
+      }))
+      .sort((a, b) => b.accuracy - a.accuracy);
+
+    const subjectTimeList = Array.from(subjectTime.entries())
+      .map(([subject, time]) => ({ subject, time }))
+      .sort((a, b) => b.time - a.time);
+
+    const questionTimeList = Array.from(questionTime.entries())
+      .map(([id, data]) => ({
+        id,
+        avgTime: data.count ? Math.round(data.time / data.count) : 0,
+        label: data.label,
+      }))
+      .filter((item) => item.avgTime > 0)
+      .sort((a, b) => b.avgTime - a.avgTime);
+
+    const trend = pyqAttempts
+      .slice(0, 12)
+      .map((item, index) => ({
+        date: item.createdAt.toISOString(),
+        score: item.isCorrect ? 1 : 0,
+        accuracy: item.isCorrect ? 100 : 0,
+        timeTaken: item.timeSpent ?? 0,
+        label: `Q${pyqAttempts.length - index}`,
+      }))
+      .reverse();
+
+    return NextResponse.json({
+      summary: {
+        attempts: totalQuestions,
+        totalQuestions,
+        attempted,
+        correct,
+        wrong,
+        skipped,
+        scoreSum,
+        avgScore,
+        accuracy,
+        attemptRate,
+        negativeMarks,
+        percentile: null,
+        rank: null,
+        peerCount: 0,
+      },
+      trend,
+      time: {
+        bySubject: subjectTimeList,
+        slowest: questionTimeList.slice(0, 5),
+        fastest: questionTimeList.slice(-5).reverse(),
+        wastedOnWrong: 0,
+        fatigue: fatigueAccuracy,
+      },
+      topics: {
+        list: topics.slice(0, 12),
+        strongest: topics[0] ?? null,
+        weakest: topics.length ? topics[topics.length - 1] : null,
+      },
+      activity: Array.from(dailyCounts.entries())
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => (a.date < b.date ? -1 : 1)),
+    });
+  }
+
   const attempts = await prisma.attempt.findMany({
     where: {
       userId: session.user.id,
@@ -220,6 +367,7 @@ export async function GET(request: Request) {
       score: attempt.score ?? 0,
       accuracy: Math.round((attempt.accuracy ?? 0) * 100),
       timeTaken: attempt.timeTaken ?? 0,
+      label: attempt.createdAt.toISOString().slice(5, 10),
     }))
     .reverse();
 
@@ -248,6 +396,7 @@ export async function GET(request: Request) {
       wastedOnWrong: timeWastedWrong,
       fatigue: fatigueAccuracy,
     },
+    activity: [],
     topics: {
       list: topics.slice(0, 12),
       strongest: topics[0] ?? null,

@@ -10,6 +10,13 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  RadialBar,
+  RadialBarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -85,7 +92,8 @@ type UserAnalysis = {
     strongest: { topic: string; subject: string; attempted: number; correct: number; accuracy: number } | null;
     weakest: { topic: string; subject: string; attempted: number; correct: number; accuracy: number } | null;
   };
-  trend: { date: string; score: number; accuracy: number; timeTaken: number }[];
+  trend: { date: string; score: number; accuracy: number; timeTaken: number; label?: string }[];
+  activity?: { date: string; count: number }[];
 };
 
 const fallbackStats: PyqStats = {
@@ -162,7 +170,7 @@ export default function PyqPage() {
   const examCards = examItems.length ? examItems : fallbackExams;
   const scoreTrend = useMemo(() => {
     return (userAnalysis?.trend ?? []).map((item, index) => ({
-      name: `T${index + 1}`,
+      name: item.label ?? `T${index + 1}`,
       score: item.score,
       accuracy: item.accuracy,
     }));
@@ -187,6 +195,55 @@ export default function PyqPage() {
         })),
     [userAnalysis]
   );
+
+  const stackedAccuracy = useMemo(() => {
+    if (!userAnalysis) return [];
+    return [
+      {
+        name: "Total",
+        correct: userAnalysis.summary.correct,
+        wrong: userAnalysis.summary.wrong,
+        skipped: userAnalysis.summary.skipped,
+      },
+    ];
+  }, [userAnalysis]);
+
+  const radarData = useMemo(() => {
+    return (userAnalysis?.topics.list ?? []).slice(0, 6).map((item) => ({
+      topic: item.topic,
+      accuracy: item.accuracy,
+    }));
+  }, [userAnalysis]);
+
+  const radialData = useMemo(() => {
+    return [
+      {
+        name: "Accuracy",
+        value: userAnalysis?.summary.accuracy ?? 0,
+        fill: "#b28bff",
+      },
+    ];
+  }, [userAnalysis]);
+
+  const activityMap = useMemo(() => {
+    const map = new Map<string, number>();
+    (userAnalysis?.activity ?? []).forEach((item) => {
+      map.set(item.date, item.count);
+    });
+    return map;
+  }, [userAnalysis]);
+
+  const activityDays = useMemo(() => {
+    const days = 56;
+    const out: { date: string; count: number }[] = [];
+    for (let i = days - 1; i >= 0; i -= 1) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      out.push({ date: key, count: activityMap.get(key) ?? 0 });
+    }
+    return out;
+  }, [activityMap]);
 
   return (
     <div className="min-h-screen bg-[#0f1218] text-white font-neue">
@@ -428,7 +485,7 @@ export default function PyqPage() {
                         <XAxis type="number" tick={{ fill: "#9aa4b2", fontSize: 10 }} />
                         <YAxis dataKey="subject" type="category" tick={{ fill: "#9aa4b2", fontSize: 10 }} width={80} />
                         <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
-                        <Bar dataKey="minutes" fill="#6aa8ff" radius={[4, 4, 4, 4]} />
+                        <Bar dataKey="minutes" fill="#b28bff" radius={[6, 6, 6, 6]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -450,6 +507,51 @@ export default function PyqPage() {
                       </p>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Accuracy Ring</p>
+                  <div className="mt-3 h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadialBarChart innerRadius="70%" outerRadius="100%" data={radialData} startAngle={90} endAngle={-270}>
+                        <RadialBar dataKey="value" cornerRadius={10} />
+                        <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
+                      </RadialBarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Correct / Wrong / Skipped</p>
+                  <div className="mt-3 h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stackedAccuracy}>
+                        <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="name" tick={{ fill: "#9aa4b2", fontSize: 10 }} />
+                        <YAxis tick={{ fill: "#9aa4b2", fontSize: 10 }} />
+                        <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
+                        <Bar dataKey="correct" stackId="a" fill="#8be9fd" />
+                        <Bar dataKey="wrong" stackId="a" fill="#ff9bb3" />
+                        <Bar dataKey="skipped" stackId="a" fill="#9aa4b2" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Topic Radar</p>
+                <div className="mt-3 h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarData}>
+                      <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                      <PolarAngleAxis dataKey="topic" tick={{ fill: "#9aa4b2", fontSize: 10 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "#9aa4b2", fontSize: 10 }} />
+                      <Radar dataKey="accuracy" stroke="#b28bff" fill="rgba(178,139,255,0.35)" />
+                      <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
@@ -487,9 +589,27 @@ export default function PyqPage() {
                       <XAxis dataKey="topic" tick={{ fill: "#9aa4b2", fontSize: 9 }} interval={0} angle={-20} height={50} />
                       <YAxis tick={{ fill: "#9aa4b2", fontSize: 10 }} domain={[0, 100]} />
                       <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
-                      <Bar dataKey="accuracy" fill="#8be9fd" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="accuracy" fill="#9b7bff" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Practice Heatmap (8 weeks)</p>
+                <div className="mt-3 grid grid-cols-8 gap-2">
+                  {activityDays.map((item) => {
+                    const intensity = Math.min(4, item.count);
+                    const colors = ["#121722", "#c9b7ff", "#b28bff", "#9b7bff", "#815bff"];
+                    return (
+                      <div
+                        key={item.date}
+                        title={`${item.date}: ${item.count}`}
+                        className="h-6 w-full rounded"
+                        style={{ background: colors[intensity] }}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             </div>

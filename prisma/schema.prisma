@@ -261,6 +261,26 @@ model AppConfig {
   updatedAt       DateTime @updatedAt
 }
 
+model PyqAttempt {
+  id         String   @id @default(cuid())
+  userId     String
+  examId     String?
+  examName   String?
+  questionId String
+  subject    String?
+  chapter    String?
+  topic      String?
+  answer     String?
+  isCorrect  Boolean  @default(false)
+  timeSpent  Int?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, examId])
+  @@index([createdAt])
+}
+
 model MatchRoom {
   id               String            @id @default(cuid())
   code             String            @unique
