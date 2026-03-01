@@ -119,13 +119,44 @@ const isNumericMatch = (value: string, correct: string) => {
   return v === c;
 };
 
-const MathBlock = ({ value, className }: { value: string; className?: string }) => {
+const cleanupLatexLines = (value: string) =>
+  value
+    .normalize("NFKC")
+    .replace(/[\u{1D400}-\u{1D7FF}]/gu, (ch) => ch.normalize("NFKC"))
+    .replace(/\u0008/g, "\\b")
+    .replace(/\u0009/g, "\\t")
+    .replace(/\u000c/g, "\\f")
+    .replace(/[\u0000-\u0007\u000b\u000e-\u001f]/g, "")
+    .replace(/\p{Mn}/gu, "")
+    .replace(/\p{Cf}/gu, "")
+    .replace(/[\u2061-\u2064]/g, "")
+    .replace(/\\\\/g, "\\")
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/[\u2028\u2029]/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\u2212/g, "-")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
+    .trim();
+
+const MathBlock = ({
+  value,
+  className,
+  preserveLineBreaks = false,
+}: {
+  value: string;
+  className?: string;
+  preserveLineBreaks?: boolean;
+}) => {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!ref.current) return;
-    ref.current.textContent = cleanupLatex(value || "");
+    ref.current.textContent = preserveLineBreaks
+      ? cleanupLatexLines(value || "")
+      : cleanupLatex(value || "");
     ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
-  }, [value]);
+  }, [value, preserveLineBreaks]);
   return <div ref={ref} className={className} />;
 };
 
@@ -562,7 +593,11 @@ export default function PyqQuestionAttempt({
             {question?.solution ? (
               <div className="rounded-[8px] border border-white/10 bg-[#171c24] px-4 py-4 text-sm text-white/80">
                 <div className="text-xs uppercase tracking-[0.2em] text-white/50">Solution</div>
-                <MathBlock value={question.solution} className="mt-2 text-sm text-white/90" />
+                <MathBlock
+                  value={question.solution}
+                  preserveLineBreaks
+                  className="mt-3 text-sm text-white/90 leading-6 whitespace-pre-wrap"
+                />
               </div>
             ) : null}
           </div>
