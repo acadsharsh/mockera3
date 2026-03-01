@@ -25,7 +25,10 @@ const ensureMathJax = (() => {
         displayMath: [["$$", "$$"], ["\\[", "\\]"]],
         processEscapes: true,
       },
-      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
+      options: {
+        enableMenu: false,
+        skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+      },
     };
     loading = new Promise((resolve) => {
       const script = document.createElement("script");

@@ -47,7 +47,10 @@ const ensureMathJax = (() => {
         scale: 1,
         matchFontHeight: false,
       },
-      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
+      options: {
+        enableMenu: false,
+        skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+      },
     };
     loading = new Promise((resolve) => {
       const script = document.createElement("script");
