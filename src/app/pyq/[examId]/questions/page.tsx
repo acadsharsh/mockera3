@@ -65,6 +65,24 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
   const chapter = searchParams.get("chapter") ?? "";
   const [items, setItems] = useState<QuestionItem[]>([]);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const cacheKey = useMemo(
+    () => `pyq_list_v1_${examId}_${subject}_${chapter}`,
+    [examId, subject, chapter]
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(cacheKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { ts: number; items: QuestionItem[] };
+      if (!parsed || !Array.isArray(parsed.items)) return;
+      const fresh = Date.now() - parsed.ts < 5 * 60 * 1000;
+      if (fresh) setItems(parsed.items);
+    } catch {
+      // ignore cache errors
+    }
+  }, [cacheKey]);
 
   useEffect(() => {
     let active = true;
@@ -77,13 +95,19 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active || !data) return;
-        setItems(Array.isArray(data.items) ? data.items : []);
+        const nextItems = Array.isArray(data.items) ? data.items : [];
+        setItems(nextItems);
+        try {
+          window.localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: nextItems }));
+        } catch {
+          // ignore cache errors
+        }
       })
       .catch(() => null);
     return () => {
       active = false;
     };
-  }, [examId, subject, chapter]);
+  }, [examId, subject, chapter, cacheKey]);
 
   useEffect(() => {
     if (!items.length) return;

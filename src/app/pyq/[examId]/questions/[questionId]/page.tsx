@@ -128,23 +128,79 @@ export default function PyqQuestionAttempt({
   const [elapsed, setElapsed] = useState(0);
   const [answer, setAnswer] = useState<string>("");
   const [showAnswer, setShowAnswer] = useState(false);
+  const [navTarget, setNavTarget] = useState<"prev" | "next" | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const cacheHitRef = useRef(false);
+  const questionCacheKey = useMemo(
+    () => `pyq_question_v1_${questionId}`,
+    [questionId]
+  );
+  const listCacheKey = useMemo(
+    () => `pyq_question_ids_v1_${examId}_${subject}_${chapter}_${topic}`,
+    [examId, subject, chapter, topic]
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    cacheHitRef.current = false;
+    try {
+      const raw = window.localStorage.getItem(questionCacheKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { ts: number; item: QuestionDetail | null; stats: QuestionStats | null };
+      if (!parsed) return;
+      const fresh = Date.now() - parsed.ts < 5 * 60 * 1000;
+      if (fresh) {
+        setQuestion(parsed.item ?? null);
+        setStats(parsed.stats ?? null);
+        cacheHitRef.current = true;
+      }
+    } catch {
+      // ignore cache errors
+    }
+  }, [questionCacheKey]);
 
   useEffect(() => {
     let active = true;
-    setQuestion(null);
+    if (!cacheHitRef.current) {
+      setQuestion(null);
+      setStats(null);
+    }
     fetch(`/api/pyq/questions/${questionId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active) return;
-        setQuestion(data?.item ?? null);
-        setStats(data?.stats ?? null);
+        const item = data?.item ?? null;
+        const nextStats = data?.stats ?? null;
+        setQuestion(item);
+        setStats(nextStats);
+        try {
+          window.localStorage.setItem(
+            questionCacheKey,
+            JSON.stringify({ ts: Date.now(), item, stats: nextStats })
+          );
+        } catch {
+          // ignore cache errors
+        }
       })
       .catch(() => null);
     return () => {
       active = false;
     };
   }, [questionId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(listCacheKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { ts: number; ids: string[] };
+      if (!parsed || !Array.isArray(parsed.ids)) return;
+      const fresh = Date.now() - parsed.ts < 5 * 60 * 1000;
+      if (fresh) setQuestionIds(parsed.ids);
+    } catch {
+      // ignore cache errors
+    }
+  }, [listCacheKey]);
 
   useEffect(() => {
     let active = true;
@@ -160,17 +216,23 @@ export default function PyqQuestionAttempt({
         if (!active || !data) return;
         const ids = Array.isArray(data.items) ? data.items.map((item: QuestionDetail) => item.id) : [];
         setQuestionIds(ids);
+        try {
+          window.localStorage.setItem(listCacheKey, JSON.stringify({ ts: Date.now(), ids }));
+        } catch {
+          // ignore cache errors
+        }
       })
       .catch(() => null);
     return () => {
       active = false;
     };
-  }, [examId, subject, chapter, topic]);
+  }, [examId, subject, chapter, topic, listCacheKey]);
 
   useEffect(() => {
     setElapsed(0);
     setAnswer("");
     setShowAnswer(false);
+    setNavTarget(null);
     const timer = window.setInterval(() => setElapsed((prev) => prev + 1), 1000);
     return () => window.clearInterval(timer);
   }, [questionId]);
@@ -195,8 +257,9 @@ export default function PyqQuestionAttempt({
     return `${meta}${shift}`;
   }, [question?.test, subject]);
 
-  const goToQuestion = (id: string | null) => {
+  const goToQuestion = (id: string | null, target: "prev" | "next") => {
     if (!id) return;
+    setNavTarget(target);
     const next = new URLSearchParams();
     if (subject) next.set("subject", subject);
     if (chapter) next.set("chapter", chapter);
@@ -398,9 +461,12 @@ export default function PyqQuestionAttempt({
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
           <button
             type="button"
-            onClick={() => goToQuestion(prevId)}
+            onClick={() => goToQuestion(prevId, "prev")}
             disabled={!prevId}
-            className="min-w-[160px] rounded-[10px] border border-white/10 bg-[#171c24] px-6 py-3 text-sm text-white/60 disabled:opacity-40"
+            className={`min-w-[160px] rounded-[10px] border border-white/10 px-6 py-3 text-sm text-white/60 transition active:scale-[0.98] disabled:opacity-40 ${
+              navTarget === "prev" ? "bg-[#1b2a44] ring-2 ring-[#6aa8ff]/50" : "bg-[#171c24]"
+            }`}
+            aria-busy={navTarget === "prev"}
           >
             Previous
           </button>
@@ -414,9 +480,12 @@ export default function PyqQuestionAttempt({
             </button>
             <button
               type="button"
-              onClick={() => goToQuestion(nextId)}
+              onClick={() => goToQuestion(nextId, "next")}
               disabled={!nextId}
-              className="min-w-[160px] rounded-[10px] border border-white/10 bg-[#171c24] px-6 py-3 text-sm text-white/90 disabled:opacity-40"
+              className={`min-w-[160px] rounded-[10px] border border-white/10 px-6 py-3 text-sm text-white/90 transition active:scale-[0.98] disabled:opacity-40 ${
+                navTarget === "next" ? "bg-[#1b2a44] ring-2 ring-[#6aa8ff]/50" : "bg-[#171c24]"
+              }`}
+              aria-busy={navTarget === "next"}
             >
               Next
             </button>

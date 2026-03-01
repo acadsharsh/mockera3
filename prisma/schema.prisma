@@ -31,6 +31,9 @@ model User {
   attempts           Attempt[]
   broadcasts         BroadcastMessage[]
   savedQuestions    SavedQuestion[]
+  hostedMatches     MatchRoom[] @relation("MatchRoomHost")
+  matchParticipants MatchParticipant[]
+  matchAnswers      MatchAnswer[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -130,6 +133,8 @@ model Question {
   updatedAt      DateTime @updatedAt
   test           Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
   savedBy       SavedQuestion[]
+  matchQuestions MatchQuestion[]
+  matchAnswers   MatchAnswer[]
 }
 
 model Attempt {
@@ -191,6 +196,7 @@ model Exam {
   tests     Test[]
   papers    ExamPaper[]
   chapters  Chapter[]
+  matches   MatchRoom[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -253,4 +259,76 @@ model AppConfig {
   maintenanceMode Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model MatchRoom {
+  id               String            @id @default(cuid())
+  code             String            @unique
+  hostId           String
+  host             User              @relation("MatchRoomHost", fields: [hostId], references: [id], onDelete: Cascade)
+  mode             String
+  visibility       String
+  examId           String?
+  examRef          Exam?             @relation(fields: [examId], references: [id], onDelete: SetNull)
+  year             Int?
+  subject          String?
+  questionCount    Int
+  timeLimitMinutes Int
+  status           String            @default("LOBBY")
+  startAt          DateTime?
+  endAt            DateTime?
+  participants     MatchParticipant[]
+  questions        MatchQuestion[]
+  answers          MatchAnswer[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([examId])
+}
+
+model MatchParticipant {
+  id          String     @id @default(cuid())
+  roomId      String
+  userId      String
+  score       Int        @default(0)
+  accuracy    Float      @default(0)
+  correct     Int        @default(0)
+  wrong       Int        @default(0)
+  skipped     Int        @default(0)
+  joinedAt    DateTime   @default(now())
+  finishedAt  DateTime?
+  room        MatchRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+}
+
+model MatchQuestion {
+  id         String    @id @default(cuid())
+  roomId     String
+  questionId String
+  order      Int
+  room       MatchRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, questionId])
+  @@index([roomId])
+}
+
+model MatchAnswer {
+  id         String    @id @default(cuid())
+  roomId     String
+  userId     String
+  questionId String
+  answer     String?
+  isCorrect  Boolean   @default(false)
+  timeSpent  Int?
+  createdAt  DateTime  @default(now())
+  room       MatchRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId, questionId])
+  @@index([roomId, userId])
 }
