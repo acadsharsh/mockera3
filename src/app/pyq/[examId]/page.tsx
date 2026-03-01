@@ -165,13 +165,6 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
           </aside>
 
           <section className="space-y-4">
-            <div className="rounded-[6px] border border-white/10 bg-transparent px-6 py-4">
-              <p className="text-sm text-white/60">PYQ Bank</p>
-              <h1 className="mt-1 text-2xl font-semibold text-white">
-                Chapter-wise Collection
-              </h1>
-            </div>
-
             <div className="flex items-center justify-between text-sm text-white/60">
               <span>Showing all chapters ({currentSubject?.chapters?.length ?? 0})</span>
               <button className="text-xs uppercase tracking-[0.2em] text-[#6aa8ff]">Sort</button>

@@ -209,11 +209,6 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
           </aside>
 
           <section className="flex min-h-[calc(100vh-180px)] flex-col space-y-4">
-            <div className="rounded-[6px] border border-white/10 bg-[#222830] px-6 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
-              <p className="text-sm text-white/60">Questions</p>
-              <h1 className="mt-1 text-2xl font-semibold text-white">{title}</h1>
-            </div>
-
             <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Filter</span>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Years</span>
