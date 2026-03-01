@@ -1,7 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 const fallbackExams = [
   { name: "JEE Main", badge: "2026 QS ADDED" },
@@ -147,6 +160,33 @@ export default function PyqPage() {
   }, [selectedExamId, userRange]);
 
   const examCards = examItems.length ? examItems : fallbackExams;
+  const scoreTrend = useMemo(() => {
+    return (userAnalysis?.trend ?? []).map((item, index) => ({
+      name: `T${index + 1}`,
+      score: item.score,
+      accuracy: item.accuracy,
+    }));
+  }, [userAnalysis]);
+
+  const subjectTimeData = useMemo(
+    () =>
+      (userAnalysis?.time.bySubject ?? []).map((item) => ({
+        subject: item.subject,
+        minutes: Math.round(item.time / 60),
+      })),
+    [userAnalysis]
+  );
+
+  const topicAccuracyData = useMemo(
+    () =>
+      (userAnalysis?.topics.list ?? [])
+        .slice(0, 8)
+        .map((item) => ({
+          topic: item.topic,
+          accuracy: item.accuracy,
+        })),
+    [userAnalysis]
+  );
 
   return (
     <div className="min-h-screen bg-[#0f1218] text-white font-neue">
@@ -285,41 +325,30 @@ export default function PyqPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Score Trend</p>
-                  <div className="mt-3 h-24">
-                    <svg viewBox="0 0 100 40" className="h-full w-full">
-                      <polyline
-                        fill="none"
-                        stroke="#6aa8ff"
-                        strokeWidth="2"
-                        points={userAnalysis.trend
-                          .map((item, index) => {
-                            const x = (index / Math.max(1, userAnalysis.trend.length - 1)) * 100;
-                            const max = Math.max(...userAnalysis.trend.map((t) => t.score), 1);
-                            const y = 40 - (item.score / max) * 36;
-                            return `${x},${y}`;
-                          })
-                          .join(" ")}
-                      />
-                    </svg>
+                  <div className="mt-3 h-28">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={scoreTrend}>
+                        <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="name" tick={{ fill: "#9aa4b2", fontSize: 10 }} />
+                        <YAxis tick={{ fill: "#9aa4b2", fontSize: 10 }} />
+                        <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
+                        <Line type="monotone" dataKey="score" stroke="#6aa8ff" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
                 <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Accuracy Trend</p>
-                  <div className="mt-3 h-24">
-                    <svg viewBox="0 0 100 40" className="h-full w-full">
-                      <polyline
-                        fill="none"
-                        stroke="#8be9fd"
-                        strokeWidth="2"
-                        points={userAnalysis.trend
-                          .map((item, index) => {
-                            const x = (index / Math.max(1, userAnalysis.trend.length - 1)) * 100;
-                            const y = 40 - (item.accuracy / 100) * 36;
-                            return `${x},${y}`;
-                          })
-                          .join(" ")}
-                      />
-                    </svg>
+                  <div className="mt-3 h-28">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={scoreTrend}>
+                        <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="name" tick={{ fill: "#9aa4b2", fontSize: 10 }} />
+                        <YAxis tick={{ fill: "#9aa4b2", fontSize: 10 }} domain={[0, 100]} />
+                        <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
+                        <Area type="monotone" dataKey="accuracy" stroke="#8be9fd" fill="rgba(139,233,253,0.2)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
@@ -392,24 +421,16 @@ export default function PyqPage() {
               <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
                 <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Time by Subject</p>
-                  <div className="mt-3 space-y-2 text-xs text-white/70">
-                    {userAnalysis.time.bySubject.map((item) => (
-                      <div key={item.subject} className="flex items-center gap-3">
-                        <span className="w-24 truncate">{item.subject}</span>
-                        <div className="h-2 flex-1 rounded-full bg-white/5">
-                          <div
-                            className="h-2 rounded-full bg-[#6aa8ff]"
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                Math.round((item.time / (userAnalysis.summary.totalQuestions || 1)) * 10)
-                              )}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="w-16 text-right">{Math.round(item.time / 60)} min</span>
-                      </div>
-                    ))}
+                  <div className="mt-3 h-40">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={subjectTimeData} layout="vertical">
+                        <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                        <XAxis type="number" tick={{ fill: "#9aa4b2", fontSize: 10 }} />
+                        <YAxis dataKey="subject" type="category" tick={{ fill: "#9aa4b2", fontSize: 10 }} width={80} />
+                        <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
+                        <Bar dataKey="minutes" fill="#6aa8ff" radius={[4, 4, 4, 4]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
 
@@ -459,15 +480,16 @@ export default function PyqPage() {
 
               <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/50">Topic Accuracy</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs text-white/70">
-                  {userAnalysis.topics.list.map((item) => (
-                    <div key={item.topic} className="rounded-[6px] border border-white/10 bg-[#0f141d] px-3 py-2">
-                      <div className="text-sm text-white">{item.topic}</div>
-                      <div className="text-[11px] text-white/50">
-                        {item.subject}  -  {item.accuracy}%  -  {item.attempted} attempts
-                      </div>
-                    </div>
-                  ))}
+                <div className="mt-3 h-44">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topicAccuracyData}>
+                      <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="topic" tick={{ fill: "#9aa4b2", fontSize: 9 }} interval={0} angle={-20} height={50} />
+                      <YAxis tick={{ fill: "#9aa4b2", fontSize: 10 }} domain={[0, 100]} />
+                      <Tooltip contentStyle={{ background: "#0f141d", border: "1px solid #1f2937", color: "#fff" }} />
+                      <Bar dataKey="accuracy" fill="#8be9fd" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
