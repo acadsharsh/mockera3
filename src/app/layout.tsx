@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist_Mono, Inter, JetBrains_Mono, Marcellus, Space_Grotesk } from "next/font/google";
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
-import BroadcastPopup from "@/components/BroadcastPopup";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
@@ -71,7 +70,6 @@ gtag('config', 'G-D1VHC992WK');`}
         </Script>
         <Providers>
           <PageTransition>{children}</PageTransition>
-          <BroadcastPopup />
           <Toaster richColors />
           <Analytics />
           <SpeedInsights />

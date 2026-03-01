@@ -158,7 +158,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
             </div>
           </aside>
 
-          <section className="space-y-4">
+          <section className="flex min-h-[calc(100vh-180px)] flex-col space-y-4">
             <div className="rounded-[6px] border border-white/10 bg-[#171c24] px-6 py-4">
               <p className="text-sm text-white/60">All PYQs</p>
               <h1 className="mt-1 text-2xl font-semibold text-white">{title}</h1>
@@ -175,7 +175,14 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
               <button className="text-xs uppercase tracking-[0.2em] text-[#6aa8ff]">Sort</button>
             </div>
 
-            <div ref={listRef} className="space-y-4">
+            <div
+              ref={listRef}
+              className="rounded-[10px] border border-white/10 bg-[#121722] p-3 pr-2"
+            >
+              <div
+                className="space-y-4 overflow-y-auto pr-2"
+                style={{ maxHeight: "calc(100vh - 360px)", minHeight: "360px" }}
+              >
               {items.map((item, index) => (
                 <button
                   key={item.id}
@@ -205,6 +212,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
                   No questions found for this chapter yet.
                 </div>
               )}
+              </div>
             </div>
           </section>
         </div>
