@@ -226,17 +226,17 @@ export default function PyqMatchPage() {
     });
   };
 
-  const remaining = useMemo(() => {
-    if (!state?.room.endAt) return null;
-    const end = new Date(state.room.endAt).getTime();
-    return Math.max(0, Math.floor((end - Date.now()) / 1000));
-  }, [state?.room.endAt, tick]);
-
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const timer = window.setInterval(() => setTick((prev) => prev + 1), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const remaining = useMemo(() => {
+    if (!state?.room.endAt) return null;
+    const end = new Date(state.room.endAt).getTime();
+    return Math.max(0, Math.floor((end - Date.now()) / 1000));
+  }, [state?.room.endAt, tick]);
 
   const currentQuestion = state?.questions[currentIndex];
   const options = useMemo(() => normalizeOptions(currentQuestion?.options), [currentQuestion?.options]);
