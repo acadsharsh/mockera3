@@ -85,6 +85,37 @@ type PyqAnalysis = {
   };
 };
 
+type UserAnalysis = {
+  summary: {
+    attempts: number;
+    totalQuestions: number;
+    attempted: number;
+    correct: number;
+    wrong: number;
+    skipped: number;
+    scoreSum: number;
+    avgScore: number;
+    accuracy: number;
+    attemptRate: number;
+    negativeMarks: number;
+    percentile: number | null;
+    rank: number | null;
+    peerCount: number;
+  };
+  time: {
+    bySubject: { subject: string; time: number }[];
+    slowest: { id: string; avgTime: number; label: string }[];
+    fastest: { id: string; avgTime: number; label: string }[];
+    wastedOnWrong: number;
+    fatigue: number[];
+  };
+  topics: {
+    list: { topic: string; subject: string; attempted: number; correct: number; accuracy: number }[];
+    strongest: { topic: string; subject: string; attempted: number; correct: number; accuracy: number } | null;
+    weakest: { topic: string; subject: string; attempted: number; correct: number; accuracy: number } | null;
+  };
+};
+
 const fallbackStats: PyqStats = {
   questions: 0,
   chapters: 0,
@@ -102,6 +133,9 @@ export default function PyqPage() {
   const [selectedExamId, setSelectedExamId] = useState<string>("");
   const [analysis, setAnalysis] = useState<PyqAnalysis | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [userRange, setUserRange] = useState("30d");
+  const [userAnalysis, setUserAnalysis] = useState<UserAnalysis | null>(null);
+  const [userLoading, setUserLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -154,6 +188,25 @@ export default function PyqPage() {
       active = false;
     };
   }, [selectedExamId]);
+
+  useEffect(() => {
+    if (!selectedExamId) return;
+    let active = true;
+    setUserLoading(true);
+    fetch(`/api/pyq/user-analysis?examId=${encodeURIComponent(selectedExamId)}&range=${userRange}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active) return;
+        setUserAnalysis(data);
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (active) setUserLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedExamId, userRange]);
 
   const examCards = examItems.length ? examItems : fallbackExams;
   const totalFor = (value: number, total: number) =>
@@ -450,6 +503,188 @@ export default function PyqPage() {
           ) : (
             <div className="mt-6 rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4 text-sm text-white/60">
               Select an exam to see detailed analysis.
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 rounded-[6px] border border-white/10 bg-[#161b22] px-5 py-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">Your PYQ Analytics</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">Personal Performance Lens</h2>
+              <p className="mt-1 text-sm text-white/60">
+                Exam-specific stats from your attempts in the selected range.
+              </p>
+            </div>
+            <select
+              value={userRange}
+              onChange={(event) => setUserRange(event.target.value)}
+              className="rounded-md border border-white/10 bg-[#0f141d] px-3 py-2 text-sm text-white"
+            >
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="90d">Last 90 days</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
+
+          {userLoading ? (
+            <div className="mt-6 rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4 text-sm text-white/60">
+              Loading your analytics...
+            </div>
+          ) : userAnalysis ? (
+            <div className="mt-6 space-y-6">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Score Avg</p>
+                  <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.avgScore}</p>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Accuracy</p>
+                  <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.accuracy}%</p>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Attempt Rate</p>
+                  <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.attemptRate}%</p>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Attempts</p>
+                  <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.attempts}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Correct</p>
+                  <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.correct}</p>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Wrong</p>
+                  <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.wrong}</p>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Skipped</p>
+                  <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.skipped}</p>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Negative Marks</p>
+                  <p className="mt-2 text-lg font-semibold text-white">-{userAnalysis.summary.negativeMarks}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Percentile / Rank</p>
+                  <p className="mt-2 text-lg font-semibold text-white">
+                    {userAnalysis.summary.percentile ?? "--"}%
+                  </p>
+                  <p className="text-xs text-white/60">
+                    Rank {userAnalysis.summary.rank ?? "--"} / {userAnalysis.summary.peerCount}
+                  </p>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Time Wasted (Wrong)</p>
+                  <p className="mt-2 text-lg font-semibold text-white">
+                    {Math.round(userAnalysis.time.wastedOnWrong / 60)} min
+                  </p>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Fatigue (Q1-Q4)</p>
+                  <div className="mt-2 flex items-center gap-2 text-xs text-white/70">
+                    {userAnalysis.time.fatigue.map((value, index) => (
+                      <span key={`fat-${index}`} className="rounded-full border border-white/10 px-2 py-1">
+                        {value}%
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Time by Subject</p>
+                  <div className="mt-3 space-y-2 text-xs text-white/70">
+                    {userAnalysis.time.bySubject.map((item) => (
+                      <div key={item.subject} className="flex items-center gap-3">
+                        <span className="w-24 truncate">{item.subject}</span>
+                        <div className="h-2 flex-1 rounded-full bg-white/5">
+                          <div
+                            className="h-2 rounded-full bg-[#6aa8ff]"
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                Math.round((item.time / (userAnalysis.summary.totalQuestions || 1)) * 10)
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="w-16 text-right">{Math.round(item.time / 60)} min</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Strong / Weak Topics</p>
+                  <div className="mt-3 space-y-3 text-xs text-white/70">
+                    <div>
+                      <p className="text-white/60">Strongest</p>
+                      <p className="text-sm text-white">
+                        {userAnalysis.topics.strongest?.topic ?? "--"} ({userAnalysis.topics.strongest?.accuracy ?? 0}%)
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-white/60">Weakest</p>
+                      <p className="text-sm text-white">
+                        {userAnalysis.topics.weakest?.topic ?? "--"} ({userAnalysis.topics.weakest?.accuracy ?? 0}%)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Slowest Questions</p>
+                  <div className="mt-3 space-y-2 text-xs text-white/70">
+                    {userAnalysis.time.slowest.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between">
+                        <span className="truncate">{item.label}</span>
+                        <span>{item.avgTime}s</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">Fastest Questions</p>
+                  <div className="mt-3 space-y-2 text-xs text-white/70">
+                    {userAnalysis.time.fastest.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between">
+                        <span className="truncate">{item.label}</span>
+                        <span>{item.avgTime}s</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Topic Accuracy</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs text-white/70">
+                  {userAnalysis.topics.list.map((item) => (
+                    <div key={item.topic} className="rounded-[6px] border border-white/10 bg-[#0f141d] px-3 py-2">
+                      <div className="text-sm text-white">{item.topic}</div>
+                      <div className="text-[11px] text-white/50">
+                        {item.subject} • {item.accuracy}% • {item.attempted} attempts
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4 text-sm text-white/60">
+              No attempts yet for this exam.
             </div>
           )}
         </div>

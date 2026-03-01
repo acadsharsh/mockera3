@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getPusherClient } from "@/lib/pusher/client";
 
@@ -56,6 +56,60 @@ type MatchState = {
 };
 
 const optionLabels = ["A", "B", "C", "D", "E"] as const;
+
+const ensureMathJax = (() => {
+  let loading: Promise<void> | null = null;
+  return () => {
+    if (typeof window === "undefined") return Promise.resolve();
+    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
+    if (loading) return loading;
+    (window as any).MathJax = {
+      tex: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]],
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+        processEscapes: true,
+      },
+      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
+    };
+    loading = new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
+      script.async = true;
+      script.onload = () => resolve();
+      document.head.appendChild(script);
+    });
+    return loading;
+  };
+})();
+
+const cleanupLatex = (value: string) =>
+  value
+    .normalize("NFKC")
+    .replace(/[\u{1D400}-\u{1D7FF}]/gu, (ch) => ch.normalize("NFKC"))
+    .replace(/\u0008/g, "\\b")
+    .replace(/\u0009/g, "\\t")
+    .replace(/\u000c/g, "\\f")
+    .replace(/[\u0000-\u0007\u000b\u000e-\u001f]/g, "")
+    .replace(/\p{Mn}/gu, "")
+    .replace(/\p{Cf}/gu, "")
+    .replace(/[\u2061-\u2064]/g, "")
+    .replace(/\\\\/g, "\\")
+    .replace(/\u00a0/g, " ")
+    .replace(/[\r\n\u2028\u2029]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\u2212/g, "-")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
+    .trim();
+
+const MathBlock = ({ value, className }: { value: string; className?: string }) => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.textContent = cleanupLatex(value || "");
+    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
+  }, [value]);
+  return <div ref={ref} className={className} />;
+};
 
 const normalizeOptions = (value: unknown) => {
   if (Array.isArray(value)) return value.map((item) => String(item));
@@ -418,7 +472,7 @@ export default function PyqMatchPage() {
                 </span>
               </div>
               <div className="rounded-[8px] border border-white/10 bg-[#10141d] px-5 py-4">
-                <div className="text-white text-base">{currentQuestion.prompt || "Question"}</div>
+                <MathBlock value={currentQuestion.prompt || "Question"} className="text-white text-base" />
                 {options.length ? (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {options.map((opt, idx) => {
@@ -432,7 +486,7 @@ export default function PyqMatchPage() {
                           onClick={() => setAnswer(label)}
                         >
                           <span className="mr-2 text-xs text-white/60">{label}.</span>
-                          {opt}
+                          <MathBlock value={opt} className="text-sm text-white/90" />
                         </button>
                       );
                     })}
