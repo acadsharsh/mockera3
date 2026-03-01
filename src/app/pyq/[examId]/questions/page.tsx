@@ -174,7 +174,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
 
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <aside className="space-y-4">
-            <div className="rounded-[6px] border border-white/10 bg-[#171c24] p-4">
+            <div className="rounded-[6px] border border-white/10 bg-[#222830] p-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
               <div className="text-sm font-semibold text-white">{chapter || "All PYQs"}</div>
               <div className="mt-2 text-xs text-white/50">
                 {itemCountText(items.length, topicCount)}
@@ -189,19 +189,19 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
                 Overview
                 <span>{">"}</span>
               </Link>
-              <div className="flex items-center justify-between rounded-[6px] border border-white/30 bg-white text-[#0f1218] px-4 py-3 text-sm font-semibold">
+              <div className="flex items-center justify-between rounded-[6px] border border-white/30 bg-white text-[#0f1218] px-4 py-3 text-sm font-semibold transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
                 All PYQs
                 <span>{">"}</span>
               </div>
-              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                 Topic-wise PYQs
                 <span>{">"}</span>
               </div>
-              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                 Bookmarked Qs
                 <span>{">"}</span>
               </div>
-              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
+              <div className="flex items-center justify-between rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 text-sm text-white/50 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                 My Mistakes
                 <span>{">"}</span>
               </div>
@@ -209,7 +209,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
           </aside>
 
           <section className="flex min-h-[calc(100vh-180px)] flex-col space-y-4">
-            <div className="rounded-[6px] border border-white/10 bg-[#171c24] px-6 py-4">
+            <div className="rounded-[6px] border border-white/10 bg-[#222830] px-6 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
               <p className="text-sm text-white/60">All PYQs</p>
               <h1 className="mt-1 text-2xl font-semibold text-white">{title}</h1>
             </div>
@@ -227,7 +227,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
 
             <div
               ref={listRef}
-              className="rounded-[10px] border border-white/10 bg-[#121722] p-3 pr-2"
+              className="rounded-[10px] border border-white/10 bg-[#222830] p-3 pr-2 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]"
             >
               <div
                 className="space-y-4 overflow-y-auto pr-2"
@@ -239,7 +239,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
                   type="button"
                   onMouseEnter={() => prefetchQuestion(item.id)}
                   onClick={() => goToQuestion(item.id)}
-                  className="w-full rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-4 text-left transition hover:-translate-y-0.5 hover:border-white/30 active:translate-y-0"
+                  className="w-full rounded-[6px] border border-white/10 bg-[#222830] px-5 py-4 text-left transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)] active:translate-y-0"
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-1 grid h-7 w-7 place-items-center rounded-full bg-white/10 text-xs text-white/70">
@@ -259,7 +259,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
               ))}
 
               {items.length === 0 && (
-                <div className="rounded-[6px] border border-white/10 bg-[#171c24] px-5 py-6 text-sm text-white/60">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-5 py-6 text-sm text-white/60">
                   No questions found for this chapter yet.
                 </div>
               )}
