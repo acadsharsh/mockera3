@@ -208,6 +208,7 @@ model Chapter {
   examId    String?
   subject   String
   name      String
+  iconUrl   String?
   order     Int      @default(0)
   topics    Topic[]
   exam      Exam?    @relation(fields: [examId], references: [id], onDelete: SetNull)

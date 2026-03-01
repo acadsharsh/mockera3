@@ -5,6 +5,7 @@ type ChapterBucket = {
   name: string;
   total: number;
   byYear: Record<number, number>;
+  iconUrl?: string | null;
 };
 
 type SubjectBucket = {
@@ -34,6 +35,15 @@ export async function GET(
     where: { examId },
     select: { year: true },
   });
+
+  const chapterRows = await prisma.chapter.findMany({
+    where: { examId },
+    select: { subject: true, name: true, iconUrl: true },
+  });
+  const chapterIconMap = new Map<string, string | null>();
+  for (const row of chapterRows) {
+    chapterIconMap.set(`${row.subject}::${row.name}`, row.iconUrl ?? null);
+  }
 
   const questionRows = await prisma.question.findMany({
     where: {
@@ -73,6 +83,7 @@ export async function GET(
         name: chapter,
         total: 0,
         byYear: {},
+        iconUrl: chapterIconMap.get(`${subject}::${chapter}`) ?? null,
       });
     }
 
@@ -98,6 +109,7 @@ export async function GET(
           name: chapter.name,
           total: chapter.total,
           byYear: chapter.byYear,
+          iconUrl: chapter.iconUrl ?? null,
         }))
         .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 

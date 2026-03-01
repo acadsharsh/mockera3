@@ -10,12 +10,46 @@ const subjectBadges: Record<string, { label: string; accent: string; chip: strin
   Maths: { label: "Maths", accent: "bg-blue-500", chip: "bg-blue-500/20 text-blue-200" },
 };
 
+function SubjectIcon({ name, className }: { name: string; className?: string }) {
+  const key = name.toLowerCase();
+  if (key.includes("physics")) {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+        <circle cx="12" cy="12" r="2.5" />
+        <ellipse cx="12" cy="12" rx="9" ry="4.5" />
+        <ellipse cx="12" cy="12" rx="4.5" ry="9" transform="rotate(60 12 12)" />
+        <ellipse cx="12" cy="12" rx="4.5" ry="9" transform="rotate(120 12 12)" />
+      </svg>
+    );
+  }
+  if (key.includes("chem")) {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+        <path d="M9 3h6" />
+        <path d="M10 3v5l-4.5 7.5A4 4 0 0 0 9 21h6a4 4 0 0 0 3.5-5.5L14 8V3" />
+        <path d="M9 14h6" />
+      </svg>
+    );
+  }
+  if (key.includes("math")) {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M5 7h14" />
+        <path d="M7 7l5 10 5-10" />
+        <path d="M5 17h14" />
+      </svg>
+    );
+  }
+  return <span className="text-[10px] font-semibold">{name.slice(0, 2).toUpperCase()}</span>;
+}
+
 const fallbackSubjects = ["Physics", "Chemistry", "Mathematics"];
 
 type ChapterRow = {
   name: string;
   total: number;
   byYear: Record<number, number>;
+  iconUrl?: string | null;
 };
 
 type SubjectRow = {
@@ -116,8 +150,8 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
                     onClick={() => setActiveSubject(subject.name)}
                   >
                     <span className="flex items-center gap-3">
-                      <span className={`grid h-9 w-9 place-items-center rounded-full text-xs font-semibold ${active ? "bg-[#0f1218] text-white" : meta.chip}`}>
-                        {meta.label.slice(0, 2).toUpperCase()}
+                      <span className={`grid h-9 w-9 place-items-center rounded-full ${active ? "bg-[#0f1218] text-white" : meta.chip}`}>
+                        <SubjectIcon name={meta.label} className="h-4 w-4" />
                       </span>
                       <span className="text-sm font-semibold">{meta.label}</span>
                     </span>
@@ -131,7 +165,7 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
           </aside>
 
           <section className="space-y-4">
-            <div className="rounded-[6px] border border-white/10 bg-[#171c24] px-6 py-4">
+            <div className="rounded-[6px] border border-white/10 bg-transparent px-6 py-4">
               <p className="text-sm text-white/60">{currentSubject?.name ?? "Subject"} PYQs</p>
               <h1 className="mt-1 text-2xl font-semibold text-white">
                 Chapter-wise Collection of {currentSubject?.name ?? "Subject"} PYQs
@@ -160,7 +194,11 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
                   >
                     <div className="flex items-center gap-3">
                       <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-xs font-semibold text-white/70">
-                        {chapter.name.slice(0, 2).toUpperCase()}
+                        {chapter.iconUrl ? (
+                          <img src={chapter.iconUrl} alt={chapter.name} className="h-9 w-9 rounded-full object-cover" />
+                        ) : (
+                          chapter.name.slice(0, 2).toUpperCase()
+                        )}
                       </span>
                       <div>
                         <p className="text-sm font-semibold text-white">{chapter.name}</p>

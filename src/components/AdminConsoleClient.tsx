@@ -46,6 +46,7 @@ type ChapterItem = {
   examId?: string | null;
   subject: string;
   name: string;
+  iconUrl?: string | null;
   order: number;
   exam?: { id: string; name: string } | null;
 };
@@ -93,6 +94,8 @@ export default function AdminConsoleClient() {
   const [chapterName, setChapterName] = useState("");
   const [chapterOrder, setChapterOrder] = useState(0);
   const [chapterExamId, setChapterExamId] = useState("");
+  const [chapterIconUrl, setChapterIconUrl] = useState("");
+  const [chapterIconUploading, setChapterIconUploading] = useState(false);
 
   const [topicExamId, setTopicExamId] = useState("");
   const [topicChapterId, setTopicChapterId] = useState("");
@@ -190,12 +193,32 @@ export default function AdminConsoleClient() {
         examId: chapterExamId,
         subject: chapterSubject,
         name: chapterName,
+        iconUrl: chapterIconUrl || null,
         order: chapterOrder,
       }),
     });
     setChapterName("");
     setChapterOrder(0);
+    setChapterIconUrl("");
     await load();
+  };
+
+  const uploadChapterIcon = async (file: File) => {
+    setChapterIconUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/upload/icon", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (data?.url) {
+        setChapterIconUrl(String(data.url));
+      }
+    } finally {
+      setChapterIconUploading(false);
+    }
   };
 
   const createTopic = async () => {
@@ -415,7 +438,7 @@ export default function AdminConsoleClient() {
 
         <section className="mt-6 rounded-xl border border-white/10 p-4">
           <h2 className="text-sm font-semibold">Chapters</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-5">
+          <div className="mt-3 grid gap-2 sm:grid-cols-6">
             <select
               value={chapterExamId}
               onChange={(e) => setChapterExamId(e.target.value)}
@@ -450,17 +473,45 @@ export default function AdminConsoleClient() {
               placeholder="Order"
               className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
             />
+            <label className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-black px-3 py-2 text-xs text-white/70">
+              <span>{chapterIconUploading ? "Uploading..." : "Upload icon"}</span>
+              <input
+                type="file"
+                accept="image/*"
+                disabled={chapterIconUploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadChapterIcon(file);
+                }}
+                className="text-xs text-white/70 file:mr-2 file:rounded-md file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-xs file:text-white"
+              />
+            </label>
             <button onClick={createChapter} className="rounded-md border border-white/10 px-3 py-2 text-xs">
               Add Chapter
             </button>
           </div>
+          {chapterIconUrl && (
+            <div className="mt-2 flex items-center gap-3 text-xs text-white/60">
+              <img src={chapterIconUrl} alt="Chapter icon preview" className="h-8 w-8 rounded-full border border-white/10 object-cover" />
+              <span className="truncate">{chapterIconUrl}</span>
+            </div>
+          )}
           <div className="mt-3 space-y-2 text-xs">
             {chapters.map((chapter) => (
               <div key={chapter.id} className="flex items-center justify-between rounded-md border border-white/10 px-3 py-2">
-                <div>
-                  <div className="font-semibold">{chapter.name}</div>
-                  <div className="text-white/50">
-                    {chapter.exam?.name ?? "Exam"} · {chapter.subject}
+                <div className="flex items-center gap-3">
+                  <div className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-[10px] font-semibold text-white/70">
+                    {chapter.iconUrl ? (
+                      <img src={chapter.iconUrl} alt={chapter.name} className="h-9 w-9 rounded-full object-cover" />
+                    ) : (
+                      chapter.name.slice(0, 2).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-semibold">{chapter.name}</div>
+                    <div className="text-white/50">
+                      {chapter.exam?.name ?? "Exam"} - {chapter.subject}
+                    </div>
                   </div>
                 </div>
                 <button className="rounded-md border border-rose-400/40 px-2 py-1 text-rose-200" onClick={() => deleteChapter(chapter.id)}>
@@ -521,7 +572,7 @@ export default function AdminConsoleClient() {
                 <div>
                   <div className="font-semibold">{topic.name}</div>
                   <div className="text-white/50">
-                    {topicChapterMap.get(topic.chapterId)?.exam?.name ?? "Exam"} · {topicChapterMap.get(topic.chapterId)?.name ?? ""}
+                    {topicChapterMap.get(topic.chapterId)?.exam?.name ?? "Exam"} - {topicChapterMap.get(topic.chapterId)?.name ?? ""}
                   </div>
                 </div>
                 <button className="rounded-md border border-rose-400/40 px-2 py-1 text-rose-200" onClick={() => deleteTopic(topic.id)}>

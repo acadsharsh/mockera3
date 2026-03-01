@@ -17,6 +17,7 @@ export async function POST(req: Request) {
   const subject = String(body.subject ?? "").trim();
   const name = String(body.name ?? "").trim();
   const examId = body.examId ? String(body.examId) : null;
+  const iconUrl = body.iconUrl ? String(body.iconUrl) : null;
 
   const existing = await prisma.chapter.findFirst({
     where: { examId, subject, name },
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
       examId,
       subject,
       name,
+      iconUrl,
       order: Number(body.order ?? 0),
     },
   });
@@ -49,6 +51,7 @@ export async function PATCH(req: Request) {
       examId: body.examId !== undefined ? (body.examId ? String(body.examId) : null) : undefined,
       subject: body.subject ? String(body.subject).trim() : undefined,
       name: body.name ? String(body.name).trim() : undefined,
+      iconUrl: body.iconUrl !== undefined ? (body.iconUrl ? String(body.iconUrl) : null) : undefined,
       order: body.order !== undefined ? Number(body.order) : undefined,
     },
   });
