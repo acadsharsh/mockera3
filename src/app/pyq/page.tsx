@@ -275,7 +275,7 @@ export default function PyqPage() {
               <Link
                 key={exam.name}
                 href={examId ? `/pyq/${examId}` : "#"}
-                className={`group relative flex h-[86px] items-center justify-between rounded-[4px] border border-white/10 bg-[#171c24] px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)] ${
+                className={`group relative flex h-[86px] items-center justify-between rounded-[4px] border border-white/10 bg-[#222830] px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)] ${
                   examId ? "" : "pointer-events-none opacity-60"
                 }`}
               >
@@ -297,7 +297,7 @@ export default function PyqPage() {
           })}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[4px] border border-white/10 bg-[#161b22] px-4 py-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[4px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
           <div className="text-xs uppercase tracking-[0.2em] text-white/50">Live PYQ Inventory</div>
           <div className="flex flex-wrap items-center gap-3 text-xs text-white/80">
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{formatCount(stats.questions)} questions</span>
@@ -316,19 +316,19 @@ export default function PyqPage() {
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-[4px] border border-white/10 bg-[#161b22] px-4 py-3">
+          <div className="rounded-[4px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
             <p className="text-xs uppercase tracking-[0.2em] text-white/50">Questions</p>
             <p className="mt-2 text-lg font-semibold text-white">{formatCount(stats.questions)}</p>
           </div>
-          <div className="rounded-[4px] border border-white/10 bg-[#161b22] px-4 py-3">
+          <div className="rounded-[4px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
             <p className="text-xs uppercase tracking-[0.2em] text-white/50">Chapters</p>
             <p className="mt-2 text-lg font-semibold text-white">{formatCount(stats.chapters)}</p>
           </div>
-          <div className="rounded-[4px] border border-white/10 bg-[#161b22] px-4 py-3">
+          <div className="rounded-[4px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
             <p className="text-xs uppercase tracking-[0.2em] text-white/50">Exams Covered</p>
             <p className="mt-2 text-lg font-semibold text-white">{formatCount(stats.exams)}</p>
           </div>
-          <div className="rounded-[4px] border border-white/10 bg-[#161b22] px-4 py-3">
+          <div className="rounded-[4px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
             <p className="text-xs uppercase tracking-[0.2em] text-white/50">Latest Year</p>
             <p className="mt-2 text-lg font-semibold text-white">
               {stats.latestYear ? stats.latestYear : "-"}
@@ -336,7 +336,7 @@ export default function PyqPage() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-[6px] border border-white/10 bg-[#161b22] px-5 py-5">
+        <div className="mt-6 rounded-[6px] border border-white/10 bg-[#222830] px-5 py-5 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-white/60">Your PYQ Analytics</p>
@@ -374,13 +374,13 @@ export default function PyqPage() {
           </div>
 
           {userLoading ? (
-            <div className="mt-6 rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4 text-sm text-white/60">
+            <div className="mt-6 rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 text-sm text-white/60 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
               Loading your analytics...
             </div>
           ) : userAnalysis ? (
             <div className="mt-6 space-y-6">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Score Trend</p>
                   <div className="mt-3 h-28">
                     <ResponsiveContainer width="100%" height="100%">
@@ -394,7 +394,7 @@ export default function PyqPage() {
                     </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Accuracy Trend</p>
                   <div className="mt-3 h-28">
                     <ResponsiveContainer width="100%" height="100%">
@@ -410,45 +410,45 @@ export default function PyqPage() {
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Score Avg</p>
                   <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.avgScore}</p>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Accuracy</p>
                   <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.accuracy}%</p>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Attempt Rate</p>
                   <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.attemptRate}%</p>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Attempts</p>
                   <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.attempts}</p>
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Correct</p>
                   <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.correct}</p>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Wrong</p>
                   <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.wrong}</p>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Skipped</p>
                   <p className="mt-2 text-lg font-semibold text-white">{userAnalysis.summary.skipped}</p>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-3">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Negative Marks</p>
                   <p className="mt-2 text-lg font-semibold text-white">-{userAnalysis.summary.negativeMarks}</p>
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Percentile / Rank</p>
                   <p className="mt-2 text-lg font-semibold text-white">
                     {userAnalysis.summary.percentile ?? "--"}%
@@ -457,13 +457,13 @@ export default function PyqPage() {
                     Rank {userAnalysis.summary.rank ?? "--"} / {userAnalysis.summary.peerCount}
                   </p>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Time Wasted (Wrong)</p>
                   <p className="mt-2 text-lg font-semibold text-white">
                     {Math.round(userAnalysis.time.wastedOnWrong / 60)} min
                   </p>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Fatigue (Q1-Q4)</p>
                   <div className="mt-2 flex items-center gap-2 text-xs text-white/70">
                     {userAnalysis.time.fatigue.map((value, index) => (
@@ -476,7 +476,7 @@ export default function PyqPage() {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Time by Subject</p>
                   <div className="mt-3 h-40">
                     <ResponsiveContainer width="100%" height="100%">
@@ -491,7 +491,7 @@ export default function PyqPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Strong / Weak Topics</p>
                   <div className="mt-3 space-y-3 text-xs text-white/70">
                     <div>
@@ -511,7 +511,7 @@ export default function PyqPage() {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Accuracy Ring</p>
                   <div className="mt-3 h-44">
                     <ResponsiveContainer width="100%" height="100%">
@@ -522,7 +522,7 @@ export default function PyqPage() {
                     </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Correct / Wrong / Skipped</p>
                   <div className="mt-3 h-44">
                     <ResponsiveContainer width="100%" height="100%">
@@ -540,7 +540,7 @@ export default function PyqPage() {
                 </div>
               </div>
 
-              <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+              <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/50">Topic Radar</p>
                 <div className="mt-3 h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -556,7 +556,7 @@ export default function PyqPage() {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Slowest Questions</p>
                   <div className="mt-3 space-y-2 text-xs text-white/70">
                     {userAnalysis.time.slowest.map((item) => (
@@ -567,7 +567,7 @@ export default function PyqPage() {
                     ))}
                   </div>
                 </div>
-                <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/50">Fastest Questions</p>
                   <div className="mt-3 space-y-2 text-xs text-white/70">
                     {userAnalysis.time.fastest.map((item) => (
@@ -580,7 +580,7 @@ export default function PyqPage() {
                 </div>
               </div>
 
-              <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/50">Topic Accuracy</p>
                 <div className="mt-3 h-44">
                   <ResponsiveContainer width="100%" height="100%">
@@ -595,7 +595,7 @@ export default function PyqPage() {
                 </div>
               </div>
 
-              <div className="rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4">
+                <div className="rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/50">Practice Heatmap (8 weeks)</p>
                 <div className="mt-3 grid grid-cols-8 gap-2">
                   {activityDays.map((item) => {
@@ -614,7 +614,7 @@ export default function PyqPage() {
               </div>
             </div>
           ) : (
-            <div className="mt-6 rounded-[6px] border border-white/10 bg-[#10141d] px-4 py-4 text-sm text-white/60">
+            <div className="mt-6 rounded-[6px] border border-white/10 bg-[#222830] px-4 py-4 text-sm text-white/60 transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#2c333d] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25),0_0_20px_rgba(155,123,255,0.25)]">
               No attempts yet for this exam.
             </div>
           )}
