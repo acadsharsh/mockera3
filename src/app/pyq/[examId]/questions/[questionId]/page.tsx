@@ -104,6 +104,18 @@ const normalizeOptions = (value: unknown) => {
   return [] as string[];
 };
 
+const isNumericMatch = (value: string, correct: string) => {
+  const v = value.trim();
+  const c = correct.trim();
+  if (!v || !c) return false;
+  const vNum = Number(v);
+  const cNum = Number(c);
+  if (!Number.isNaN(vNum) && !Number.isNaN(cNum)) {
+    return Math.abs(vNum - cNum) < 1e-6;
+  }
+  return v === c;
+};
+
 const MathBlock = ({ value, className }: { value: string; className?: string }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -290,6 +302,13 @@ export default function PyqQuestionAttempt({
     );
   }, [correctAnswer]);
 
+  const numericResult = useMemo(() => {
+    if (!showAnswer || !isNumeric) return null;
+    if (!answer.trim()) return null;
+    const correct = isNumericMatch(answer, correctAnswer);
+    return { correct };
+  }, [showAnswer, isNumeric, answer, correctAnswer]);
+
   const selectedSet = useMemo(() => {
     if (!answer) return new Set<string>();
     return new Set(
@@ -325,7 +344,7 @@ export default function PyqQuestionAttempt({
           </button>
         </div>
 
-        <div className="rounded-[8px] border border-white/10 bg-[#171c24] px-6 py-4">
+        <div className="rounded-[8px] border border-white/10 bg-[#222830] px-6 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-white/60">
             <div>
               <span className="text-white/70">Q {questionNumber}</span>
@@ -346,9 +365,21 @@ export default function PyqQuestionAttempt({
                   <input
                     value={answer}
                     onChange={(event) => setAnswer(event.target.value)}
-                    className="w-full max-w-[240px] rounded-md border border-white/10 bg-[#10141d] px-3 py-2 text-white outline-none focus:border-white/40"
+                    className={`w-full max-w-[240px] rounded-md border px-3 py-2 text-white outline-none focus:border-white/40 ${
+                      numericResult?.correct === true
+                        ? "border-emerald-400/70 bg-emerald-400/10"
+                        : numericResult?.correct === false
+                        ? "border-rose-400/70 bg-rose-400/10"
+                        : "border-white/10 bg-[#10141d]"
+                    }`}
                     placeholder="Enter answer"
                   />
+                  {numericResult?.correct === true && (
+                    <div className="text-xs text-emerald-300">Correct</div>
+                  )}
+                  {numericResult?.correct === false && (
+                    <div className="text-xs text-rose-300">Incorrect</div>
+                  )}
                 </div>
                 {stats?.distribution?.length ? (
                   <div className="grid gap-4 md:grid-cols-2">
