@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import ChemStructure from "@/components/ChemStructure";
 
 type QuestionDetail = {
   id: string;
@@ -159,6 +160,20 @@ const MathBlock = ({
   }, [value, preserveLineBreaks]);
   return <div ref={ref} className={className} />;
 };
+
+const extractChemNames = (value: string) => {
+  const names: string[] = [];
+  const regex = /\[\[chem:([^\]]+)\]\]/gi;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(value)) !== null) {
+    const name = match[1]?.trim();
+    if (name) names.push(name);
+  }
+  return names;
+};
+
+const stripChemTags = (value: string) =>
+  value.replace(/\[\[chem:([^\]]+)\]\]/gi, (_match, name) => String(name).trim());
 
 export default function PyqQuestionAttempt({
   params,
@@ -325,6 +340,11 @@ export default function PyqQuestionAttempt({
     if (question.questionType === "NUM") return question.correctNumeric ?? "";
     return question.correctOption ?? "";
   }, [question]);
+
+  const solutionChemNames = useMemo(
+    () => (question?.solution ? Array.from(new Set(extractChemNames(question.solution))) : []),
+    [question?.solution]
+  );
 
   const correctSet = useMemo(() => {
     if (!correctAnswer) return new Set<string>();
@@ -594,10 +614,17 @@ export default function PyqQuestionAttempt({
               <div className="rounded-[8px] border border-white/10 bg-[#171c24] px-4 py-4 text-sm text-white/80">
                 <div className="text-xs uppercase tracking-[0.2em] text-white/50">Solution</div>
                 <MathBlock
-                  value={question.solution}
+                  value={stripChemTags(question.solution)}
                   preserveLineBreaks
                   className="mt-3 text-sm text-white/90 leading-6 whitespace-pre-wrap"
                 />
+                {solutionChemNames.length > 0 && (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {solutionChemNames.map((name, index) => (
+                      <ChemStructure key={`${name}-${index}`} name={name} />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : null}
           </div>

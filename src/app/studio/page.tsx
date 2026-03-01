@@ -1090,7 +1090,9 @@ const [isPanning, setIsPanning] = useState(false);
           !isNumeric && !isMulti && ["A", "B", "C", "D"].includes(answer as any)
             ? (answer as "A" | "B" | "C" | "D")
             : "";
-        const options = q.options?.length
+        const options = isNumeric
+          ? []
+          : q.options?.length
           ? q.options.map((opt) => String(opt))
           : ["Option A", "Option B", "Option C", "Option D"];
         return {
@@ -1133,12 +1135,12 @@ const [isPanning, setIsPanning] = useState(false);
     {
       "number": 1,
       "text": "Question text only (remove Section labels like [Section 1])",
+      "questionType": "MCQ|MSQ|NUM",
       "options": ["A", "B", "C", "D"],
       "answer": "A",
-      "questionType": "MCQ|MSQ|NUM",
       "correctOptions": ["A","C"],
       "correctNumeric": "42",
-      "solution": "Step-by-step solution in plain text or LaTeX",
+      "solution": "Step-by-step solution in plain text or LaTeX. Wrap chemical names like [[chem:benzyl]] to render structures.",
       "exam": "JEE Main",
       "year": 2024,
       "shift": "Jan 27 S1",
@@ -1159,6 +1161,9 @@ Rules (MathJax-friendly):
 - Use \\times for multiplication, \\cdot for dot product.
 - Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
 - If a question has a diagram, set hasDiagram: true.
+- If questionType is MCQ/MSQ, include options. If NUM, omit options entirely.
+- For MCQ/MSQ, do not leave options blank.
+- Wrap chemical names like [[chem:benzyl]] to render structures.
 - Provide exam/year/shift/subject/difficulty/marks for every question.
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
@@ -1170,8 +1175,10 @@ Rules (MathJax-friendly):
     {
       "number": 1,
       "text": "Question text only (remove Section labels like [Section 1])",
+      "questionType": "MCQ|MSQ|NUM",
       "options": ["A", "B", "C", "D"],
       "answer": "A",
+      "solution": "Step-by-step solution in plain text or LaTeX. Wrap chemical names like [[chem:benzyl]] to render structures.",
       "subject": "Physics|Chemistry|Maths",
       "hasDiagram": true|false
     }
@@ -1186,6 +1193,9 @@ Rules (MathJax-friendly):
 - Use \\times for multiplication, \\cdot for dot product.
 - Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
 - If a question has a diagram, set hasDiagram: true.
+- If questionType is MCQ/MSQ, include options. If NUM, omit options entirely.
+- For MCQ/MSQ, do not leave options blank.
+- Wrap chemical names like [[chem:benzyl]] to render structures.
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
 
@@ -2258,6 +2268,19 @@ Rules (MathJax-friendly):
                             </select>
                           </div>
                           <div>
+                            <label className="text-white/60">Diagram</label>
+                            <label className="mt-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(activeCrop.hasDiagram)}
+                                onChange={(event) =>
+                                  updateActiveCrop({ hasDiagram: event.target.checked })
+                                }
+                              />
+                              Has diagram
+                            </label>
+                          </div>
+                          <div>
                             <label className="text-white/60">Subject</label>
                             <select
                               value={activeCrop.subject}
@@ -2408,6 +2431,16 @@ Rules (MathJax-friendly):
                               </div>
                             </div>
                           )}
+                          <div>
+                            <label className="text-white/60">Solution</label>
+                            <textarea
+                              value={activeCrop.solution ?? ""}
+                              onChange={(event) => updateActiveCrop({ solution: event.target.value })}
+                              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                              rows={4}
+                              placeholder="Solution (plain text or LaTeX). Use [[chem:benzyl]] for structures."
+                            />
+                          </div>
                         </>
                       ) : (
                         <div className="space-y-3 text-sm text-white/70">
@@ -2415,6 +2448,21 @@ Rules (MathJax-friendly):
                             <div className="text-[11px] uppercase text-white/50">Question Type</div>
                             <div className="mt-1 font-semibold text-white">
                               {activeCrop.questionType}
+                            </div>
+                          </div>
+                          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                            <div className="text-[11px] uppercase text-white/50">Diagram</div>
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <span className="text-sm font-semibold text-white">
+                                {activeCrop.hasDiagram ? "Yes" : "No"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => updateActiveCrop({ hasDiagram: !activeCrop.hasDiagram })}
+                                className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70 hover:border-white/30"
+                              >
+                                Toggle
+                              </button>
                             </div>
                           </div>
                           {activeCrop.hasDiagram && !activeCrop.imageDataUrl && (
@@ -2461,6 +2509,14 @@ Rules (MathJax-friendly):
                               </div>
                             </div>
                           )}
+                          {activeCrop.solution ? (
+                            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                              <div className="text-[11px] uppercase text-white/50">Solution</div>
+                              <div className="mt-1 whitespace-pre-wrap text-sm text-white/80">
+                                {activeCrop.solution}
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       )}
                     </>

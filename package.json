@@ -28,6 +28,7 @@
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
     "resend": "^6.9.1",
+    "smiles-drawer": "^2.1.7",
     "sonner": "^1.7.3"
   },
   "devDependencies": {
