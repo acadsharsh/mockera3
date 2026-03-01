@@ -248,7 +248,7 @@ export default function PyqPage() {
   return (
     <div className="min-h-screen bg-[#222830] text-white font-neue">
       <div className="mx-auto w-full max-w-[1240px] px-6 pb-4 pt-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-white/60">PYQ Bank</p>
             <h1 className="mt-2 text-3xl font-black uppercase tracking-tight font-everett">
@@ -258,12 +258,20 @@ export default function PyqPage() {
               Select your target exam and start practicing chapter-wise previous year questions.
             </p>
           </div>
-          <Link
-            className="text-sm font-semibold uppercase tracking-wider text-[#6aa8ff] hover:text-white"
-            href="/pyq/papers"
-          >
-            View All
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 transition hover:border-white/30 hover:bg-white/10"
+              href="/pyq/match"
+            >
+              Match
+            </Link>
+            <Link
+              className="text-sm font-semibold uppercase tracking-wider text-[#6aa8ff] hover:text-white"
+              href="/pyq/papers"
+            >
+              View All
+            </Link>
+          </div>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
