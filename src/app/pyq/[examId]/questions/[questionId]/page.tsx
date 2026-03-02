@@ -81,7 +81,8 @@ const cleanupLatex = (value: string) =>
     .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
-    .replace(/double subscripts: use braces to clarify/gi, "")
+    .replace(/[│┃｜¦]/g, "|")
+    .replace(/double\s+subscripts:\s*use\s+braces\s+to\s+clarify\.?/gi, "")
     .trim();
 
 const formatElapsed = (seconds: number) => {
@@ -140,7 +141,8 @@ const cleanupLatexLines = (value: string) =>
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
-    .replace(/double subscripts: use braces to clarify/gi, "")
+    .replace(/[│┃｜¦]/g, "|")
+    .replace(/double\s+subscripts:\s*use\s+braces\s+to\s+clarify\.?/gi, "")
     .trim();
 
 const MathBlock = ({
@@ -191,8 +193,9 @@ const parseMatchList = (input: string) => {
     if (!/list-?\s*i\b/i.test(cleaned) || !/list-?\s*ii\b/i.test(cleaned)) {
       return null;
     }
-    const tokens = cleaned
-      .split(/\s*\|\|\s*/g)
+    const normalized = cleaned.replace(/\s*\|\s*\|\s*/g, "||");
+    const tokens = normalized
+      .split(/\s*\|{2,}\s*/g)
       .map((chunk) => chunk.trim())
       .filter(Boolean);
     const listIIndex = tokens.findIndex((chunk) => /list-?\s*i\b/i.test(chunk));
