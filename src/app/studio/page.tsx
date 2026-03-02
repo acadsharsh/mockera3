@@ -1186,7 +1186,8 @@ const [isPanning, setIsPanning] = useState(false);
     }
   };
 
-  const adminJsonPrompt = `Extract questions into strict JSON with this shape (include full details per question):
+  const adminJsonPrompt = `Extract questions into strict JSON with this shape (include full details per question).
+CRITICAL: Return ALL questions from the paper in order. Do not skip any question. If a question is unclear, still include it with best-effort text. If it is unreadable, set text: "UNREADABLE" but keep the question number.
 
 {
   "questions": [
@@ -1227,7 +1228,8 @@ Rules (MathJax-friendly):
 - Do NOT include section labels in the question text.
 - One JSON object only, no extra commentary.`;
 
-  const userJsonPrompt = `Extract questions into strict JSON with this shape:
+  const userJsonPrompt = `Extract questions into strict JSON with this shape.
+CRITICAL: Return ALL questions from the paper in order. Do not skip any question. If a question is unclear, still include it with best-effort text. If it is unreadable, set text: "UNREADABLE" but keep the question number.
 
 {
   "questions": [
