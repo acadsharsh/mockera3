@@ -12,6 +12,7 @@ type Crop = {
   correctOption: string;
   correctOptions?: Array<"A" | "B" | "C" | "D">;
   correctNumeric?: string;
+  solution?: string;
   marks: "+4/-1";
   difficulty: "Easy" | "Moderate" | "Tough";
   imageDataUrl: string;
@@ -1176,6 +1177,17 @@ export default function CBT() {
                 })
               )}
             </div>
+
+            {solutionMode && activeQuestion?.solution?.trim() ? (
+              <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-slate-500">
+                  Solution
+                </div>
+                <div className="text-[15px] leading-7 text-slate-700">
+                  <MathText text={activeQuestion.solution} />
+                </div>
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap gap-3">
               <button
