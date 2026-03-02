@@ -14,10 +14,24 @@ export async function GET(req: Request) {
   if (year) where.year = Number(year);
   if (shift) where.shift = shift;
 
-  const rows = await prisma.examPaper.findMany({
-    where,
+  const rows = await prisma.test.findMany({
+    where: {
+      isYearPaper: true,
+      examId: examId || undefined,
+      year: year ? Number(year) : undefined,
+      shift: shift || undefined,
+    },
     orderBy: [{ year: "desc" }, { createdAt: "desc" }],
-    include: { exam: true, test: true },
+    include: { examRef: true },
   });
-  return NextResponse.json(rows, { headers: cacheHeaders });
+  return NextResponse.json(
+    rows.map((t) => ({
+      id: t.id,
+      year: t.year,
+      shift: t.shift,
+      exam: t.examRef ? { id: t.examRef.id, name: t.examRef.name } : null,
+      test: { id: t.id, title: t.title },
+    })),
+    { headers: cacheHeaders }
+  );
 }

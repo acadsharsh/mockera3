@@ -17,6 +17,7 @@ export async function GET() {
       ownerEmail: t.owner?.email ?? null,
       createdAt: t.createdAt,
       isPyq: t.isPyq,
+      isYearPaper: t.isYearPaper,
       exam: t.exam,
       examId: t.examId,
       year: t.year,
@@ -36,6 +37,7 @@ export async function PATCH(request: Request) {
     data: {
       hidden: payload.hidden !== undefined ? Boolean(payload.hidden) : undefined,
       isPyq: payload.isPyq !== undefined ? Boolean(payload.isPyq) : undefined,
+      isYearPaper: payload.isYearPaper !== undefined ? Boolean(payload.isYearPaper) : undefined,
       examId: payload.examId !== undefined ? (payload.examId ? String(payload.examId) : null) : undefined,
       exam: payload.exam !== undefined ? (payload.exam ? String(payload.exam) : null) : undefined,
       year: payload.year !== undefined && payload.year !== null && payload.year !== "" ? Number(payload.year) : payload.year === null || payload.year === "" ? null : undefined,

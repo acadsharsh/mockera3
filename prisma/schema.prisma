@@ -89,6 +89,7 @@ model Test {
   visibility       String
   hidden          Boolean   @default(false)
   isPyq           Boolean   @default(false)
+  isYearPaper     Boolean   @default(false)
   exam            String?
   examId          String?
   examRef         Exam?     @relation(fields: [examId], references: [id], onDelete: SetNull)

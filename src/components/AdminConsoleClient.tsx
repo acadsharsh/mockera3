@@ -9,6 +9,7 @@ type TestItem = {
   visibility: string;
   hidden: boolean;
   isPyq?: boolean;
+  isYearPaper?: boolean;
   exam?: string | null;
   examId?: string | null;
   year?: number | null;
@@ -59,16 +60,6 @@ type TopicItem = {
   chapter?: ChapterItem;
 };
 
-type PaperItem = {
-  id: string;
-  year: number;
-  shift?: string | null;
-  pdfUrl: string;
-  examId: string;
-  exam?: { name: string };
-  testId?: string | null;
-};
-
 export default function AdminConsoleClient() {
   const [tests, setTests] = useState<TestItem[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
@@ -76,7 +67,6 @@ export default function AdminConsoleClient() {
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [chapters, setChapters] = useState<ChapterItem[]>([]);
   const [topics, setTopics] = useState<TopicItem[]>([]);
-  const [papers, setPapers] = useState<PaperItem[]>([]);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
 
@@ -102,21 +92,14 @@ export default function AdminConsoleClient() {
   const [topicName, setTopicName] = useState("");
   const [topicOrder, setTopicOrder] = useState(0);
 
-  const [paperExamId, setPaperExamId] = useState("");
-  const [paperYear, setPaperYear] = useState(new Date().getFullYear());
-  const [paperShift, setPaperShift] = useState("");
-  const [paperPdf, setPaperPdf] = useState("");
-  const [paperTestId, setPaperTestId] = useState("");
-
   const load = async () => {
-    const [t, u, b, e, c, tp, p, m] = await Promise.all([
+    const [t, u, b, e, c, tp, m] = await Promise.all([
       fetch("/api/admin/tests", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/users", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/broadcast", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/exams", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/chapters", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/topics", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/admin/papers", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/maintenance", { cache: "no-store" }).then((r) => r.json()),
     ]);
     setTests(Array.isArray(t) ? t : []);
@@ -125,11 +108,7 @@ export default function AdminConsoleClient() {
     setExams(Array.isArray(e) ? e : []);
     setChapters(Array.isArray(c) ? c : []);
     setTopics(Array.isArray(tp) ? tp : []);
-    setPapers(Array.isArray(p) ? p : []);
     setMaintenanceEnabled(Boolean(m?.enabled));
-    if (Array.isArray(e) && e[0]?.id && !paperExamId) {
-      setPaperExamId(e[0].id);
-    }
     if (Array.isArray(e) && e[0]?.id && !chapterExamId) {
       setChapterExamId(e[0].id);
     }
@@ -233,25 +212,6 @@ export default function AdminConsoleClient() {
     await load();
   };
 
-  const createPaper = async () => {
-    if (!paperExamId || !paperPdf) return;
-    await fetch("/api/admin/papers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        examId: paperExamId,
-        year: paperYear,
-        shift: paperShift,
-        pdfUrl: paperPdf,
-        testId: paperTestId || null,
-      }),
-    });
-    setPaperPdf("");
-    setPaperShift("");
-    setPaperTestId("");
-    await load();
-  };
-
 
   const updateTestMeta = async (id: string, payload: Record<string, any>) => {
     await fetch("/api/admin/tests", {
@@ -304,12 +264,6 @@ export default function AdminConsoleClient() {
     await load();
   };
 
-  const deletePaper = async (id: string) => {
-    if (!confirm("Delete this paper?")) return;
-    await fetch(`/api/admin/papers?id=${id}`, { method: "DELETE" });
-    await load();
-  };
-
   const topicChapterMap = useMemo(() => {
     const map = new Map<string, ChapterItem>();
     chapters.forEach((c) => map.set(c.id, c));
@@ -320,56 +274,6 @@ export default function AdminConsoleClient() {
     if (!topicExamId) return chapters;
     return chapters.filter((chapter) => chapter.examId === topicExamId);
   }, [chapters, topicExamId]);
-
-  const paperByTestId = useMemo(() => {
-    const map = new Map<string, PaperItem>();
-    papers.forEach((paper) => {
-      if (paper.testId) map.set(paper.testId, paper);
-    });
-    return map;
-  }, [papers]);
-
-  const toggleYearPaper = async (test: TestItem, enabled: boolean) => {
-    const existing = paperByTestId.get(test.id);
-    if (!enabled) {
-      if (existing) {
-        await deletePaper(existing.id);
-      }
-      return;
-    }
-    if (existing) return;
-    if (!test.examId) {
-      alert("Set exam first.");
-      return;
-    }
-    let year = test.year ?? null;
-    if (!year) {
-      const entered = prompt("Year for this paper?", "");
-      year = entered ? Number(entered) : null;
-    }
-    if (!year || Number.isNaN(year)) {
-      alert("Valid year required.");
-      return;
-    }
-    const shift = test.shift ?? prompt("Shift (optional)", "") ?? "";
-    const pdfUrl = prompt("PDF URL for this year-wise paper?", "") ?? "";
-    if (!pdfUrl.trim()) {
-      alert("PDF URL required.");
-      return;
-    }
-    await fetch("/api/admin/papers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        examId: test.examId,
-        year,
-        shift: shift || null,
-        pdfUrl,
-        testId: test.id,
-      }),
-    });
-    await load();
-  };
 
   useEffect(() => {
     if (!filteredChaptersForTopics.length) {
@@ -634,65 +538,6 @@ export default function AdminConsoleClient() {
         </section>
 
         <section className="mt-6 rounded-xl border border-white/10 p-4">
-          <h2 className="text-sm font-semibold">Year-wise Papers</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-5">
-            <select
-              value={paperExamId}
-              onChange={(e) => setPaperExamId(e.target.value)}
-              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
-            >
-              <option value="">Select exam</option>
-              {exams.map((exam) => (
-                <option key={exam.id} value={exam.id}>
-                  {exam.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              value={paperYear}
-              onChange={(e) => setPaperYear(Number(e.target.value))}
-              placeholder="Year"
-              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
-            />
-            <input
-              value={paperShift}
-              onChange={(e) => setPaperShift(e.target.value)}
-              placeholder="Shift (optional)"
-              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
-            />
-            <input
-              value={paperPdf}
-              onChange={(e) => setPaperPdf(e.target.value)}
-              placeholder="PDF URL"
-              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
-            />
-            <input
-              value={paperTestId}
-              onChange={(e) => setPaperTestId(e.target.value)}
-              placeholder="Test ID (optional)"
-              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
-            />
-            <button onClick={createPaper} className="rounded-md border border-white/10 px-3 py-2 text-xs">
-              Add Paper
-            </button>
-          </div>
-          <div className="mt-3 space-y-2 text-xs">
-            {papers.map((paper) => (
-              <div key={paper.id} className="flex items-center justify-between rounded-md border border-white/10 px-3 py-2">
-                <div>
-                  <div className="font-semibold">{paper.exam?.name ?? "Exam"}  {paper.year}{paper.shift ? `  ${paper.shift}` : ""}</div>
-                  <div className="text-white/50">{paper.pdfUrl}</div>
-                </div>
-                <button className="rounded-md border border-rose-400/40 px-2 py-1 text-rose-200" onClick={() => deletePaper(paper.id)}>
-                  Delete
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-xl border border-white/10 p-4">
           <h2 className="text-sm font-semibold">Tests</h2>
           <div className="mt-3 space-y-3 text-xs">
             {tests.map((t) => (
@@ -724,8 +569,8 @@ export default function AdminConsoleClient() {
                   <label className="flex items-center gap-2 rounded-md border border-white/10 px-2 py-1">
                     <input
                       type="checkbox"
-                      checked={paperByTestId.has(t.id)}
-                      onChange={(e) => toggleYearPaper(t, e.target.checked)}
+                      checked={Boolean(t.isYearPaper)}
+                      onChange={(e) => updateTestMeta(t.id, { isYearPaper: e.target.checked })}
                     />
                     <span>Year-wise paper</span>
                   </label>

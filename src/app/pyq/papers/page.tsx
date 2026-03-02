@@ -9,7 +9,6 @@ type Paper = {
   id: string;
   year: number;
   shift?: string | null;
-  pdfUrl: string;
   exam?: { id?: string; name: string } | null;
   test?: { id: string; title: string } | null;
 };
@@ -102,7 +101,7 @@ export default function PyqPapersPage() {
               Year-wise Question Papers
             </h1>
             <p className="mt-2 text-sm text-white/70">
-              Exam-wise year cards. Open the PDF or jump into the attached CBT test.
+              Exam-wise year cards. Open the attached CBT test.
             </p>
           </div>
           <Link
@@ -194,15 +193,11 @@ export default function PyqPapersPage() {
                             >
                               Open Test
                             </a>
-                          ) : null}
-                          <a
-                            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/80"
-                            href={paper.pdfUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            View PDF
-                          </a>
+                          ) : (
+                            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60">
+                              Test not linked
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
