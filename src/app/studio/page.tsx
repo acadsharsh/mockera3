@@ -1165,7 +1165,7 @@ const [isPanning, setIsPanning] = useState(false);
       "answer": "A",
       "correctOptions": ["A","C"],
       "correctNumeric": "42",
-      "solution": "Step-by-step solution in plain text or LaTeX. Wrap chemical names like [[chem:benzyl]] to render structures.",
+      "solution": "Direct final solution only (concise steps/derivation). No self-talk, no rechecks, no reasoning about reasoning. Wrap chemical names like [[chem:benzyl]] to render structures.",
       "exam": "JEE Main",
       "year": 2024,
       "shift": "Jan 27 S1",
@@ -1188,6 +1188,7 @@ Rules (MathJax-friendly):
 - If a question has a diagram, set hasDiagram: true.
 - If questionType is MCQ/MSQ, include options. If NUM, omit options entirely.
 - For MCQ/MSQ, do not leave options blank.
+- Solutions must be direct. Do not include phrases like \"let me recheck\", \"I think\", \"maybe\", or chain-of-thought.
 - Wrap chemical names like [[chem:benzyl]] to render structures.
 - Provide exam/year/shift/subject/difficulty/marks for every question.
 - Do NOT include section labels in the question text.
@@ -1203,7 +1204,7 @@ Rules (MathJax-friendly):
       "questionType": "MCQ|MSQ|NUM",
       "options": ["A", "B", "C", "D"],
       "answer": "A",
-      "solution": "Step-by-step solution in plain text or LaTeX. Wrap chemical names like [[chem:benzyl]] to render structures.",
+      "solution": "Direct final solution only (concise steps/derivation). No self-talk, no rechecks, no reasoning about reasoning. Wrap chemical names like [[chem:benzyl]] to render structures.",
       "subject": "Physics|Chemistry|Maths",
       "hasDiagram": true|false
     }
@@ -1213,6 +1214,7 @@ Rules (MathJax-friendly):
 Rules (MathJax-friendly):
 - Use LaTeX commands with backslashes: \\pi, \\sin, \\cos, \\tan, \\log.
 - Use fractions as \\frac{a}{b} (do NOT use a/b or fracpi3).
+- Solutions must be direct. Do not include phrases like \"let me recheck\", \"I think\", \"maybe\", or chain-of-thought.
 - Use vectors as \\vec{a}, hats as \\hat{a}.
 - Use exponents as x^2, (a+b)^2, 10^{-3}.
 - Use \\times for multiplication, \\cdot for dot product.
