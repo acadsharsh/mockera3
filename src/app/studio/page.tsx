@@ -1016,6 +1016,9 @@ const [isPanning, setIsPanning] = useState(false);
     return topics.find((topic) => topic.name.toLowerCase() === name.toLowerCase());
   };
 
+  const sanitizeJsonInput = (raw: string) =>
+    raw.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+
   const activeCrop = cropRects.find((rect) => rect.id === activeCropId) || null;
   const activeAccent = activeCrop ? subjectAccents[activeCrop.subject] : subjectAccents.Physics;
   const activeChapter = activeCrop
@@ -1031,7 +1034,8 @@ const [isPanning, setIsPanning] = useState(false);
 
   const handleJsonImport = () => {
     try {
-      const parsed = JSON.parse(jsonImportText || "{}") as {
+      const raw = jsonImportText || "{}";
+      let parsed: {
         meta?: {
           exam?: string;
           year?: number | string;
@@ -1055,11 +1059,40 @@ const [isPanning, setIsPanning] = useState(false);
           hasDiagram?: boolean;
         }>;
       };
-      if (!parsed.questions || parsed.questions.length === 0) {
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = JSON.parse(sanitizeJsonInput(raw));
+      }
+      const normalized = parsed as {
+        meta?: {
+          exam?: string;
+          year?: number | string;
+          shift?: string;
+          subject?: string;
+          chapter?: string;
+          topic?: string;
+        };
+        questions?: Array<{
+          number?: number;
+          text?: string;
+          options?: string[];
+          answer?: string;
+          questionType?: "MCQ" | "MSQ" | "NUM" | string;
+          correctOptions?: string[];
+          correctNumeric?: string;
+          solution?: string;
+          subject?: CropMeta["subject"];
+          chapter?: string;
+          topic?: string;
+          hasDiagram?: boolean;
+        }>;
+      };
+      if (!normalized.questions || normalized.questions.length === 0) {
         setJsonImportStatus({ message: "No questions found in JSON.", tone: "error" });
         return;
       }
-      const meta = parsed.meta || {};
+      const meta = normalized.meta || {};
       const metaSubject = normalizeSubject(meta.subject) ?? undefined;
       const metaChapter = meta.chapter ? String(meta.chapter) : "";
       const metaTopic = meta.topic ? String(meta.topic) : "";
@@ -1077,7 +1110,7 @@ const [isPanning, setIsPanning] = useState(false);
       if (meta.shift) {
         setPyqShift(String(meta.shift));
       }
-      const mapped = parsed.questions.map((q) => {
+      const mapped = normalized.questions.map((q) => {
         const rawType = q.questionType ? String(q.questionType).toUpperCase() : "";
         const answer = q.answer ? normalizeAnswer(q.answer) : "";
         const isMultiAnswer = answer.includes(",");
