@@ -699,6 +699,7 @@ export default function CBT() {
       correctOptions: crop.correctOptions ?? [],
       correctNumeric: crop.correctNumeric ?? "",
       questionText: crop.questionText ?? "",
+      solution: crop.solution ?? "",
       options: crop.options ?? [],
       index: index + 1,
     }));
