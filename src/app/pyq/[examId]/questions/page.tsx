@@ -58,6 +58,7 @@ const cleanupLatex = (value: string) =>
     .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
+    .replace(/double subscripts: use braces to clarify/gi, "")
     .trim();
 
 export default function PyqChapterQuestions({ params }: { params: Promise<{ examId: string }> }) {

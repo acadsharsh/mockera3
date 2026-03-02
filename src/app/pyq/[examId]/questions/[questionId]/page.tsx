@@ -81,6 +81,7 @@ const cleanupLatex = (value: string) =>
     .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
+    .replace(/double subscripts: use braces to clarify/gi, "")
     .trim();
 
 const formatElapsed = (seconds: number) => {
@@ -139,6 +140,7 @@ const cleanupLatexLines = (value: string) =>
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
+    .replace(/double subscripts: use braces to clarify/gi, "")
     .trim();
 
 const MathBlock = ({
@@ -159,6 +161,59 @@ const MathBlock = ({
     ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
   }, [value, preserveLineBreaks]);
   return <div ref={ref} className={className} />;
+};
+
+const parseMatchList = (input: string) => {
+  const cleaned = cleanupLatex(input ?? "");
+  const lines = cleaned
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const listIIndex = lines.findIndex((line) => /list-?\s*i\b/i.test(line));
+  const listIIIndex = lines.findIndex((line) => /list-?\s*ii\b/i.test(line));
+  if (listIIndex === -1 || listIIIndex === -1 || listIIIndex <= listIIndex) {
+    return null;
+  }
+  const before = lines.slice(0, listIIndex).join(" ");
+  const listI = lines.slice(listIIndex + 1, listIIIndex);
+  const afterLines = lines.slice(listIIIndex + 1);
+  const cutoff = afterLines.findIndex((line) =>
+    /^(choose|options|select|in the light|answer)/i.test(line)
+  );
+  const listII = cutoff === -1 ? afterLines : afterLines.slice(0, cutoff);
+  const after = cutoff === -1 ? "" : afterLines.slice(cutoff).join(" ");
+  return { before, listI, listII, after };
+};
+
+const QuestionPrompt = ({ text }: { text: string }) => {
+  const parsed = parseMatchList(text);
+  if (!parsed) {
+    return <MathBlock value={text} className="text-base text-white" />;
+  }
+  return (
+    <div className="space-y-3">
+      {parsed.before && <MathBlock value={parsed.before} className="text-base text-white" />}
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
+        <div className="grid grid-cols-2 bg-white/10 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+          <div className="px-3 py-2">List-I</div>
+          <div className="px-3 py-2">List-II</div>
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-white/10">
+          <div className="space-y-2 p-3">
+            {parsed.listI.map((item, idx) => (
+              <MathBlock key={`list-i-${idx}`} value={item} className="text-sm text-white/90" />
+            ))}
+          </div>
+          <div className="space-y-2 p-3">
+            {parsed.listII.map((item, idx) => (
+              <MathBlock key={`list-ii-${idx}`} value={item} className="text-sm text-white/90" />
+            ))}
+          </div>
+        </div>
+      </div>
+      {parsed.after && <MathBlock value={parsed.after} className="text-base text-white" />}
+    </div>
+  );
 };
 
 const extractChemNames = (value: string) => {
@@ -425,7 +480,7 @@ export default function PyqQuestionAttempt({
           </div>
 
           <div ref={containerRef} className="mt-4 space-y-6">
-            <MathBlock value={question?.prompt ?? "Loading question..."} className="text-base text-white" />
+            <QuestionPrompt text={question?.prompt ?? "Loading question..."} />
 
             {isNumeric ? (
               <div className="space-y-4">

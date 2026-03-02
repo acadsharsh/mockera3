@@ -9,6 +9,9 @@ type Crop = {
   id: string;
   subject: "Physics" | "Chemistry" | "Maths";
   questionType?: "MCQ" | "MSQ" | "NUM";
+  correctOption?: string;
+  correctOptions?: string[];
+  correctNumeric?: string;
 };
 
 type Test = {
@@ -69,6 +72,29 @@ export default function AnswerKeyPage() {
     });
     return groups;
   }, [orderedCrops]);
+
+  const missingBySubject = useMemo(() => {
+    const isMissing = (crop: Crop) => {
+      if (crop.questionType === "NUM") {
+        return !(crop.correctNumeric ?? "").trim();
+      }
+      const raw = crop.correctOption ?? "";
+      return raw.trim().length === 0;
+    };
+    const entries: Record<string, typeof orderedCrops> = {};
+    Object.entries(grouped).forEach(([subject, crops]) => {
+      const missing = crops.filter((crop) => isMissing(crop));
+      if (missing.length) {
+        entries[subject] = missing;
+      }
+    });
+    return entries;
+  }, [grouped]);
+
+  const missingCount = useMemo(
+    () => Object.values(missingBySubject).reduce((acc, crops) => acc + crops.length, 0),
+    [missingBySubject]
+  );
 
   const applyAnswerKey = async () => {
     if (!test) return;
@@ -138,7 +164,13 @@ export default function AnswerKeyPage() {
           </p>
         </header>
 
-        {Object.entries(grouped).map(([subject, crops], groupIndex) => (
+        {missingCount === 0 && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+            All answers are already filled for this test.
+          </div>
+        )}
+
+        {Object.entries(missingBySubject).map(([subject, crops], groupIndex) => (
           <section
             key={subject}
             className="rounded-3xl border border-white/10 bg-[#0f172a] p-6 shadow-[0_20px_40px_rgba(5,10,20,0.5)]"
@@ -148,8 +180,8 @@ export default function AnswerKeyPage() {
               <p className="mt-1 text-sm text-white/60">Section {groupIndex + 1}</p>
             </div>
             <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
-              <div className="grid grid-cols-[100px_120px_1fr_140px] bg-white/5 text-xs uppercase tracking-[0.2em] text-white/70">
-                <div className="px-4 py-3">Q. Num</div>
+              <div className="grid grid-cols-[110px_120px_1fr_140px] bg-white/5 text-xs uppercase tracking-[0.2em] text-white/70">
+                <div className="px-4 py-3">Q. No</div>
                 <div className="px-4 py-3">Q. Type</div>
                 <div className="px-4 py-3">Input Answer</div>
                 <div className="px-4 py-3">Parsed</div>
@@ -160,9 +192,9 @@ export default function AnswerKeyPage() {
                 return (
                   <div
                     key={crop.id}
-                    className="grid grid-cols-[100px_120px_1fr_140px] border-t border-white/10 text-sm"
+                    className="grid grid-cols-[110px_120px_1fr_140px] border-t border-white/10 text-sm"
                   >
-                    <div className="px-4 py-3 text-white/80">{crop.index}</div>
+                    <div className="px-4 py-3 text-white/80">Q{crop.index}</div>
                     <div className="px-4 py-3 text-white/70">
                       {crop.questionType ?? "MCQ"}
                     </div>
@@ -177,7 +209,7 @@ export default function AnswerKeyPage() {
                       />
                     </div>
                     <div className="px-4 py-3 text-right font-semibold text-emerald-200">
-                      {parsed || "—"}
+                      {parsed || "--"}
                     </div>
                   </div>
                 );
@@ -196,6 +228,7 @@ export default function AnswerKeyPage() {
           <button
             className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-white"
             onClick={applyAnswerKey}
+            disabled={missingCount === 0}
           >
             Generate Answer Key
           </button>

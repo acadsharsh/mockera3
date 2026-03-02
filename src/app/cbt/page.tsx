@@ -140,6 +140,7 @@ const cleanupLatex = (value: string) =>
     .replace(/\\?frac\s*\\?pi\s*([0-9]+)/gi, "\\frac{\\pi}{$1}")
     .replace(/\\?frac\s*\\?pi\s*\/\s*([0-9]+)/gi, "\\frac{\\pi}{$1}")
     .replace(/\\?fracpi([0-9]+)/gi, "\\frac{\\pi}{$1}")
+    .replace(/double subscripts: use braces to clarify/gi, "")
     .trim();
 
 const normalizeMathToken = (value: string) => {
@@ -426,6 +427,72 @@ const MathText = ({ text }: { text: string }) => {
     ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
   }, [text]);
   return <span ref={ref} className="whitespace-normal break-words" />;
+};
+
+const parseMatchList = (input: string) => {
+  const cleaned = cleanupLatex(input ?? "");
+  const lines = cleaned
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const listIIndex = lines.findIndex((line) => /list-?\s*i\b/i.test(line));
+  const listIIIndex = lines.findIndex((line) => /list-?\s*ii\b/i.test(line));
+  if (listIIndex === -1 || listIIIndex === -1 || listIIIndex <= listIIndex) {
+    return null;
+  }
+
+  const before = lines.slice(0, listIIndex).join(" ");
+  const listI = lines.slice(listIIndex + 1, listIIIndex);
+  const afterLines = lines.slice(listIIIndex + 1);
+  const cutoff = afterLines.findIndex((line) =>
+    /^(choose|options|select|in the light|answer)/i.test(line)
+  );
+  const listII = cutoff === -1 ? afterLines : afterLines.slice(0, cutoff);
+  const after = cutoff === -1 ? "" : afterLines.slice(cutoff).join(" ");
+  return { before, listI, listII, after };
+};
+
+const QuestionText = ({ text }: { text: string }) => {
+  const parsed = parseMatchList(text);
+  if (!parsed) {
+    return <MathText text={text} />;
+  }
+  return (
+    <div className="space-y-3">
+      {parsed.before && (
+        <p className="text-[16px] leading-7">
+          <MathText text={parsed.before} />
+        </p>
+      )}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <div className="grid grid-cols-2 bg-slate-100 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+          <div className="px-3 py-2">List-I</div>
+          <div className="px-3 py-2">List-II</div>
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-slate-200">
+          <div className="space-y-2 p-3">
+            {parsed.listI.map((item, idx) => (
+              <div key={`list-i-${idx}`} className="text-[15px] leading-6 text-slate-700">
+                <MathText text={item} />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2 p-3">
+            {parsed.listII.map((item, idx) => (
+              <div key={`list-ii-${idx}`} className="text-[15px] leading-6 text-slate-700">
+                <MathText text={item} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {parsed.after && (
+        <p className="text-[16px] leading-7">
+          <MathText text={parsed.after} />
+        </p>
+      )}
+    </div>
+  );
 };
 
 const SolutionBlock = ({ text }: { text: string }) => {
@@ -1060,7 +1127,7 @@ export default function CBT() {
           <div className="grid min-h-0 flex-1 gap-4 p-5">
                 {activeQuestion?.questionText && (
                   <div className="rounded border border-slate-200 bg-slate-50 p-3 text-[16px] leading-7">
-                    <MathText text={activeQuestion.questionText} />
+                    <QuestionText text={activeQuestion.questionText} />
                   </div>
                 )}
             <div className="rounded border border-slate-200 bg-slate-50 p-3">
