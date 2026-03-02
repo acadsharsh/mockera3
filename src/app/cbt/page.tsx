@@ -62,6 +62,20 @@ const isCorrectAnswer = (crop: Crop, selected?: string) => {
   return selected === crop.correctOption;
 };
 
+const missingAnswerKeyCount = (crops: Crop[]) => {
+  if (!Array.isArray(crops)) return 0;
+  return crops.filter((crop) => {
+    if (crop.questionType === "NUM") {
+      return !crop.correctNumeric || String(crop.correctNumeric).trim() === "";
+    }
+    if (crop.questionType === "MSQ") {
+      const list = Array.isArray(crop.correctOptions) ? crop.correctOptions : [];
+      return list.length === 0;
+    }
+    return !crop.correctOption || String(crop.correctOption).trim() === "";
+  }).length;
+};
+
 const ensureMathJax = (() => {
   let loading: Promise<void> | null = null;
   return () => {
@@ -857,7 +871,12 @@ export default function CBT() {
       });
       const saved = await response.json().catch(() => null);
       const attemptId = saved?.id ? `&attemptId=${saved.id}` : "";
-      router.push(`/answer-key?testId=${test.id}${attemptId}`);
+      const missingCount = missingAnswerKeyCount(test.crops || []);
+      if (missingCount > 0) {
+        router.push(`/answer-key?testId=${test.id}${attemptId}`);
+      } else {
+        router.push(`/test-analysis?testId=${test.id}${attemptId}`);
+      }
     } finally {
       setSubmitting(false);
     }
