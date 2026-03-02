@@ -193,6 +193,7 @@ export default function PyqQuestionAttempt({
   const [elapsed, setElapsed] = useState(0);
   const [answer, setAnswer] = useState<string>("");
   const [showAnswer, setShowAnswer] = useState(false);
+  const [solutionsEnabled, setSolutionsEnabled] = useState(true);
   const [navTarget, setNavTarget] = useState<"prev" | "next" | null>(null);
   const [loggedAttempt, setLoggedAttempt] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -253,6 +254,20 @@ export default function PyqQuestionAttempt({
       active = false;
     };
   }, [questionId]);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/solutions")
+      .then((res) => (res.ok ? res.json() : { enabled: true }))
+      .then((data) => {
+        if (!active) return;
+        setSolutionsEnabled(Boolean(data?.enabled ?? true));
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -610,7 +625,7 @@ export default function PyqQuestionAttempt({
             <div className="rounded-[8px] border border-white/10 bg-[#171c24] px-4 py-3 text-sm text-white/80">
               Correct answer: <span className="font-semibold text-white">{correctAnswer}</span>
             </div>
-            {question?.solution ? (
+            {solutionsEnabled && question?.solution ? (
               <div className="rounded-[8px] border border-white/10 bg-[#171c24] px-4 py-4 text-sm text-white/80">
                 <div className="text-xs uppercase tracking-[0.2em] text-white/50">Solution</div>
                 <MathBlock

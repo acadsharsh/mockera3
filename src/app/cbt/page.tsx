@@ -461,6 +461,7 @@ export default function CBT() {
   const [submitting, setSubmitting] = useState(false);
   const [candidateName, setCandidateName] = useState("Candidate");
   const [solutionMode, setSolutionMode] = useState(false);
+  const [solutionsEnabled, setSolutionsEnabled] = useState(true);
   const [practiceMode, setPracticeMode] = useState<"standard" | "adaptive">("standard");
   const [adaptiveOrder, setAdaptiveOrder] = useState<string[] | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -566,6 +567,20 @@ export default function CBT() {
     setJumpParam(params.get("q"));
     setSolutionMode(params.get("solution") === "1");
     setPracticeMode(params.get("mode") === "adaptive" ? "adaptive" : "standard");
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/solutions")
+      .then((res) => (res.ok ? res.json() : { enabled: true }))
+      .then((data) => {
+        if (!active) return;
+        setSolutionsEnabled(Boolean(data?.enabled ?? true));
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -1180,7 +1195,7 @@ export default function CBT() {
               )}
             </div>
 
-            {solutionMode && activeQuestion?.solution?.trim() ? (
+            {solutionMode && solutionsEnabled && activeQuestion?.solution?.trim() ? (
               <div className="rounded border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-slate-500">
                   Solution

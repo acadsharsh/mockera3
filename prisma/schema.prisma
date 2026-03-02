@@ -261,6 +261,7 @@ model SavedQuestion {
 model AppConfig {
   key             String   @id
   maintenanceMode Boolean  @default(false)
+  showSolutions   Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

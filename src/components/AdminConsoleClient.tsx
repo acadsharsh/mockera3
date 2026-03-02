@@ -69,6 +69,8 @@ export default function AdminConsoleClient() {
   const [topics, setTopics] = useState<TopicItem[]>([]);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [solutionsEnabled, setSolutionsEnabled] = useState(true);
+  const [solutionsLoading, setSolutionsLoading] = useState(false);
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -93,7 +95,7 @@ export default function AdminConsoleClient() {
   const [topicOrder, setTopicOrder] = useState(0);
 
   const load = async () => {
-    const [t, u, b, e, c, tp, m] = await Promise.all([
+    const [t, u, b, e, c, tp, m, s] = await Promise.all([
       fetch("/api/admin/tests", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/users", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/broadcast", { cache: "no-store" }).then((r) => r.json()),
@@ -101,6 +103,7 @@ export default function AdminConsoleClient() {
       fetch("/api/admin/chapters", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/admin/topics", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/maintenance", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/solutions", { cache: "no-store" }).then((r) => r.json()),
     ]);
     setTests(Array.isArray(t) ? t : []);
     setUsers(Array.isArray(u) ? u : []);
@@ -109,6 +112,7 @@ export default function AdminConsoleClient() {
     setChapters(Array.isArray(c) ? c : []);
     setTopics(Array.isArray(tp) ? tp : []);
     setMaintenanceEnabled(Boolean(m?.enabled));
+    setSolutionsEnabled(Boolean(s?.enabled ?? true));
     if (Array.isArray(e) && e[0]?.id && !chapterExamId) {
       setChapterExamId(e[0].id);
     }
@@ -128,6 +132,17 @@ export default function AdminConsoleClient() {
       body: JSON.stringify({ enabled }),
     });
     setMaintenanceLoading(false);
+    await load();
+  };
+
+  const toggleSolutions = async (enabled: boolean) => {
+    setSolutionsLoading(true);
+    await fetch("/api/solutions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    });
+    setSolutionsLoading(false);
     await load();
   };
 
@@ -305,6 +320,24 @@ export default function AdminConsoleClient() {
             </label>
             <span className="text-white/50">
               When enabled, only admin routes remain accessible.
+            </span>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-xl border border-white/10 p-4">
+          <h2 className="text-sm font-semibold">Solution Visibility</h2>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={solutionsEnabled}
+                disabled={solutionsLoading}
+                onChange={(e) => toggleSolutions(e.target.checked)}
+              />
+              {solutionsEnabled ? "Enabled" : "Disabled"}
+            </label>
+            <span className="text-white/50">
+              When disabled, solution text is hidden for users.
             </span>
           </div>
         </section>
