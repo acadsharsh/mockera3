@@ -1075,21 +1075,43 @@ const [isPanning, setIsPanning] = useState(false);
         setPyqShift(String(meta.shift));
       }
       const mapped = parsed.questions.map((q) => {
+        const rawType = q.questionType ? String(q.questionType).toUpperCase() : "";
         const answer = q.answer ? normalizeAnswer(q.answer) : "";
-        const isNumeric = answer.length > 0 && /^[0-9.+-]+$/.test(answer);
-        const isMulti = answer.includes(",");
-        const correctOptions = isMulti
-          ? answer
-              .split(",")
-              .map((v) => v.trim())
-              .filter((v) => ["A", "B", "C", "D"].includes(v as any)) as Array<
-              "A" | "B" | "C" | "D"
-            >
-          : [];
-        const correctOption =
-          !isNumeric && !isMulti && ["A", "B", "C", "D"].includes(answer as any)
-            ? (answer as "A" | "B" | "C" | "D")
-            : "";
+        const isMultiAnswer = answer.includes(",");
+        const isAnswerNumeric = answer.length > 0 && /^[0-9.+-]+$/.test(answer);
+        const normalizedType =
+          rawType === "MCQ" || rawType === "MSQ" || rawType === "NUM"
+            ? (rawType as "MCQ" | "MSQ" | "NUM")
+            : isAnswerNumeric
+            ? "NUM"
+            : isMultiAnswer
+            ? "MSQ"
+            : "MCQ";
+        const isNumeric = normalizedType === "NUM";
+        const isMulti = normalizedType === "MSQ";
+        const toLetter = (value: string) => {
+          const v = value.trim().toUpperCase();
+          if (["A", "B", "C", "D"].includes(v)) return v as "A" | "B" | "C" | "D";
+          if (/^[1-4]$/.test(v)) {
+            const idx = Number(v) - 1;
+            return (["A", "B", "C", "D"] as const)[idx];
+          }
+          return null;
+        };
+        const correctOptions =
+          q.correctOptions?.length
+            ? q.correctOptions
+                .map((v) => toLetter(String(v)) )
+                .filter(Boolean) as Array<"A" | "B" | "C" | "D">
+            : isMulti
+            ? answer
+                .split(",")
+                .map((v) => toLetter(v))
+                .filter(Boolean) as Array<"A" | "B" | "C" | "D">
+            : [];
+        const correctOption = !isNumeric && !isMulti
+          ? (toLetter(q.answer ? String(q.answer) : "") ?? correctOptions[0] ?? "")
+          : "";
         const options = isNumeric
           ? []
           : q.options?.length
@@ -1104,10 +1126,10 @@ const [isPanning, setIsPanning] = useState(false);
           w: 0,
           h: 0,
           subject: q.subject ?? metaSubject ?? lastSubject,
-          questionType: isNumeric ? "NUM" : isMulti ? "MSQ" : "MCQ",
+          questionType: normalizedType,
           correctOption,
           correctOptions,
-          correctNumeric: isNumeric ? answer : "",
+          correctNumeric: isNumeric ? String(q.correctNumeric ?? answer ?? "") : "",
           marks: "+4/-1",
           difficulty: lastDifficulty,
           chapter: q.chapter ?? metaChapter ?? "",
