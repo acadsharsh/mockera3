@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
+import ChemStructure from "@/components/ChemStructure";
 import { safeJson } from "@/lib/safe-json";
 
 type Crop = {
@@ -43,6 +44,20 @@ type Attempt = {
 };
 
 const optionLetters = ["A", "B", "C", "D"] as const;
+
+const extractChemNames = (value: string) => {
+  const names: string[] = [];
+  const regex = /\[\[chem:([^\]]+)\]\]/gi;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(value)) !== null) {
+    const name = match[1]?.trim();
+    if (name) names.push(name);
+  }
+  return names;
+};
+
+const stripChemTags = (value: string) =>
+  value.replace(/\[\[chem:([^\]]+)\]\]/gi, (_match, name) => String(name).trim());
 
 const isCorrectAnswer = (crop: Crop, selected?: string) => {
   if (!selected) return false;
@@ -411,6 +426,25 @@ const MathText = ({ text }: { text: string }) => {
     ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
   }, [text]);
   return <span ref={ref} className="whitespace-normal break-words" />;
+};
+
+const SolutionBlock = ({ text }: { text: string }) => {
+  const lines = text
+    .split(/\r?\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) {
+    return <MathText text={text} />;
+  }
+  return (
+    <div className="space-y-2">
+      {lines.map((line, idx) => (
+        <p key={`${line}-${idx}`} className="text-[15px] leading-7">
+          <MathText text={line} />
+        </p>
+      ))}
+    </div>
+  );
 };
 
 const formatTime = (seconds: number) => {
@@ -1201,8 +1235,15 @@ export default function CBT() {
                   Solution
                 </div>
                 <div className="text-[15px] leading-7 text-slate-700">
-                  <MathText text={activeQuestion.solution} />
+                  <SolutionBlock text={stripChemTags(activeQuestion.solution)} />
                 </div>
+                {extractChemNames(activeQuestion.solution).length > 0 && (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {extractChemNames(activeQuestion.solution).map((name, index) => (
+                      <ChemStructure key={`${name}-${index}`} name={name} />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : null}
 
