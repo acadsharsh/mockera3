@@ -60,7 +60,7 @@ export default function ChemStructure({ name, className }: ChemStructureProps) {
       padding: 12,
       compactDrawing: true,
     });
-    SmilesDrawer.parse(state.smiles, (tree) => {
+    SmilesDrawer.parse(state.smiles, (tree: any) => {
       if (!svgRef.current) return;
       while (svgRef.current.firstChild) {
         svgRef.current.removeChild(svgRef.current.firstChild);
