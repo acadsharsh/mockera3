@@ -26,7 +26,7 @@ export async function POST() {
   const folder = "cbtcore/pdfs";
   const publicId = `${timestamp}-${randomUUID()}`;
   const signature = cloudinary.utils.api_sign_request(
-    { folder, public_id: publicId, timestamp, resource_type: "raw" },
+    { folder, public_id: publicId, timestamp },
     process.env.CLOUDINARY_API_SECRET
   );
 
