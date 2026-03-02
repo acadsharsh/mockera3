@@ -577,6 +577,7 @@ export default function CBT() {
       }
     };
     loadSession();
+  }, [candidateName]);
 
   useEffect(() => {
     let active = true;
@@ -592,7 +593,6 @@ export default function CBT() {
     return () => {
       active = false;
     };
-  }, []);
   }, []);
 
   useEffect(() => {
