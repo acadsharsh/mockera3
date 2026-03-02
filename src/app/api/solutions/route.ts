@@ -5,18 +5,26 @@ import { prisma } from "@/lib/prisma";
 const CONFIG_KEY = "global";
 
 export async function GET() {
-  const config = await prisma.appConfig.findUnique({ where: { key: CONFIG_KEY } });
-  return NextResponse.json({ enabled: config?.showSolutions ?? true });
+  try {
+    const config = await prisma.appConfig.findUnique({ where: { key: CONFIG_KEY } });
+    return NextResponse.json({ enabled: config?.showSolutions ?? true });
+  } catch {
+    return NextResponse.json({ enabled: true });
+  }
 }
 
 export async function POST(request: Request) {
   await requireAdmin();
-  const payload = await request.json();
-  const enabled = Boolean(payload?.enabled);
-  const config = await prisma.appConfig.upsert({
-    where: { key: CONFIG_KEY },
-    update: { showSolutions: enabled },
-    create: { key: CONFIG_KEY, showSolutions: enabled },
-  });
-  return NextResponse.json({ enabled: config.showSolutions });
+  try {
+    const payload = await request.json();
+    const enabled = Boolean(payload?.enabled);
+    const config = await prisma.appConfig.upsert({
+      where: { key: CONFIG_KEY },
+      update: { showSolutions: enabled },
+      create: { key: CONFIG_KEY, showSolutions: enabled },
+    });
+    return NextResponse.json({ enabled: config.showSolutions });
+  } catch {
+    return NextResponse.json({ enabled: true });
+  }
 }

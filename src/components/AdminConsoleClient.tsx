@@ -94,16 +94,26 @@ export default function AdminConsoleClient() {
   const [topicName, setTopicName] = useState("");
   const [topicOrder, setTopicOrder] = useState(0);
 
+  const safeFetch = async <T,>(url: string, fallback: T): Promise<T> => {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) return fallback;
+      return (await res.json()) as T;
+    } catch {
+      return fallback;
+    }
+  };
+
   const load = async () => {
     const [t, u, b, e, c, tp, m, s] = await Promise.all([
-      fetch("/api/admin/tests", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/admin/users", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/admin/broadcast", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/admin/exams", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/admin/chapters", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/admin/topics", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/maintenance", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/solutions", { cache: "no-store" }).then((r) => r.json()),
+      safeFetch("/api/admin/tests", [] as TestItem[]),
+      safeFetch("/api/admin/users", [] as UserItem[]),
+      safeFetch("/api/admin/broadcast", [] as BroadcastMessage[]),
+      safeFetch("/api/admin/exams", [] as ExamItem[]),
+      safeFetch("/api/admin/chapters", [] as ChapterItem[]),
+      safeFetch("/api/admin/topics", [] as TopicItem[]),
+      safeFetch("/api/maintenance", { enabled: false }),
+      safeFetch("/api/solutions", { enabled: true }),
     ]);
     setTests(Array.isArray(t) ? t : []);
     setUsers(Array.isArray(u) ? u : []);
