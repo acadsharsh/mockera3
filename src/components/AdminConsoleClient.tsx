@@ -321,6 +321,56 @@ export default function AdminConsoleClient() {
     return chapters.filter((chapter) => chapter.examId === topicExamId);
   }, [chapters, topicExamId]);
 
+  const paperByTestId = useMemo(() => {
+    const map = new Map<string, PaperItem>();
+    papers.forEach((paper) => {
+      if (paper.testId) map.set(paper.testId, paper);
+    });
+    return map;
+  }, [papers]);
+
+  const toggleYearPaper = async (test: TestItem, enabled: boolean) => {
+    const existing = paperByTestId.get(test.id);
+    if (!enabled) {
+      if (existing) {
+        await deletePaper(existing.id);
+      }
+      return;
+    }
+    if (existing) return;
+    if (!test.examId) {
+      alert("Set exam first.");
+      return;
+    }
+    let year = test.year ?? null;
+    if (!year) {
+      const entered = prompt("Year for this paper?", "");
+      year = entered ? Number(entered) : null;
+    }
+    if (!year || Number.isNaN(year)) {
+      alert("Valid year required.");
+      return;
+    }
+    const shift = test.shift ?? prompt("Shift (optional)", "") ?? "";
+    const pdfUrl = prompt("PDF URL for this year-wise paper?", "") ?? "";
+    if (!pdfUrl.trim()) {
+      alert("PDF URL required.");
+      return;
+    }
+    await fetch("/api/admin/papers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        examId: test.examId,
+        year,
+        shift: shift || null,
+        pdfUrl,
+        testId: test.id,
+      }),
+    });
+    await load();
+  };
+
   useEffect(() => {
     if (!filteredChaptersForTopics.length) {
       if (topicChapterId) setTopicChapterId("");
@@ -662,7 +712,7 @@ export default function AdminConsoleClient() {
                   </div>
                 </div>
 
-                <div className="mt-3 grid gap-2 sm:grid-cols-5">
+                <div className="mt-3 grid gap-2 sm:grid-cols-6">
                   <label className="flex items-center gap-2 rounded-md border border-white/10 px-2 py-1">
                     <input
                       type="checkbox"
@@ -670,6 +720,14 @@ export default function AdminConsoleClient() {
                       onChange={(e) => updateTestMeta(t.id, { isPyq: e.target.checked })}
                     />
                     <span>PYQ</span>
+                  </label>
+                  <label className="flex items-center gap-2 rounded-md border border-white/10 px-2 py-1">
+                    <input
+                      type="checkbox"
+                      checked={paperByTestId.has(t.id)}
+                      onChange={(e) => toggleYearPaper(t, e.target.checked)}
+                    />
+                    <span>Year-wise paper</span>
                   </label>
                   <select
                     value={t.examId ?? ""}
