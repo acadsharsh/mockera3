@@ -118,20 +118,59 @@ const parseMatchList = (input: string) => {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const listIIndex = lines.findIndex((line) => /list-?\s*i\b/i.test(line));
-  const listIIIndex = lines.findIndex((line) => /list-?\s*ii\b/i.test(line));
-  if (listIIndex === -1 || listIIIndex === -1 || listIIIndex <= listIIndex) {
-    return null;
-  }
-  const before = lines.slice(0, listIIndex).join(" ");
-  const listI = lines.slice(listIIndex + 1, listIIIndex);
-  const afterLines = lines.slice(listIIIndex + 1);
-  const cutoff = afterLines.findIndex((line) =>
-    /^(choose|options|select|in the light|answer)/i.test(line)
-  );
-  const listII = cutoff === -1 ? afterLines : afterLines.slice(0, cutoff);
-  const after = cutoff === -1 ? "" : afterLines.slice(cutoff).join(" ");
-  return { before, listI, listII, after };
+
+  const parseFromLines = () => {
+    const listIIndex = lines.findIndex((line) => /list-?\s*i\b/i.test(line));
+    const listIIIndex = lines.findIndex((line) => /list-?\s*ii\b/i.test(line));
+    if (listIIndex === -1 || listIIIndex === -1 || listIIIndex <= listIIndex) {
+      return null;
+    }
+    const before = lines.slice(0, listIIndex).join(" ");
+    const listI = lines.slice(listIIndex + 1, listIIIndex);
+    const afterLines = lines.slice(listIIIndex + 1);
+    const cutoff = afterLines.findIndex((line) =>
+      /^(choose|options|select|in the light|answer)/i.test(line)
+    );
+    const listII = cutoff === -1 ? afterLines : afterLines.slice(0, cutoff);
+    const after = cutoff === -1 ? "" : afterLines.slice(cutoff).join(" ");
+    return { before, listI, listII, after };
+  };
+
+  const parseInline = () => {
+    if (!/list-?\s*i\b/i.test(cleaned) || !/list-?\s*ii\b/i.test(cleaned)) {
+      return null;
+    }
+    const tokens = cleaned
+      .split(/\s*\|\|\s*/g)
+      .map((chunk) => chunk.trim())
+      .filter(Boolean);
+    const listIIndex = tokens.findIndex((chunk) => /list-?\s*i\b/i.test(chunk));
+    const listIIIndex = tokens.findIndex((chunk) => /list-?\s*ii\b/i.test(chunk));
+    if (listIIndex === -1 || listIIIndex === -1 || listIIIndex <= listIIndex) {
+      return null;
+    }
+
+    const before = tokens.slice(0, listIIndex).join(" ");
+    const listIText = tokens.slice(listIIndex + 1, listIIIndex).join(" | ");
+    const afterText = tokens.slice(listIIIndex + 1).join(" | ");
+
+    const listI =
+      listIText.match(/\b(?:I|II|III|IV|V|VI|VII|VIII|IX|X)\.?\s*[^|]+/g) ??
+      listIText.split("|").map((item) => item.trim()).filter(Boolean);
+    const listII =
+      afterText.match(/\b[A-H]\.?\s*[^|]+/g) ??
+      afterText.split("|").map((item) => item.trim()).filter(Boolean);
+
+    const after =
+      afterText
+        .split("|")
+        .map((item) => item.trim())
+        .find((item) => /^(choose|options|select|in the light|answer)/i.test(item)) ?? "";
+
+    return { before, listI, listII, after };
+  };
+
+  return parseFromLines() ?? parseInline();
 };
 
 const QuestionPrompt = ({ text }: { text: string }) => {
