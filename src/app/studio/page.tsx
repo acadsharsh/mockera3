@@ -542,29 +542,14 @@ const [isPanning, setIsPanning] = useState(false);
     try {
       let resolvedPdfUrl = pdfUrl;
       if (uploadedFile && !resolvedPdfUrl) {
-        setUploadingPdf(true);
         try {
-          const formData = new FormData();
-          formData.append("file", uploadedFile);
-          const uploadResponse = await fetch("/api/upload/pdf", {
-            method: "POST",
-            body: formData,
-          });
-          if (!uploadResponse.ok) {
-            const errorPayload = await safeJson<{ error?: string }>(uploadResponse, {});
-            const errorMessage = errorPayload?.error || "PDF upload failed. Please re-upload the PDF and try again.";
-            alert(errorMessage);
-            return;
-          }
-          const uploadData = await safeJson<{ url?: string }>(uploadResponse, {} as any);
-          resolvedPdfUrl = uploadData?.url ?? null;
+          resolvedPdfUrl = await uploadPdfToCloudinary(uploadedFile);
           if (!resolvedPdfUrl) {
             alert("PDF upload failed. Please re-upload the PDF and try again.");
             return;
           }
-          setPdfUrl(resolvedPdfUrl);
         } finally {
-          setUploadingPdf(false);
+          // uploadPdfToCloudinary handles loading state
         }
       }
 
@@ -780,19 +765,49 @@ const [isPanning, setIsPanning] = useState(false);
     setCurrentPage(1);
   }, [pdfApi]);
 
-  const uploadPdfToCloud = useCallback(async (file: File): Promise<string | null> => {
+  const uploadPdfToCloudinary = useCallback(async (file: File): Promise<string | null> => {
     setUploadingPdf(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch("/api/upload/pdf", { method: "POST", body: formData });
-      if (!response.ok) {
+      const signResponse = await fetch("/api/upload/pdf/sign", { method: "POST" });
+      if (!signResponse.ok) {
         return null;
       }
-      const data = await safeJson<{ url?: string }>(response, {} as any);
-      if (data?.url) {
-        setPdfUrl(data.url);
-        return data.url;
+      const signData = await safeJson<{
+        cloudName?: string;
+        apiKey?: string;
+        timestamp?: number;
+        signature?: string;
+        folder?: string;
+        publicId?: string;
+      }>(signResponse, {});
+      if (
+        !signData?.cloudName ||
+        !signData?.apiKey ||
+        !signData?.timestamp ||
+        !signData?.signature ||
+        !signData?.folder ||
+        !signData?.publicId
+      ) {
+        return null;
+      }
+
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/raw/upload`;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", signData.apiKey);
+      formData.append("timestamp", String(signData.timestamp));
+      formData.append("signature", signData.signature);
+      formData.append("folder", signData.folder);
+      formData.append("public_id", signData.publicId);
+
+      const uploadResponse = await fetch(uploadUrl, { method: "POST", body: formData });
+      if (!uploadResponse.ok) {
+        return null;
+      }
+      const uploadData = await safeJson<{ secure_url?: string }>(uploadResponse, {} as any);
+      if (uploadData?.secure_url) {
+        setPdfUrl(uploadData.secure_url);
+        return uploadData.secure_url;
       }
       return null;
     } finally {
@@ -821,7 +836,7 @@ const [isPanning, setIsPanning] = useState(false);
     setCurrentPage(1);
     setCropRects([]);
     setActiveCropId(null);
-    void uploadPdfToCloud(file);
+    void uploadPdfToCloudinary(file);
   };
 
   const startResize = (
