@@ -13,6 +13,13 @@ type Paper = {
   test?: { id: string; title: string } | null;
 };
 
+type Attempt = {
+  id: string;
+  testId: string;
+  createdAt: string;
+  answers: Record<string, string>;
+};
+
 type ExamGroup = {
   examId: string;
   examName: string;
@@ -31,6 +38,7 @@ const logoTints = [
 export default function PyqPapersPage() {
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [papers, setPapers] = useState<Paper[]>([]);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [filters, setFilters] = useState({
     examId: "",
     year: "",
@@ -52,6 +60,14 @@ export default function PyqPapersPage() {
       .then((data) => {
         if (!active) return;
         setPapers(Array.isArray(data) ? data : []);
+      })
+      .catch(() => null);
+
+    fetch("/api/attempts")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!active) return;
+        setAttempts(Array.isArray(data) ? data : []);
       })
       .catch(() => null);
 
@@ -90,6 +106,14 @@ export default function PyqPapersPage() {
       papers: group.papers.sort((a, b) => b.year - a.year),
     }));
   }, [filtered]);
+
+  const attemptsByTest = useMemo(() => {
+    return attempts.reduce<Record<string, Attempt[]>>((acc, attempt) => {
+      if (!acc[attempt.testId]) acc[attempt.testId] = [];
+      acc[attempt.testId].push(attempt);
+      return acc;
+    }, {});
+  }, [attempts]);
 
   return (
     <div className="min-h-screen bg-[#222830] text-white font-neue">
@@ -160,7 +184,7 @@ export default function PyqPapersPage() {
             grouped.map((group, index) => {
               const tint = logoTints[index % logoTints.length];
               return (
-                <div key={group.examId} className="rounded-[4px] border border-white/10 bg-[#161b22] p-4">
+                <div key={group.examId} className="rounded-[6px] border border-white/10 bg-[#222830] p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br ${tint} text-xs font-bold text-[#0f1218]`}>
@@ -177,7 +201,7 @@ export default function PyqPapersPage() {
                     {group.papers.map((paper) => (
                       <div
                         key={paper.id}
-                        className="flex flex-col justify-between rounded-[4px] border border-white/10 bg-[#171c24] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                        className="flex flex-col justify-between rounded-[6px] border border-white/10 bg-[#222830] px-4 py-3 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-[#2a3038] hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                       >
                         <div>
                           <div className="text-xs uppercase tracking-[0.2em] text-white/50">{paper.year}</div>
@@ -186,14 +210,27 @@ export default function PyqPapersPage() {
                           </div>
                         </div>
                         <div className="mt-3 flex items-center gap-2 text-xs">
-                          {paper.test?.id ? (
-                            <a
-                              className="rounded-full border border-cyan-300/25 bg-cyan-500/15 px-3 py-1.5 text-xs text-cyan-100"
-                              href={`/cbt?testId=${paper.test.id}`}
-                            >
-                              Open Test
-                            </a>
-                          ) : (
+                          {paper.test?.id ? (() => {
+                            const hasAttempt = (attemptsByTest[paper.test!.id] ?? []).length > 0;
+                            return (
+                              <div className="flex flex-wrap gap-2">
+                                <a
+                                  className="rounded-full border border-cyan-300/25 bg-cyan-500/15 px-3 py-1.5 text-xs text-cyan-100"
+                                  href={`/cbt?testId=${paper.test!.id}`}
+                                >
+                                  {hasAttempt ? "Reattempt" : "Start"}
+                                </a>
+                                {hasAttempt && (
+                                  <a
+                                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white/80"
+                                    href={`/test-analysis?testId=${paper.test!.id}`}
+                                  >
+                                    Analysis
+                                  </a>
+                                )}
+                              </div>
+                            );
+                          })() : (
                             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60">
                               Test not linked
                             </span>

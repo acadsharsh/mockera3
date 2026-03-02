@@ -733,14 +733,22 @@ export default function LibraryClient({
                           </span>
                           <span>Global attempts: {formatCount(attemptsCount)}</span>
                         </div>
-                        <a
-                          className="mt-6 inline-flex rounded-md border border-cyan-300/25 bg-cyan-500/15 px-3 py-2 text-xs text-cyan-100"
-                          href={
-                            isCompleted ? `/test-analysis?testId=${test.id}` : `/cbt?testId=${test.id}`
-                          }
-                        >
-                          {isCompleted ? "View Insights" : "Enter Arena"}
-                        </a>
+                        <div className="mt-6 flex flex-wrap gap-2">
+                          <a
+                            className="inline-flex rounded-md border border-cyan-300/25 bg-cyan-500/15 px-3 py-2 text-xs text-cyan-100"
+                            href={`/cbt?testId=${test.id}`}
+                          >
+                            {attemptsCount > 0 ? "Reattempt" : "Enter Arena"}
+                          </a>
+                          {attemptsCount > 0 && (
+                            <a
+                              className="inline-flex rounded-md border border-white/15 bg-white/10 px-3 py-2 text-xs text-white/80"
+                              href={`/test-analysis?testId=${test.id}`}
+                            >
+                              Analysis
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
