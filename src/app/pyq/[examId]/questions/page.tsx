@@ -87,7 +87,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
       if (!raw) return;
       const parsed = JSON.parse(raw) as { ts: number; items: QuestionItem[] };
       if (!parsed || !Array.isArray(parsed.items)) return;
-      const fresh = Date.now() - parsed.ts < 5 * 60 * 1000;
+      const fresh = Date.now() - parsed.ts < 30 * 1000;
       if (fresh) setItems(parsed.items);
     } catch {
       // ignore cache errors

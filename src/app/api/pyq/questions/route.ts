@@ -9,7 +9,7 @@ const parseIntMaybe = (value: string | null) => {
 
 export async function GET(req: Request) {
   const cacheHeaders = {
-    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+    "Cache-Control": "private, max-age=0, no-store",
   };
   const { searchParams } = new URL(req.url);
   const examId = searchParams.get("examId");

@@ -19,7 +19,7 @@ export async function GET(
   { params }: { params: Promise<{ examId: string }> }
 ) {
   const cacheHeaders = {
-    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+    "Cache-Control": "private, max-age=0, no-store",
   };
   const { examId } = await params;
   const exam = await prisma.exam.findUnique({
