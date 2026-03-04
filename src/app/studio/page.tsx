@@ -574,6 +574,21 @@ const [isPanning, setIsPanning] = useState(false);
           }))
         : cropRects;
 
+      const resolvedCrops: CropMeta[] = [];
+      for (let i = 0; i < normalizedCrops.length; i += 1) {
+        const crop = normalizedCrops[i];
+        if (crop.imageDataUrl && crop.imageDataUrl.startsWith("data:image/")) {
+          const uploadedUrl = await uploadQuestionImage(crop.imageDataUrl, i);
+          if (!uploadedUrl) {
+            alert("Question image upload failed. Please retry.");
+            return;
+          }
+          resolvedCrops.push({ ...crop, imageDataUrl: uploadedUrl });
+        } else {
+          resolvedCrops.push(crop);
+        }
+      }
+
       const response = await fetch("/api/tests", {
         method: editingTestId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -593,7 +608,7 @@ const [isPanning, setIsPanning] = useState(false);
           exam: pyqExamName ?? undefined,
           year: pyqYear ?? undefined,
           shift: pyqShift ?? undefined,
-          crops: normalizedCrops,
+          crops: resolvedCrops,
           lockNavigation,
         }),
       });
@@ -812,6 +827,25 @@ const [isPanning, setIsPanning] = useState(false);
       return null;
     } finally {
       setUploadingPdf(false);
+    }
+  }, []);
+
+  const uploadQuestionImage = useCallback(async (dataUrl: string, index: number): Promise<string | null> => {
+    if (!dataUrl.startsWith("data:image/")) return dataUrl;
+    try {
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const formData = new FormData();
+      formData.append("file", new File([blob], `question-${Date.now()}-${index}.png`, { type: blob.type || "image/png" }));
+      const uploadResponse = await fetch("/api/upload/question-image", {
+        method: "POST",
+        body: formData,
+      });
+      if (!uploadResponse.ok) return null;
+      const uploadData = await safeJson<{ url?: string }>(uploadResponse, {});
+      return uploadData?.url ?? null;
+    } catch {
+      return null;
     }
   }, []);
   useEffect(() => {

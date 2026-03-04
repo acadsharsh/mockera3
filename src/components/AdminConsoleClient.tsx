@@ -96,6 +96,8 @@ export default function AdminConsoleClient() {
   const [pyqJsonFile, setPyqJsonFile] = useState<File | null>(null);
   const [pyqImportOverwrite, setPyqImportOverwrite] = useState(false);
   const [pyqImportLang, setPyqImportLang] = useState<"en" | "hi">("en");
+  const [pyqImportExamId, setPyqImportExamId] = useState("");
+  const [pyqImportChapterId, setPyqImportChapterId] = useState("");
   const [pyqImporting, setPyqImporting] = useState(false);
   const [pyqImportStatus, setPyqImportStatus] = useState<{
     tone: "success" | "error" | "info";
@@ -139,6 +141,9 @@ export default function AdminConsoleClient() {
     }
     if (Array.isArray(c) && c[0]?.id && !topicChapterId) {
       setTopicChapterId(c[0].id);
+    }
+    if (Array.isArray(e) && e[0]?.id && !pyqImportExamId) {
+      setPyqImportExamId(e[0].id);
     }
   };
 
@@ -250,6 +255,14 @@ export default function AdminConsoleClient() {
       setPyqImportStatus({ tone: "error", message: "Please choose a JSON file first." });
       return;
     }
+    if (!pyqImportExamId) {
+      setPyqImportStatus({ tone: "error", message: "Please select exam first." });
+      return;
+    }
+    if (!pyqImportChapterId) {
+      setPyqImportStatus({ tone: "error", message: "Please select chapter first." });
+      return;
+    }
     setPyqImporting(true);
     setPyqImportStatus({ tone: "info", message: "Importing PYQ JSON..." });
     try {
@@ -257,6 +270,8 @@ export default function AdminConsoleClient() {
       formData.append("file", pyqJsonFile);
       formData.append("overwrite", String(pyqImportOverwrite));
       formData.append("lang", pyqImportLang);
+      formData.append("examId", pyqImportExamId);
+      formData.append("chapterId", pyqImportChapterId);
 
       const response = await fetch("/api/admin/pyq-import", {
         method: "POST",
@@ -347,6 +362,11 @@ export default function AdminConsoleClient() {
     return chapters.filter((chapter) => chapter.examId === topicExamId);
   }, [chapters, topicExamId]);
 
+  const filteredChaptersForPyqImport = useMemo(() => {
+    if (!pyqImportExamId) return chapters;
+    return chapters.filter((chapter) => chapter.examId === pyqImportExamId);
+  }, [chapters, pyqImportExamId]);
+
   useEffect(() => {
     if (!filteredChaptersForTopics.length) {
       if (topicChapterId) setTopicChapterId("");
@@ -356,6 +376,16 @@ export default function AdminConsoleClient() {
       setTopicChapterId(filteredChaptersForTopics[0].id);
     }
   }, [filteredChaptersForTopics, topicChapterId]);
+
+  useEffect(() => {
+    if (!filteredChaptersForPyqImport.length) {
+      if (pyqImportChapterId) setPyqImportChapterId("");
+      return;
+    }
+    if (!filteredChaptersForPyqImport.some((chapter) => chapter.id === pyqImportChapterId)) {
+      setPyqImportChapterId(filteredChaptersForPyqImport[0].id);
+    }
+  }, [filteredChaptersForPyqImport, pyqImportChapterId]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -629,7 +659,31 @@ export default function AdminConsoleClient() {
 
         <section className="mt-6 rounded-xl border border-white/10 p-4">
           <h2 className="text-sm font-semibold">PYQ JSON Import</h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+          <div className="mt-3 grid gap-3 sm:grid-cols-6">
+            <select
+              value={pyqImportExamId}
+              onChange={(e) => setPyqImportExamId(e.target.value)}
+              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
+            >
+              <option value="">Select exam</option>
+              {exams.map((exam) => (
+                <option key={exam.id} value={exam.id}>
+                  {exam.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={pyqImportChapterId}
+              onChange={(e) => setPyqImportChapterId(e.target.value)}
+              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
+            >
+              <option value="">Select chapter</option>
+              {filteredChaptersForPyqImport.map((chapter) => (
+                <option key={chapter.id} value={chapter.id}>
+                  {chapter.subject}  {chapter.name}
+                </option>
+              ))}
+            </select>
             <label className="flex items-center rounded-md border border-white/10 bg-black px-3 py-2 text-xs text-white/70 sm:col-span-2">
               <input
                 type="file"
@@ -664,7 +718,7 @@ export default function AdminConsoleClient() {
               Overwrite existing same paper
             </label>
             <span className="text-white/50">
-              Creates/updates year-wise PYQ papers, questions, chapters and topics.
+              Imports all questions into selected exam/chapter. Images in JSON are auto-linked.
             </span>
           </div>
           {pyqImportStatus && (

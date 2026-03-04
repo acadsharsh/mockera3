@@ -22,6 +22,7 @@ type RawQuestion = {
   correctOptions: Array<"A" | "B" | "C" | "D">;
   correctNumeric: string | null;
   solution: string | null;
+  imageUrl: string | null;
 };
 
 type GroupedPaper = {
@@ -107,6 +108,21 @@ const htmlToText = (value: unknown) =>
     .replace(/[ \t]{2,}/g, " ")
     .trim();
 
+const extractFirstImageUrl = (...values: unknown[]) => {
+  for (const value of values) {
+    const raw = String(value ?? "").trim();
+    if (!raw) continue;
+    const imgMatch = raw.match(/<img[^>]*src=["']([^"']+)["'][^>]*>/i);
+    if (imgMatch?.[1]) return imgMatch[1].trim();
+    const markdownMatch = raw.match(/!\[[^\]]*\]\(([^)]+)\)/);
+    if (markdownMatch?.[1]) return markdownMatch[1].trim();
+    const urlMatch = raw.match(/https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg)/i);
+    if (urlMatch?.[0]) return urlMatch[0].trim();
+    if (/^data:image\/[a-zA-Z+]+;base64,/.test(raw)) return raw;
+  }
+  return null;
+};
+
 const cleanLabel = (value: unknown) => {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
@@ -182,6 +198,18 @@ const parseExamGoalShape = (payload: any, lang: ImportLang): RawQuestion[] => {
 
       const prompt = htmlToText(langBlock?.content ?? item?.prompt ?? item?.questionText ?? "");
       if (!prompt) continue;
+      const imageUrl = extractFirstImageUrl(
+        langBlock?.content,
+        ...(Array.isArray(langBlock?.options)
+          ? langBlock.options.map((option: any) =>
+              typeof option === "string" ? option : option?.content ?? option?.text ?? ""
+            )
+          : []),
+        item?.imageUrl,
+        item?.image,
+        item?.diagram,
+        item?.questionImage
+      );
 
       const paperId = String(item?.paperId ?? item?.yearKey ?? item?.question_id ?? "").trim();
       const paperTitle = String(item?.paperTitle ?? "").trim();
@@ -234,6 +262,7 @@ const parseExamGoalShape = (payload: any, lang: ImportLang): RawQuestion[] => {
         correctOptions: finalCorrectOptions,
         correctNumeric,
         solution: htmlToText(langBlock?.explanation ?? item?.solution ?? "") || null,
+        imageUrl,
       });
     }
   }
@@ -251,6 +280,15 @@ const parseGenericShape = (payload: any): RawQuestion[] => {
     if (!prompt) continue;
     const questionType = normalizeQuestionType(item?.questionType ?? item?.type);
     const answerValue = String(item?.answer ?? "").trim();
+    const imageUrl = extractFirstImageUrl(
+      item?.prompt,
+      item?.text,
+      item?.question,
+      item?.imageUrl,
+      item?.image,
+      item?.diagram,
+      item?.questionImage
+    );
     const correctOptions = normalizeCorrectOptions(item?.correctOptions);
     const answerLetter = toLetter(answerValue);
     const finalCorrectOptions =
@@ -304,6 +342,7 @@ const parseGenericShape = (payload: any): RawQuestion[] => {
           ? String(item?.correctNumeric ?? answerValue ?? "").trim() || null
           : null,
       solution: htmlToText(item?.solution ?? item?.explanation ?? "") || null,
+      imageUrl,
     });
   }
 
@@ -354,7 +393,7 @@ const buildQuestionRows = (testId: string, questions: RawQuestion[]) =>
       correctNumeric: question.questionType === "NUM" ? question.correctNumeric ?? "" : null,
       marksCorrect: question.marksCorrect,
       marksIncorrect: question.marksIncorrect,
-      imageUrl: "",
+      imageUrl: question.imageUrl ?? "",
       cropX: 0,
       cropY: 0,
       cropW: 1,
@@ -371,6 +410,8 @@ export async function POST(request: Request) {
   let rawJson = "";
   let overwrite = false;
   let lang: ImportLang = "en";
+  let selectedExamId = "";
+  let selectedChapterId = "";
 
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
@@ -383,6 +424,8 @@ export async function POST(request: Request) {
     }
     overwrite = String(form.get("overwrite") ?? "false").toLowerCase() === "true";
     lang = String(form.get("lang") ?? "en").toLowerCase() === "hi" ? "hi" : "en";
+    selectedExamId = String(form.get("examId") ?? "").trim();
+    selectedChapterId = String(form.get("chapterId") ?? "").trim();
   } else {
     const body = await request.json();
     rawJson =
@@ -391,6 +434,8 @@ export async function POST(request: Request) {
         : JSON.stringify(body?.data ?? body?.payload ?? body ?? {});
     overwrite = Boolean(body?.overwrite);
     lang = String(body?.lang ?? "en").toLowerCase() === "hi" ? "hi" : "en";
+    selectedExamId = String(body?.examId ?? "").trim();
+    selectedChapterId = String(body?.chapterId ?? "").trim();
   }
 
   if (!rawJson.trim()) {
@@ -405,7 +450,7 @@ export async function POST(request: Request) {
   }
 
   const extracted = parseExamGoalShape(parsed, lang);
-  const questions = extracted.length ? extracted : parseGenericShape(parsed);
+  let questions = extracted.length ? extracted : parseGenericShape(parsed);
   if (!questions.length) {
     return NextResponse.json(
       { error: "No questions found in uploaded JSON." },
@@ -413,8 +458,45 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!selectedExamId) {
+    return NextResponse.json({ error: "Please select an exam." }, { status: 400 });
+  }
+  if (!selectedChapterId) {
+    return NextResponse.json({ error: "Please select a chapter." }, { status: 400 });
+  }
+
+  const selectedExam = await prisma.exam.findUnique({
+    where: { id: selectedExamId },
+    select: { id: true, name: true },
+  });
+  if (!selectedExam) {
+    return NextResponse.json({ error: "Selected exam not found." }, { status: 400 });
+  }
+
+  const selectedChapter = await prisma.chapter.findUnique({
+    where: { id: selectedChapterId },
+    select: { id: true, examId: true, subject: true, name: true },
+  });
+  if (!selectedChapter) {
+    return NextResponse.json({ error: "Selected chapter not found." }, { status: 400 });
+  }
+  if (selectedChapter.examId !== selectedExam.id) {
+    return NextResponse.json(
+      { error: "Selected chapter does not belong to selected exam." },
+      { status: 400 }
+    );
+  }
+
+  questions = questions.map((question) => ({
+    ...question,
+    examName: selectedExam.name,
+    subject: selectedChapter.subject,
+    chapter: selectedChapter.name,
+  }));
+
   const grouped = groupByPaper(questions);
   const examCache = new Map<string, { id: string; name: string }>();
+  examCache.set(selectedExam.name, selectedExam);
   const chapterCache = new Map<string, string>();
   const chapterKeysToCreate = new Set<string>();
   const topicKeysToCreate = new Set<string>();
@@ -430,30 +512,9 @@ export async function POST(request: Request) {
 
   for (const paper of grouped) {
     if (!paper.questions.length) continue;
-    const examName = normalizeExamName(paper.examName);
+    const examName = normalizeExamName(selectedExam.name || paper.examName);
     if (!examCache.has(examName)) {
-      const existing = await prisma.exam.findFirst({
-        where: { name: { equals: examName, mode: "insensitive" } },
-        select: { id: true, name: true },
-      });
-      if (existing) {
-        examCache.set(examName, existing);
-      } else {
-        const createdExam = await prisma.exam.create({
-          data: {
-            name: examName,
-            shortCode: examName
-              .split(" ")
-              .map((part) => part[0])
-              .join("")
-              .slice(0, 4)
-              .toUpperCase(),
-            active: true,
-          },
-          select: { id: true, name: true },
-        });
-        examCache.set(examName, createdExam);
-      }
+      examCache.set(examName, selectedExam);
     }
     const exam = examCache.get(examName)!;
 
@@ -494,8 +555,8 @@ export async function POST(request: Request) {
         hidden: false,
         isPyq: true,
         isYearPaper: true,
-        exam: exam.name,
-        examId: exam.id,
+        exam: selectedExam.name,
+        examId: selectedExam.id,
         year: year ?? null,
         shift: shift ?? null,
         durationMinutes: 180,
@@ -517,7 +578,7 @@ export async function POST(request: Request) {
 
     for (const question of paper.questions) {
       if (!question.chapter) continue;
-      const chapterKey = `${exam.id}::${question.subject}::${question.chapter}`;
+      const chapterKey = `${selectedExam.id}::${selectedChapter.subject}::${selectedChapter.name}`;
       chapterKeysToCreate.add(chapterKey);
       if (question.topic) {
         topicKeysToCreate.add(`${chapterKey}::${question.topic}`);
@@ -526,27 +587,9 @@ export async function POST(request: Request) {
   }
 
   for (const chapterKey of chapterKeysToCreate) {
-    const [examId, subject, chapterName] = chapterKey.split("::");
-    const chapter = await prisma.chapter.upsert({
-      where: {
-        examId_subject_name: {
-          examId,
-          subject,
-          name: chapterName,
-        },
-      },
-      update: {},
-      create: {
-        examId,
-        subject,
-        name: chapterName,
-        order: 0,
-      },
-      select: { id: true },
-    });
-    chapterCache.set(chapterKey, chapter.id);
+    chapterCache.set(chapterKey, selectedChapter.id);
   }
-  summary.chaptersCreated = chapterKeysToCreate.size;
+  summary.chaptersCreated = 0;
 
   let createdTopicCount = 0;
   for (const topicKey of topicKeysToCreate) {
