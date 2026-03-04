@@ -65,7 +65,7 @@ export async function DELETE(req: Request) {
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   const chapter = await prisma.chapter.findUnique({
     where: { id },
-    select: { id: true, examId: true, subject: true, name: true },
+    select: { id: true, examId: true, subject: true, name: true, exam: { select: { name: true } } },
   });
   if (!chapter) return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
 
@@ -74,8 +74,22 @@ export async function DELETE(req: Request) {
     prisma.question.deleteMany({
       where: {
         subject: chapter.subject,
-        chapter: chapter.name,
-        test: { examId: chapter.examId ?? undefined, isPyq: true },
+        ...(chapter.name.toLowerCase() === "uncategorized"
+          ? { OR: [{ chapter: null }, { chapter: "" }, { chapter: chapter.name }] }
+          : { chapter: chapter.name }),
+        test: {
+          isPyq: true,
+          ...(chapter.examId
+            ? {
+                OR: [
+                  { examId: chapter.examId },
+                  ...(chapter.exam?.name ? [{ exam: chapter.exam.name }] : []),
+                ],
+              }
+            : chapter.exam?.name
+            ? { exam: chapter.exam.name }
+            : {}),
+        },
       },
     }),
     prisma.chapter.delete({ where: { id: chapter.id } }),
