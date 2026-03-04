@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
+import { v2 as cloudinary } from "cloudinary";
 
 type ImportLang = "en" | "hi";
 
@@ -43,6 +44,12 @@ type ImportSummary = {
   chaptersCreated: number;
   topicsCreated: number;
 };
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const toTitleCase = (value: string) =>
   value
@@ -121,6 +128,44 @@ const extractFirstImageUrl = (...values: unknown[]) => {
     if (/^data:image\/[a-zA-Z+]+;base64,/.test(raw)) return raw;
   }
   return null;
+};
+
+const isDirectImageUrl = (value: string) =>
+  /^data:image\//i.test(value) || /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(value);
+
+const resolveIbbImageUrl = async (url: string): Promise<string | null> => {
+  if (!/ibb\.co\//i.test(url)) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const ogMatch = html.match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+    if (ogMatch?.[1]) return ogMatch[1];
+    const imgMatch = html.match(/<img[^>]*src=["'](https?:\/\/i\.ibb\.co\/[^"']+)["'][^>]*>/i);
+    if (imgMatch?.[1]) return imgMatch[1];
+  } catch {
+    return null;
+  }
+  return null;
+};
+
+const rehostImageToCloudinary = async (url: string): Promise<string | null> => {
+  if (!process.env.CLOUDINARY_CLOUD_NAME) return null;
+  if (url.includes("res.cloudinary.com")) return url;
+  const resolved =
+    isDirectImageUrl(url) || url.startsWith("data:image/")
+      ? url
+      : (await resolveIbbImageUrl(url)) ?? url;
+  if (!resolved) return null;
+  try {
+    const result = await cloudinary.uploader.upload(resolved, {
+      resource_type: "image",
+      folder: "cbtcore/questions",
+    });
+    return result.secure_url || null;
+  } catch {
+    return null;
+  }
 };
 
 const cleanLabel = (value: unknown) => {
@@ -499,6 +544,20 @@ export async function POST(request: Request) {
     subject: selectedChapter.subject,
     chapter: selectedChapter.name,
   }));
+
+  const imageCache = new Map<string, string | null>();
+  for (const question of questions) {
+    if (!question.imageUrl) continue;
+    const rawUrl = question.imageUrl.trim();
+    if (!rawUrl) continue;
+    if (imageCache.has(rawUrl)) {
+      question.imageUrl = imageCache.get(rawUrl) ?? null;
+      continue;
+    }
+    const uploaded = await rehostImageToCloudinary(rawUrl);
+    imageCache.set(rawUrl, uploaded ?? rawUrl);
+    question.imageUrl = uploaded ?? rawUrl;
+  }
 
   if (importMode === "questions") {
     const defaultTitle = `Imported Questions - ${selectedExam.name} - ${selectedChapter.name}`;
