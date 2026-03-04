@@ -99,7 +99,7 @@ const cleanupLatex = (value: string) =>
     .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
-    .replace(/[│┃｜¦]/g, "|")
+        .replace(/[\u2502\u2503\uFF5C\u00A6]/g, "|")
     .replace(/double\s+subscripts:\s*use\s+braces\s+to\s+clarify\.?/gi, "")
     .trim();
 
@@ -146,30 +146,60 @@ const parseMatchList = (input: string) => {
       .split(/\s*\|{2,}\s*/g)
       .map((chunk) => chunk.trim())
       .filter(Boolean);
+    const combinedHeaderIndex = tokens.findIndex((chunk) =>
+      /list-?\s*i\b[\s\S]*list-?\s*ii\b/i.test(chunk)
+    );
+    if (combinedHeaderIndex !== -1) {
+      const before = tokens
+        .slice(0, combinedHeaderIndex + 1)
+        .join(" ")
+        .replace(/list-?\s*i\b[\s\S]*?list-?\s*ii\b/i, "")
+        .trim();
+      const rows = tokens.slice(combinedHeaderIndex + 1);
+      const listI: string[] = [];
+      const listII: string[] = [];
+      const afterParts: string[] = [];
+
+      rows.forEach((row) => {
+        if (/^(choose|options|select|in the light|answer)/i.test(row)) {
+          afterParts.push(row);
+          return;
+        }
+        const cells = row.split(/\s*\|\s*/).map((cell) => cell.trim()).filter(Boolean);
+        if (
+          cells.length >= 4 &&
+          /^[A-H]\.?$/i.test(cells[0]) &&
+          /^(?:I|II|III|IV|V|VI|VII|VIII|IX|X)\.?$/i.test(cells[2])
+        ) {
+          listI.push(`${cells[0]} ${cells[1]}`);
+          listII.push(`${cells[2]} ${cells[3]}`);
+          return;
+        }
+        afterParts.push(row);
+      });
+
+      if (listI.length && listII.length) {
+        return { before, listI, listII, after: afterParts.join(" ") };
+      }
+    }
+
     const listIIndex = tokens.findIndex((chunk) => /list-?\s*i\b/i.test(chunk));
-    const listIIIndex = tokens.findIndex((chunk) => /list-?\s*ii\b/i.test(chunk));
-    if (listIIndex === -1 || listIIIndex === -1 || listIIIndex <= listIIndex) {
+    const listIIIndex = tokens.findIndex(
+      (chunk, index) => index > listIIndex && /list-?\s*ii\b/i.test(chunk)
+    );
+    if (listIIndex === -1 || listIIIndex === -1) {
       return null;
     }
 
     const before = tokens.slice(0, listIIndex).join(" ");
     const listIText = tokens.slice(listIIndex + 1, listIIIndex).join(" | ");
     const afterText = tokens.slice(listIIIndex + 1).join(" | ");
-
-    const listI =
-      listIText.match(/\b(?:I|II|III|IV|V|VI|VII|VIII|IX|X)\.?\s*[^|]+/g) ??
-      listIText.split("|").map((item) => item.trim()).filter(Boolean);
-    const listII =
-      afterText.match(/\b[A-H]\.?\s*[^|]+/g) ??
-      afterText.split("|").map((item) => item.trim()).filter(Boolean);
-
+    const listI = listIText.split("|").map((item) => item.trim()).filter(Boolean);
+    const listII = afterText.split("|").map((item) => item.trim()).filter(Boolean);
     const after =
-      afterText
-        .split("|")
-        .map((item) => item.trim())
-        .find((item) => /^(choose|options|select|in the light|answer)/i.test(item)) ?? "";
+      listII.find((item) => /^(choose|options|select|in the light|answer)/i.test(item)) ?? "";
 
-    return { before, listI, listII, after };
+    return { before, listI, listII: listII.filter((item) => item !== after), after };
   };
 
   return parseFromLines() ?? parseInline();

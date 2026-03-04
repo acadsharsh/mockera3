@@ -93,6 +93,14 @@ export default function AdminConsoleClient() {
   const [topicChapterId, setTopicChapterId] = useState("");
   const [topicName, setTopicName] = useState("");
   const [topicOrder, setTopicOrder] = useState(0);
+  const [pyqJsonFile, setPyqJsonFile] = useState<File | null>(null);
+  const [pyqImportOverwrite, setPyqImportOverwrite] = useState(false);
+  const [pyqImportLang, setPyqImportLang] = useState<"en" | "hi">("en");
+  const [pyqImporting, setPyqImporting] = useState(false);
+  const [pyqImportStatus, setPyqImportStatus] = useState<{
+    tone: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
 
   const safeFetch = async <T,>(url: string, fallback: T): Promise<T> => {
     try {
@@ -235,6 +243,45 @@ export default function AdminConsoleClient() {
     setTopicName("");
     setTopicOrder(0);
     await load();
+  };
+
+  const importPyqJson = async () => {
+    if (!pyqJsonFile) {
+      setPyqImportStatus({ tone: "error", message: "Please choose a JSON file first." });
+      return;
+    }
+    setPyqImporting(true);
+    setPyqImportStatus({ tone: "info", message: "Importing PYQ JSON..." });
+    try {
+      const formData = new FormData();
+      formData.append("file", pyqJsonFile);
+      formData.append("overwrite", String(pyqImportOverwrite));
+      formData.append("lang", pyqImportLang);
+
+      const response = await fetch("/api/admin/pyq-import", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setPyqImportStatus({
+          tone: "error",
+          message: String(data?.error ?? "Import failed."),
+        });
+        return;
+      }
+
+      const summary = data?.summary ?? {};
+      setPyqImportStatus({
+        tone: "success",
+        message: `Imported ${summary.questionsImported ?? 0} questions across ${summary.papersCreated ?? 0} papers. Skipped ${summary.papersSkipped ?? 0}.`,
+      });
+      await load();
+    } catch {
+      setPyqImportStatus({ tone: "error", message: "Import failed due to network/server error." });
+    } finally {
+      setPyqImporting(false);
+    }
   };
 
 
@@ -578,6 +625,62 @@ export default function AdminConsoleClient() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mt-6 rounded-xl border border-white/10 p-4">
+          <h2 className="text-sm font-semibold">PYQ JSON Import</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <label className="flex items-center rounded-md border border-white/10 bg-black px-3 py-2 text-xs text-white/70 sm:col-span-2">
+              <input
+                type="file"
+                accept="application/json"
+                onChange={(e) => setPyqJsonFile(e.target.files?.[0] ?? null)}
+                className="w-full text-xs text-white/70 file:mr-2 file:rounded-md file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-xs file:text-white"
+              />
+            </label>
+            <select
+              value={pyqImportLang}
+              onChange={(e) => setPyqImportLang(e.target.value === "hi" ? "hi" : "en")}
+              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
+            >
+              <option value="en">Language: English</option>
+              <option value="hi">Language: Hindi</option>
+            </select>
+            <button
+              onClick={importPyqJson}
+              disabled={!pyqJsonFile || pyqImporting}
+              className="rounded-md border border-white/10 px-3 py-2 text-xs disabled:opacity-60"
+            >
+              {pyqImporting ? "Importing..." : "Import PYQ"}
+            </button>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={pyqImportOverwrite}
+                onChange={(e) => setPyqImportOverwrite(e.target.checked)}
+              />
+              Overwrite existing same paper
+            </label>
+            <span className="text-white/50">
+              Creates/updates year-wise PYQ papers, questions, chapters and topics.
+            </span>
+          </div>
+          {pyqImportStatus && (
+            <div
+              className={
+                "mt-3 rounded-md px-3 py-2 text-xs " +
+                (pyqImportStatus.tone === "success"
+                  ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                  : pyqImportStatus.tone === "error"
+                  ? "border border-rose-500/40 bg-rose-500/10 text-rose-200"
+                  : "border border-white/10 bg-white/5 text-white/70")
+              }
+            >
+              {pyqImportStatus.message}
+            </div>
+          )}
         </section>
 
         <section className="mt-6 rounded-xl border border-white/10 p-4">

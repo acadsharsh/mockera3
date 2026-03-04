@@ -136,7 +136,7 @@ const cleanupLatex = (value: string) =>
     .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
-    .replace(/[│┃｜¦]/g, "|")
+        .replace(/[\u2502\u2503\uFF5C\u00A6]/g, "|")
     // Fix common OCR for fraction like \fracpi6 or fracpi6
     .replace(/\\?frac\s*\\?pi\s*([0-9]+)/gi, "\\frac{\\pi}{$1}")
     .replace(/\\?frac\s*\\?pi\s*\/\s*([0-9]+)/gi, "\\frac{\\pi}{$1}")
@@ -463,30 +463,96 @@ const parseMatchList = (input: string) => {
       .split(/\s*\|{2,}\s*/g)
       .map((chunk) => chunk.trim())
       .filter(Boolean);
+    const normalizeAlphaLabel = (value: string) => {
+      const match = value.toUpperCase().replace(/[^A-Z]/g, "").match(/[A-H]/);
+      return match ? `${match[0]}.` : null;
+    };
+    const normalizeRomanLabel = (value: string) => {
+      const roman = value.toUpperCase().replace(/[^IVX]/g, "");
+      if (!/^(?:I|II|III|IV|V|VI|VII|VIII|IX|X)$/.test(roman)) {
+        return null;
+      }
+      return `${roman}.`;
+    };
+    const parseRow = (row: string) => {
+      const cells = row
+        .split(/\s*\|\s*/)
+        .map((cell) => cell.trim())
+        .filter(Boolean);
+      if (!cells.length) return null;
+      const leftIndex = cells.findIndex((cell) => normalizeAlphaLabel(cell));
+      if (leftIndex === -1) return null;
+      const rightIndex = cells.findIndex(
+        (cell, index) => index > leftIndex && normalizeRomanLabel(cell)
+      );
+      if (rightIndex === -1) return null;
+      const leftLabel = normalizeAlphaLabel(cells[leftIndex]);
+      const rightLabel = normalizeRomanLabel(cells[rightIndex]);
+      const leftText = cells.slice(leftIndex + 1, rightIndex).join(" | ").trim();
+      const rightText = cells.slice(rightIndex + 1).join(" | ").trim();
+      if (!leftLabel || !rightLabel || !leftText || !rightText) return null;
+      return {
+        listIItem: `${leftLabel} ${leftText}`,
+        listIIItem: `${rightLabel} ${rightText}`,
+      };
+    };
+    const combinedHeaderIndex = tokens.findIndex((chunk) =>
+      /list-?\s*i\b[\s\S]*list-?\s*ii\b/i.test(chunk)
+    );
+    if (combinedHeaderIndex !== -1) {
+      const before = tokens
+        .slice(0, combinedHeaderIndex + 1)
+        .join(" ")
+        .replace(/list-?\s*i\b[\s\S]*?list-?\s*ii\b/i, "")
+        .trim();
+      const rows = tokens.slice(combinedHeaderIndex + 1);
+      const listI: string[] = [];
+      const listII: string[] = [];
+      const afterParts: string[] = [];
+      let startedRows = false;
+
+      rows.forEach((row) => {
+        if (/^(choose|options|select|in the light|answer)/i.test(row)) {
+          afterParts.push(row);
+          return;
+        }
+        if (/^[-|:\s]+$/.test(row)) {
+          return;
+        }
+        const parsedRow = parseRow(row);
+        if (parsedRow) {
+          startedRows = true;
+          listI.push(parsedRow.listIItem);
+          listII.push(parsedRow.listIIItem);
+          return;
+        }
+        if (startedRows) {
+          afterParts.push(row);
+        }
+      });
+
+      if (listI.length && listII.length) {
+        return { before, listI, listII, after: afterParts.join(" ") };
+      }
+    }
+
     const listIIndex = tokens.findIndex((chunk) => /list-?\s*i\b/i.test(chunk));
-    const listIIIndex = tokens.findIndex((chunk) => /list-?\s*ii\b/i.test(chunk));
-    if (listIIndex === -1 || listIIIndex === -1 || listIIIndex <= listIIndex) {
+    const listIIIndex = tokens.findIndex(
+      (chunk, index) => index > listIIndex && /list-?\s*ii\b/i.test(chunk)
+    );
+    if (listIIndex === -1 || listIIIndex === -1) {
       return null;
     }
 
     const before = tokens.slice(0, listIIndex).join(" ");
     const listIText = tokens.slice(listIIndex + 1, listIIIndex).join(" | ");
     const afterText = tokens.slice(listIIIndex + 1).join(" | ");
-
-    const listI =
-      listIText.match(/\b(?:I|II|III|IV|V|VI|VII|VIII|IX|X)\.?\s*[^|]+/g) ??
-      listIText.split("|").map((item) => item.trim()).filter(Boolean);
-    const listII =
-      afterText.match(/\b[A-H]\.?\s*[^|]+/g) ??
-      afterText.split("|").map((item) => item.trim()).filter(Boolean);
-
+    const listI = listIText.split("|").map((item) => item.trim()).filter(Boolean);
+    const listII = afterText.split("|").map((item) => item.trim()).filter(Boolean);
     const after =
-      afterText
-        .split("|")
-        .map((item) => item.trim())
-        .find((item) => /^(choose|options|select|in the light|answer)/i.test(item)) ?? "";
+      listII.find((item) => /^(choose|options|select|in the light|answer)/i.test(item)) ?? "";
 
-    return { before, listI, listII, after };
+    return { before, listI, listII: listII.filter((item) => item !== after), after };
   };
 
   return parseFromLines() ?? parseInline();
