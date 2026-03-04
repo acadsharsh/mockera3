@@ -63,6 +63,23 @@ export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  await prisma.chapter.delete({ where: { id } });
+  const chapter = await prisma.chapter.findUnique({
+    where: { id },
+    select: { id: true, examId: true, subject: true, name: true },
+  });
+  if (!chapter) return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
+
+  await prisma.$transaction([
+    prisma.topic.deleteMany({ where: { chapterId: chapter.id } }),
+    prisma.question.updateMany({
+      where: {
+        subject: chapter.subject,
+        chapter: chapter.name,
+        test: { examId: chapter.examId ?? undefined, isPyq: true },
+      },
+      data: { chapter: null, topic: null },
+    }),
+    prisma.chapter.delete({ where: { id: chapter.id } }),
+  ]);
   return NextResponse.json({ ok: true });
 }
