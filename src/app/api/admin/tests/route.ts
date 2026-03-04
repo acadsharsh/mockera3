@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   await requireAdmin();
+  const url = new URL(request.url);
+  const limitParam = url.searchParams.get("limit");
+  const limit = limitParam ? Math.min(Number(limitParam) || 0, 500) : 200;
   const tests = await prisma.test.findMany({
     include: { owner: true },
     orderBy: { createdAt: "desc" },
+    take: limit > 0 ? limit : undefined,
   });
   return NextResponse.json(
     tests.map((t) => ({

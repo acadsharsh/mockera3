@@ -412,6 +412,8 @@ export async function POST(request: Request) {
   let lang: ImportLang = "en";
   let selectedExamId = "";
   let selectedChapterId = "";
+  let importMode: "papers" | "questions" = "papers";
+  let testTitle = "";
 
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
@@ -426,6 +428,8 @@ export async function POST(request: Request) {
     lang = String(form.get("lang") ?? "en").toLowerCase() === "hi" ? "hi" : "en";
     selectedExamId = String(form.get("examId") ?? "").trim();
     selectedChapterId = String(form.get("chapterId") ?? "").trim();
+    importMode = String(form.get("mode") ?? "papers") === "questions" ? "questions" : "papers";
+    testTitle = String(form.get("testTitle") ?? "").trim();
   } else {
     const body = await request.json();
     rawJson =
@@ -436,6 +440,8 @@ export async function POST(request: Request) {
     lang = String(body?.lang ?? "en").toLowerCase() === "hi" ? "hi" : "en";
     selectedExamId = String(body?.examId ?? "").trim();
     selectedChapterId = String(body?.chapterId ?? "").trim();
+    importMode = String(body?.mode ?? "papers") === "questions" ? "questions" : "papers";
+    testTitle = String(body?.testTitle ?? "").trim();
   }
 
   if (!rawJson.trim()) {
@@ -493,6 +499,86 @@ export async function POST(request: Request) {
     subject: selectedChapter.subject,
     chapter: selectedChapter.name,
   }));
+
+  if (importMode === "questions") {
+    const defaultTitle = `Imported Questions - ${selectedExam.name} - ${selectedChapter.name}`;
+    const title = testTitle || defaultTitle;
+    const existingTest = await prisma.test.findFirst({
+      where: {
+        title,
+        examId: selectedExam.id,
+        isPyq: true,
+        isYearPaper: false,
+      },
+      select: { id: true },
+    });
+    if (existingTest && !overwrite) {
+      return NextResponse.json(
+        { error: "Test already exists. Enable overwrite to replace it." },
+        { status: 400 }
+      );
+    }
+    if (existingTest && overwrite) {
+      await prisma.test.delete({ where: { id: existingTest.id } });
+    }
+
+    const firstQuestion = questions[0];
+    const test = await prisma.test.create({
+      data: {
+        title,
+        description: "Imported from admin JSON",
+        tags: ["PYQ", "Imported"],
+        visibility: "Public",
+        hidden: false,
+        isPyq: true,
+        isYearPaper: false,
+        exam: selectedExam.name,
+        examId: selectedExam.id,
+        durationMinutes: 180,
+        markingCorrect: firstQuestion.marksCorrect,
+        markingIncorrect: firstQuestion.marksIncorrect,
+        ownerId: session.user.id,
+      },
+      select: { id: true },
+    });
+
+    const rows = buildQuestionRows(test.id, questions);
+    for (let start = 0; start < rows.length; start += 300) {
+      const chunk = rows.slice(start, start + 300);
+      await prisma.question.createMany({ data: chunk });
+    }
+
+    const topicKeysToCreate = new Set<string>();
+    for (const question of questions) {
+      if (question.topic) {
+        const chapterKey = `${selectedExam.id}::${selectedChapter.subject}::${selectedChapter.name}`;
+        topicKeysToCreate.add(`${chapterKey}::${question.topic}`);
+      }
+    }
+    for (const topicKey of topicKeysToCreate) {
+      const parts = topicKey.split("::");
+      const chapterId = selectedChapter.id;
+      const topicName = parts[3];
+      if (!topicName) continue;
+      await prisma.topic.upsert({
+        where: { chapterId_name: { chapterId, name: topicName } },
+        update: {},
+        create: { chapterId, name: topicName, order: 0 },
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      summary: {
+        papersFound: 1,
+        papersCreated: 1,
+        papersSkipped: 0,
+        questionsImported: rows.length,
+        chaptersCreated: 0,
+        topicsCreated: topicKeysToCreate.size,
+      },
+    });
+  }
 
   const grouped = groupByPaper(questions);
   const examCache = new Map<string, { id: string; name: string }>();

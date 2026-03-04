@@ -414,11 +414,13 @@ const MathText = ({ text }: { text: string }) => {
       return;
     }
 
+    const inlineDisplay = hasPlainWords(raw);
     parts.forEach((part) => {
       const span = document.createElement("span");
       if (part.type === "math") {
         const normalized = balanceBraces(normalizeMathToken(part.value));
-        span.textContent = part.display ? `\\[${normalized}\\]` : `\\(${normalized}\\)`;
+        const useDisplay = part.display && !inlineDisplay;
+        span.textContent = useDisplay ? `\\[${normalized}\\]` : `\\(${normalized}\\)`;
       } else {
         span.textContent = part.value;
       }

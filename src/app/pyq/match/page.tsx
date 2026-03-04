@@ -107,7 +107,10 @@ const MathBlock = ({ value, className }: { value: string; className?: string }) 
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!ref.current) return;
-    ref.current.textContent = cleanupLatex(value || "");
+    const raw = String(value || "");
+    const hasTextOutsideMath = /[A-Za-z]/.test(raw.replace(/\$\$[\s\S]+?\$\$/g, ""));
+    const normalized = hasTextOutsideMath ? raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => `$${m}$`) : raw;
+    ref.current.textContent = cleanupLatex(normalized);
     ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
   }, [value]);
   return <div ref={ref} className={className} />;

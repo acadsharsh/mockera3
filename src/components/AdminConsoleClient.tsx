@@ -98,6 +98,8 @@ export default function AdminConsoleClient() {
   const [pyqImportLang, setPyqImportLang] = useState<"en" | "hi">("en");
   const [pyqImportExamId, setPyqImportExamId] = useState("");
   const [pyqImportChapterId, setPyqImportChapterId] = useState("");
+  const [pyqImportMode, setPyqImportMode] = useState<"papers" | "questions">("papers");
+  const [pyqImportTestTitle, setPyqImportTestTitle] = useState("");
   const [pyqImporting, setPyqImporting] = useState(false);
   const [pyqImportStatus, setPyqImportStatus] = useState<{
     tone: "success" | "error" | "info";
@@ -116,7 +118,7 @@ export default function AdminConsoleClient() {
 
   const load = async () => {
     const [t, u, b, e, c, tp, m, s] = await Promise.all([
-      safeFetch("/api/admin/tests", [] as TestItem[]),
+      safeFetch("/api/admin/tests?limit=200", [] as TestItem[]),
       safeFetch("/api/admin/users", [] as UserItem[]),
       safeFetch("/api/admin/broadcast", [] as BroadcastMessage[]),
       safeFetch("/api/admin/exams", [] as ExamItem[]),
@@ -272,6 +274,10 @@ export default function AdminConsoleClient() {
       formData.append("lang", pyqImportLang);
       formData.append("examId", pyqImportExamId);
       formData.append("chapterId", pyqImportChapterId);
+      formData.append("mode", pyqImportMode);
+      if (pyqImportMode === "questions" && pyqImportTestTitle.trim()) {
+        formData.append("testTitle", pyqImportTestTitle.trim());
+      }
 
       const response = await fetch("/api/admin/pyq-import", {
         method: "POST",
@@ -684,6 +690,16 @@ export default function AdminConsoleClient() {
                 </option>
               ))}
             </select>
+            <select
+              value={pyqImportMode}
+              onChange={(e) =>
+                setPyqImportMode(e.target.value === "questions" ? "questions" : "papers")
+              }
+              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
+            >
+              <option value="papers">Import year-wise papers</option>
+              <option value="questions">Import questions only</option>
+            </select>
             <label className="flex items-center rounded-md border border-white/10 bg-black px-3 py-2 text-xs text-white/70 sm:col-span-2">
               <input
                 type="file"
@@ -708,6 +724,19 @@ export default function AdminConsoleClient() {
               {pyqImporting ? "Importing..." : "Import PYQ"}
             </button>
           </div>
+          {pyqImportMode === "questions" && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-4">
+              <input
+                value={pyqImportTestTitle}
+                onChange={(e) => setPyqImportTestTitle(e.target.value)}
+                placeholder="Test title (optional)"
+                className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs sm:col-span-2"
+              />
+              <span className="text-xs text-white/50 sm:col-span-2">
+                Uses a single test instead of year-wise papers.
+              </span>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
             <label className="flex items-center gap-2">
               <input
@@ -715,7 +744,7 @@ export default function AdminConsoleClient() {
                 checked={pyqImportOverwrite}
                 onChange={(e) => setPyqImportOverwrite(e.target.checked)}
               />
-              Overwrite existing same paper
+              Overwrite existing same paper/test
             </label>
             <span className="text-white/50">
               Imports all questions into selected exam/chapter. Images in JSON are auto-linked.

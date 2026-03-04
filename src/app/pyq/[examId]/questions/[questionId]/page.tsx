@@ -157,9 +157,12 @@ const MathBlock = ({
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!ref.current) return;
+    const raw = String(value || "");
+    const hasTextOutsideMath = /[A-Za-z]/.test(raw.replace(/\$\$[\s\S]+?\$\$/g, ""));
+    const normalized = hasTextOutsideMath ? raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => `$${m}$`) : raw;
     ref.current.textContent = preserveLineBreaks
-      ? cleanupLatexLines(value || "")
-      : cleanupLatex(value || "");
+      ? cleanupLatexLines(normalized)
+      : cleanupLatex(normalized);
     ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
   }, [value, preserveLineBreaks]);
   return <div ref={ref} className={className} />;
