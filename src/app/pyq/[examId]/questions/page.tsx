@@ -101,7 +101,8 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
     if (subject) url.searchParams.set("subject", subject);
     if (chapter) url.searchParams.set("chapter", chapter);
     url.searchParams.set("limit", "200");
-    fetch(url.toString())
+    url.searchParams.set("ts", String(Date.now()));
+    fetch(url.toString(), { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active || !data) return;

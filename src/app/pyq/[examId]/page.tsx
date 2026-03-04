@@ -77,7 +77,7 @@ export default function PyqExamPage({ params }: { params: Promise<{ examId: stri
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/pyq/exams/${examId}/chapters`)
+    fetch(`/api/pyq/exams/${examId}/chapters?ts=${Date.now()}`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (!active || !payload) return;
