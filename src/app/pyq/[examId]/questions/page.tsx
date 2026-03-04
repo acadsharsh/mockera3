@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 type QuestionItem = {
   id: string;
   prompt?: string | null;
+  imageUrl?: string | null;
   subject?: string | null;
   chapter?: string | null;
   topic?: string | null;
@@ -41,8 +42,11 @@ const ensureMathJax = (() => {
   };
 })();
 
-const cleanupLatex = (value: string) =>
-  value
+const cleanupLatex = (value: string) => {
+  const raw = String(value ?? "");
+  const hasTextOutsideMath = /[A-Za-z]/.test(raw.replace(/\$\$[\s\S]+?\$\$/g, ""));
+  const normalized = hasTextOutsideMath ? raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => `$${m}$`) : raw;
+  return normalized
     .normalize("NFKC")
     .replace(/[\u{1D400}-\u{1D7FF}]/gu, (ch) => ch.normalize("NFKC"))
     .replace(/\u0008/g, "\\b")
@@ -60,6 +64,7 @@ const cleanupLatex = (value: string) =>
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
     .replace(/double subscripts: use braces to clarify/gi, "")
     .trim();
+};
 
 export default function PyqChapterQuestions({ params }: { params: Promise<{ examId: string }> }) {
   const { examId } = use(params);
@@ -252,6 +257,14 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
                         {item.test?.exam ?? ""} {item.test?.year ? `${item.test?.year}` : ""} {item.test?.shift ? `(${item.test?.shift})` : ""}
                       </p>
                     </div>
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt="Question diagram"
+                        className="h-12 w-16 rounded-md border border-white/10 object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
                     <span className="text-[11px] text-white/50">Attempt</span>
                   </div>
                 </button>

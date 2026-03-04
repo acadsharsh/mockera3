@@ -8,6 +8,7 @@ import ChemStructure from "@/components/ChemStructure";
 type QuestionDetail = {
   id: string;
   prompt?: string | null;
+  imageUrl?: string | null;
   solution?: string | null;
   subject?: string | null;
   chapter?: string | null;
@@ -556,6 +557,16 @@ export default function PyqQuestionAttempt({
 
           <div ref={containerRef} className="mt-4 space-y-6">
             <QuestionPrompt text={question?.prompt ?? "Loading question..."} />
+            {question?.imageUrl ? (
+              <div className="rounded-[12px] border border-white/10 bg-[#10141d] p-3">
+                <img
+                  src={question.imageUrl}
+                  alt="Question diagram"
+                  className="mx-auto max-h-[360px] w-auto rounded-md border border-white/10 object-contain"
+                  loading="lazy"
+                />
+              </div>
+            ) : null}
 
             {isNumeric ? (
               <div className="space-y-4">
