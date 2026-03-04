@@ -71,13 +71,12 @@ export async function DELETE(req: Request) {
 
   await prisma.$transaction([
     prisma.topic.deleteMany({ where: { chapterId: chapter.id } }),
-    prisma.question.updateMany({
+    prisma.question.deleteMany({
       where: {
         subject: chapter.subject,
         chapter: chapter.name,
         test: { examId: chapter.examId ?? undefined, isPyq: true },
       },
-      data: { chapter: null, topic: null },
     }),
     prisma.chapter.delete({ where: { id: chapter.id } }),
   ]);
