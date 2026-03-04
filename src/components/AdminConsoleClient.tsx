@@ -100,6 +100,12 @@ export default function AdminConsoleClient() {
   const [pyqImportChapterId, setPyqImportChapterId] = useState("");
   const [pyqImportMode, setPyqImportMode] = useState<"papers" | "questions">("papers");
   const [pyqImportTestTitle, setPyqImportTestTitle] = useState("");
+  const [purgeExamId, setPurgeExamId] = useState("");
+  const [purgeStatus, setPurgeStatus] = useState<{
+    tone: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+  const [purging, setPurging] = useState(false);
   const [pyqImporting, setPyqImporting] = useState(false);
   const [pyqImportStatus, setPyqImportStatus] = useState<{
     tone: "success" | "error" | "info";
@@ -146,6 +152,9 @@ export default function AdminConsoleClient() {
     }
     if (Array.isArray(e) && e[0]?.id && !pyqImportExamId) {
       setPyqImportExamId(e[0].id);
+    }
+    if (Array.isArray(e) && e[0]?.id && !purgeExamId) {
+      setPurgeExamId(e[0].id);
     }
   };
 
@@ -302,6 +311,36 @@ export default function AdminConsoleClient() {
       setPyqImportStatus({ tone: "error", message: "Import failed due to network/server error." });
     } finally {
       setPyqImporting(false);
+    }
+  };
+
+  const purgeOrphanedQuestions = async () => {
+    if (!purgeExamId) {
+      setPurgeStatus({ tone: "error", message: "Please select an exam first." });
+      return;
+    }
+    setPurging(true);
+    setPurgeStatus({ tone: "info", message: "Purging orphaned questions..." });
+    try {
+      const response = await fetch("/api/admin/chapters/purge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ examId: purgeExamId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setPurgeStatus({ tone: "error", message: String(data?.error ?? "Purge failed.") });
+        return;
+      }
+      setPurgeStatus({
+        tone: "success",
+        message: `Deleted ${data?.deleted ?? 0} questions not linked to any chapter.`,
+      });
+      await load();
+    } catch {
+      setPurgeStatus({ tone: "error", message: "Purge failed due to network/server error." });
+    } finally {
+      setPurging(false);
     }
   };
 
@@ -762,6 +801,48 @@ export default function AdminConsoleClient() {
               }
             >
               {pyqImportStatus.message}
+            </div>
+          )}
+        </section>
+
+        <section className="mt-6 rounded-xl border border-white/10 p-4">
+          <h2 className="text-sm font-semibold">PYQ Cleanup</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <select
+              value={purgeExamId}
+              onChange={(e) => setPurgeExamId(e.target.value)}
+              className="rounded-md border border-white/10 bg-black px-3 py-2 text-xs"
+            >
+              <option value="">Select exam</option>
+              {exams.map((exam) => (
+                <option key={exam.id} value={exam.id}>
+                  {exam.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={purgeOrphanedQuestions}
+              disabled={purging}
+              className="rounded-md border border-white/10 px-3 py-2 text-xs disabled:opacity-60"
+            >
+              {purging ? "Purging..." : "Purge Orphaned Questions"}
+            </button>
+            <span className="text-xs text-white/50 sm:col-span-2">
+              Removes PYQ questions whose chapters no longer exist.
+            </span>
+          </div>
+          {purgeStatus && (
+            <div
+              className={
+                "mt-3 rounded-md px-3 py-2 text-xs " +
+                (purgeStatus.tone === "success"
+                  ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                  : purgeStatus.tone === "error"
+                  ? "border border-rose-500/40 bg-rose-500/10 text-rose-200"
+                  : "border border-white/10 bg-white/5 text-white/70")
+              }
+            >
+              {purgeStatus.message}
             </div>
           )}
         </section>
