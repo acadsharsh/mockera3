@@ -1235,9 +1235,12 @@ const [isPanning, setIsPanning] = useState(false);
     }
   };
 
-  const adminJsonPrompt = `Extract questions into strict JSON with this shape (include full details per question).
+  const adminJsonPrompt = `# JEE Question Extraction Prompt
+
+Extract questions into strict JSON with this shape (include full details per question).
 CRITICAL: Return ALL questions from the paper in order. Do not skip any question. If a question is unclear, still include it with best-effort text. If it is unreadable, set text: "UNREADABLE" but keep the question number.
 
+\`\`\`json
 {
   "questions": [
     {
@@ -1256,59 +1259,104 @@ CRITICAL: Return ALL questions from the paper in order. Do not skip any question
       "difficulty": "Easy|Moderate|Tough",
       "marksCorrect": 4,
       "marksIncorrect": -1,
-      "hasDiagram": true|false
+      "hasDiagram": true
     }
   ]
 }
+\`\`\`
 
-Rules (MathJax-friendly):
-- Use LaTeX commands with backslashes: \\pi, \\sin, \\cos, \\tan, \\log.
-- Use fractions as \\frac{a}{b} (do NOT use a/b or fracpi3).
-- Use vectors as \\vec{a}, hats as \\hat{a}.
-- Use exponents as x^2, (a+b)^2, 10^{-3}.
+---
+
+## Rules (MathJax-safe LaTeX — read every rule carefully)
+
+### General Math Formatting
+- All LaTeX MUST be wrapped in $...$ (inline) or $$...$$ (display). Never write bare LaTeX commands like \\frac, \\sin, \\vec outside math delimiters.
+- Use \\frac{a}{b} for fractions. Never write a/b for math fractions or use frac without backslash.
+- Use \\vec{a} for vectors, \\hat{a} for unit vectors.
 - Use \\times for multiplication, \\cdot for dot product.
-- Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
-- If a question has a diagram, set hasDiagram: true.
-- If questionType is MCQ/MSQ, include options. If NUM, omit options entirely.
-- For MCQ/MSQ, do not leave options blank.
-- Solutions must be direct. Do not include phrases like \"let me recheck\", \"I think\", \"maybe\", or chain-of-thought.
-- Wrap chemical names like [[chem:benzyl]] to render structures.
-- Provide exam/year/shift/subject/difficulty/marks for every question.
-- Do NOT include section labels in the question text.
-- One JSON object only, no extra commentary.`;
+- Use \\pi, \\sin, \\cos, \\tan, \\log, \\ln, \\sqrt{x} etc. with backslashes always inside $.
 
-  const userJsonPrompt = `Extract questions into strict JSON with this shape.
-CRITICAL: Return ALL questions from the paper in order. Do not skip any question. If a question is unclear, still include it with best-effort text. If it is unreadable, set text: "UNREADABLE" but keep the question number.
+### Superscripts and Subscripts — CRITICAL
+- Single-character superscripts/subscripts do NOT need braces: x^2, a_n are fine.
+- Multi-character superscripts/subscripts MUST have braces: x^{10}, a_{ij}, e^{-x}, 10^{-3} — always use {} when the argument is 2 or more characters.
+- Ion charges MUST use \\text{} for the sign character — MathJax treats + and - inside ^{...} as binary operators, which causes "Missing superscript or subscript argument" errors. The only safe fix is to wrap the sign in \\text{}:
+  - ✅ Correct: Fe^{3\\text{+}}, Fe^{2\\text{+}}, Cu^{2\\text{+}}, Ca^{2\\text{+}}, O^{2\\text{-}}
+  - ✅ Correct: I^{\\text{-}}, Cl^{\\text{-}}, e^{\\text{-}}, H^{\\text{+}}, Na^{\\text{+}}, NO^{\\text{+}}, NH_4^{\\text{+}}, MnO_4^{\\text{-}}, Cr_2O_7^{2\\text{-}}
+  - ❌ Wrong: Fe^{3+}, I^{-}, NO^{+}, e^{-}, H^{+} — +/− inside ^{} without \\text{} ALWAYS errors in MathJax
+  - ❌ Wrong: I^-, NO^+, e^- — bare sign with no braces at all
+- Never chain subscripts or superscripts: never x_a_b or _{a}_{b}. Use x_{ab} or nest properly.
 
-{
-  "questions": [
-    {
-      "number": 1,
-      "text": "Question text only (remove Section labels like [Section 1])",
-      "questionType": "MCQ|MSQ|NUM",
-      "options": ["A", "B", "C", "D"],
-      "answer": "A",
-      "solution": "Direct final solution only (concise steps/derivation). No self-talk, no rechecks, no reasoning about reasoning. Wrap chemical names like [[chem:benzyl]] to render structures.",
-      "subject": "Physics|Chemistry|Maths",
-      "hasDiagram": true|false
-    }
-  ]
-}
+### Subscripts in Named Constants and Variables
+- Multi-letter subscripts must be braced: k_{B}T, E_{cell}, E_{cathode}, n_{i}, C_{eq}, I_{total}, v_{max}, m_{eff}.
+- Single-letter or Greek subscripts need no braces: \\mu_0, \\epsilon_0, C_v, T_1.
 
-Rules (MathJax-friendly):
-- Use LaTeX commands with backslashes: \\pi, \\sin, \\cos, \\tan, \\log.
-- Use fractions as \\frac{a}{b} (do NOT use a/b or fracpi3).
-- Solutions must be direct. Do not include phrases like \"let me recheck\", \"I think\", \"maybe\", or chain-of-thought.
-- Use vectors as \\vec{a}, hats as \\hat{a}.
-- Use exponents as x^2, (a+b)^2, 10^{-3}.
-- Use \\times for multiplication, \\cdot for dot product.
-- Wrap math in $...$ (inline) or $$...$$ (display) when mixed with plain English.
-- If a question has a diagram, set hasDiagram: true.
-- If questionType is MCQ/MSQ, include options. If NUM, omit options entirely.
-- For MCQ/MSQ, do not leave options blank.
-- Wrap chemical names like [[chem:benzyl]] to render structures.
-- Do NOT include section labels in the question text.
-- One JSON object only, no extra commentary.`;
+### Fractions and Operators
+- Always \\frac{numerator}{denominator} — both arguments must be brace-wrapped even for single chars: \\frac{1}{2} not \\frac12.
+- Square roots: \\sqrt{expr} — always brace the argument: \\sqrt{3} not \\sqrt3.
+- Integrals and sums: \\int_{a}^{b}, \\sum_{n=1}^{\\infty} — all limits in braces.
+
+### Pre-Submit Checklist (verify mentally for every field before finalizing)
+1. ✅ Every \\command is inside $...$ or $$...$$.
+2. ✅ Every ^ or _ with 2+ characters has {} around the full argument.
+3. ✅ Every bare ^+ or ^- replaced with ^{+} or ^{-}.
+4. ✅ No chained subscripts: no _x_y anywhere.
+5. ✅ Every \\frac, \\sqrt, \\sum, \\int has all arguments in {}.
+6. ✅ All ion charges use \\text{} for the sign: ^{2\\text{+}}, ^{\\text{-}}, ^{\\text{+}} — never raw ^{2+} or ^{-} or ^+.
+
+---
+
+## Structure Rules
+- MCQ/MSQ: include options array, answer (single letter "A"/"B"/"C"/"D"), and correctOptions array. Omit correctNumeric.
+- NUM: include correctNumeric string. Omit options, answer, correctOptions.
+- Do NOT include section labels in question text.
+- Solutions must be direct: no phrases like "let me recheck", "I think", "maybe", or chain-of-thought.
+- Wrap chemical compound names with [[chem:name]] for structure rendering (e.g. [[chem:benzaldehyde]]).
+- Provide exam, year, shift, subject, difficulty, marksCorrect, marksIncorrect, hasDiagram for every question.
+- One JSON object only. No commentary, explanation, or text outside the JSON.
+
+---
+
+### Ion Formulas with Slashes — CRITICAL
+
+When two ion formulas are separated by / (e.g. electrode notation like Fe³⁺/Fe²⁺), they MUST be written as two separate $...$ blocks with the slash outside math entirely:
+
+- ✅ Correct: $Fe^{3\\text{+}}$/$Fe^{2\\text{+}}$
+- ✅ Correct: $I_2$/$I^{\\text{-}}$
+- ✅ Correct: $MnO_4^{\\text{-}}$/$Mn^{2\\text{+}}$
+- ❌ Wrong: $Fe^{3\\text{+}}/Fe^{2\\text{+}}$ — slash inside a single $...$ after a charged superscript causes MathJax parser errors
+
+This rule applies only to ion/charge formulas. Regular math fractions written with / inside a single $...$ are fine:
+- ✅ Fine: $PV^{5/3}$, $(1+2x)^{1/x}$, $\\sin(1/x)$, $T^{3/2}$, $x/m$
+
+---
+
+### PDF Text Extraction Corruption — CRITICAL
+
+PDF-to-text parsers often mangle math expressions into garbage strings. Never copy raw extracted text for mathematical expressions. Always visually read the rendered formula from the PDF/image and reconstruct the LaTeX from scratch.
+
+Common corruption patterns to watch for and correct:
+
+| Corrupted (never use) | Correct LaTeX |
+|---|---|
+| fracpi2 | \\frac{\\pi}{2} |
+| fracab | \\frac{a}{b} |
+| frac12 | \\frac{1}{2} |
+| sin2x | \\sin^2 x |
+| cos2x | \\cos^{2} x |
+| 1+2x (from 1+2^x) | 1+2^x |
+| Jfracpi2 (from integral) | \\int_{-\\pi/2}^{\\pi/2} |
+| S-fracpi2 (from integral) | \\int_{-\\pi/2}^{\\pi/2} |
+| sqrtx | \\sqrt{x} |
+| limx-0 | \\lim_{x \\to 0} |
+| sumni1 | \\sum_{n=1}^{\\infty} |
+
+Rule: If you see any string that looks like concatenated LaTeX command names without backslashes or braces (e.g. fracpi2, sqrta, sin2x), it is a corrupted extraction. Stop, look at the original rendered image, and write the correct LaTeX manually.
+
+The integral from the image above is a perfect example:
+- Corrupted extraction: I = Jfracpi2-fracpi2 sin2x / 1+2x dx
+- Correct LaTeX: $I = \\int_{-\\pi/2}^{\\pi/2} \\frac{\\sin^2 x}{1+2^x}\\, dx$`;
+
+  const userJsonPrompt = adminJsonPrompt;
 
   const jsonPrompt = isAdmin ? adminJsonPrompt : userJsonPrompt;
 
