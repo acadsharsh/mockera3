@@ -795,6 +795,11 @@ export default function CBT() {
   useEffect(() => {
     const load = async () => {
       const response = await fetch("/api/tests");
+      if (response.status === 401) {
+        const next = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/cbt";
+        router.push(`/login?next=${encodeURIComponent(next)}`);
+        return;
+      }
       const data = await safeJson<Test[]>(response, []);
       const selected = testIdParam ? data.find((item: Test) => item.id === testIdParam) : data[0];
       if (selected) {
@@ -806,7 +811,7 @@ export default function CBT() {
       }
     };
     load();
-  }, [testIdParam]);
+  }, [router, testIdParam]);
 
   useEffect(() => {
     const loadSession = async () => {
