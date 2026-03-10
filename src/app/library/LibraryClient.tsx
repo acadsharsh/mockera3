@@ -130,6 +130,11 @@ export default function LibraryClient({
   const [editDescription, setEditDescription] = useState("");
   const [editTags, setEditTags] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [editJsonText, setEditJsonText] = useState("");
+  const [editJsonStatus, setEditJsonStatus] = useState<{ message: string; tone: "success" | "error" } | null>(
+    null
+  );
+  const [updatingJson, setUpdatingJson] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -376,6 +381,66 @@ export default function LibraryClient({
     setEditTitle(test.title ?? "");
     setEditDescription(test.description ?? "");
     setEditTags((test.tags ?? []).join(", "));
+    setEditJsonText("");
+    setEditJsonStatus(null);
+  };
+
+  const updateJsonForTest = async () => {
+    if (!editTest) return;
+    const raw = editJsonText.trim();
+    if (!raw) {
+      setEditJsonStatus({ message: "Paste JSON first.", tone: "error" });
+      return;
+    }
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      setEditJsonStatus({ message: "Invalid JSON. Please check the format.", tone: "error" });
+      return;
+    }
+    const questions = Array.isArray(parsed?.questions) ? parsed.questions : null;
+    if (!questions?.length) {
+      setEditJsonStatus({ message: "No questions found in JSON.", tone: "error" });
+      return;
+    }
+    setUpdatingJson(true);
+    setEditJsonStatus(null);
+    try {
+      const mapped = questions.map((q: any) => ({
+        subject: q.subject ?? "Physics",
+        questionType: q.questionType ?? undefined,
+        answer: q.answer ?? "",
+        correctOptions: Array.isArray(q.correctOptions) ? q.correctOptions : [],
+        correctNumeric: q.correctNumeric ?? "",
+        solution: q.solution ?? "",
+        options: Array.isArray(q.options) ? q.options : [],
+        questionText: q.text ?? q.questionText ?? q.prompt ?? "",
+        chapter: q.chapter ?? "",
+        topic: q.topic ?? "",
+        difficulty: q.difficulty ?? "Moderate",
+        imageUrl: q.imageUrl ?? q.imageDataUrl ?? "",
+      }));
+
+      const response = await fetch("/api/tests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          testId: editTest.id,
+          questions: mapped,
+        }),
+      });
+      if (!response.ok) {
+        setEditJsonStatus({ message: "Update failed. Please try again.", tone: "error" });
+        return;
+      }
+      const updated = await response.json();
+      setTests((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      setEditJsonStatus({ message: "Questions updated from JSON.", tone: "success" });
+      setEditJsonText("");
+    } finally {
+      setUpdatingJson(false);
+    }
   };
 
   const saveEdit = async () => {
@@ -457,6 +522,37 @@ export default function LibraryClient({
                 onChange={(event) => setEditTags(event.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
               />
+              <div className="pt-2">
+                <label className="block text-xs text-white/60">Update questions from JSON</label>
+                <p className="mt-1 text-[11px] text-white/40">This replaces all existing questions in the test.</p>
+                <textarea
+                  value={editJsonText}
+                  onChange={(event) => setEditJsonText(event.target.value)}
+                  placeholder="Paste JSON with questions array..."
+                  className="mt-2 h-32 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+                {editJsonStatus && (
+                  <div
+                    className={`mt-2 rounded-lg border px-3 py-2 text-xs ${
+                      editJsonStatus.tone === "success"
+                        ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                        : "border-rose-400/30 bg-rose-400/10 text-rose-200"
+                    }`}
+                  >
+                    {editJsonStatus.message}
+                  </div>
+                )}
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/80 disabled:opacity-50"
+                    onClick={updateJsonForTest}
+                    disabled={updatingJson}
+                  >
+                    {updatingJson ? "Updating..." : "Update Questions"}
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="mt-5 flex items-center justify-end gap-2">
               <button

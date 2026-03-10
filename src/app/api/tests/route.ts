@@ -349,6 +349,20 @@ export async function PATCH(request: Request) {
     title?: string;
     description?: string;
     tags?: string[];
+    questions?: Array<{
+      subject?: "Physics" | "Chemistry" | "Maths";
+      questionType?: "MCQ" | "MSQ" | "NUM";
+      answer?: string;
+      correctOptions?: string[];
+      correctNumeric?: string;
+      solution?: string;
+      options?: string[];
+      questionText?: string;
+      chapter?: string;
+      topic?: string;
+      difficulty?: "Easy" | "Moderate" | "Tough";
+      imageUrl?: string;
+    }>;
   };
 
 
@@ -377,6 +391,72 @@ export async function PATCH(request: Request) {
       include: { questions: true },
     });
     return NextResponse.json(mapTest(updated));
+  }
+
+  if (payload?.testId && Array.isArray(payload.questions)) {
+    const ownedTest = await prisma.test.findFirst({
+      where: { id: payload.testId, ownerId: session.user.id },
+      include: { questions: true },
+    });
+    if (!ownedTest) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const normalizeType = (value?: string, numeric?: string, options?: string[], corrects?: string[]) => {
+      const raw = (value ?? "").toUpperCase();
+      if (raw === "NUM" || raw === "MCQ" || raw === "MSQ") return raw as "MCQ" | "MSQ" | "NUM";
+      if (numeric && String(numeric).trim() !== "") return "NUM";
+      const correctList = Array.isArray(corrects) ? corrects.filter(Boolean) : [];
+      if (correctList.length > 1) return "MSQ";
+      return "MCQ";
+    };
+
+    const normalizeLetter = (value?: string) => (value ?? "").trim().toUpperCase();
+
+    await prisma.question.deleteMany({ where: { testId: ownedTest.id } });
+
+    const created = await prisma.test.update({
+      where: { id: ownedTest.id },
+      data: {
+        questions: {
+          create: payload.questions.map((q) => {
+            const questionType = normalizeType(q.questionType, q.correctNumeric, q.options, q.correctOptions);
+            const correctOptions = Array.isArray(q.correctOptions) ? q.correctOptions.map(normalizeLetter) : [];
+            const answer = normalizeLetter(q.answer);
+            const correctOption =
+              questionType === "MSQ"
+                ? correctOptions.length
+                  ? correctOptions.join(",")
+                  : answer
+                : questionType === "NUM"
+                ? null
+                : answer || (correctOptions[0] ?? "");
+            return {
+              subject: q.subject ?? "Physics",
+              difficulty: q.difficulty ?? "Moderate",
+              questionType,
+              chapter: q.chapter ?? null,
+              topic: q.topic ?? null,
+              correctOption: correctOption || null,
+              correctNumeric: questionType === "NUM" ? (q.correctNumeric ?? "").trim() : null,
+              marksCorrect: ownedTest.markingCorrect,
+              marksIncorrect: ownedTest.markingIncorrect,
+              imageUrl: q.imageUrl ? q.imageUrl : null,
+              cropX: 0,
+              cropY: 0,
+              cropW: 0,
+              cropH: 0,
+              prompt: q.questionText ?? "",
+              solution: q.solution ?? null,
+              options: Array.isArray(q.options) ? q.options : [],
+            };
+          }),
+        },
+      },
+      include: { questions: true },
+    });
+
+    return NextResponse.json(mapTest(created));
   }
 
   if (!payload?.testId || !payload.entries?.length) {
