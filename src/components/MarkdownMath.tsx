@@ -35,7 +35,11 @@ const ensureMathJax = (() => {
 })();
 
 const normalizeText = (value: string) =>
-  value.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r");
+  value
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\\r/g, "\r")
+    .replace(/\\\$/g, "$");
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -44,7 +48,9 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   useEffect(() => {
     const host = ref.current;
     if (!host) return;
-    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
+    ensureMathJax().then(() => {
+      requestAnimationFrame(() => (window as any).MathJax?.typesetPromise?.([host]));
+    });
   }, [normalized]);
 
   return (
