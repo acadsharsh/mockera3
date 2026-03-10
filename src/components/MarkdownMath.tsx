@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { visit } from "unist-util-visit";
 
 type MarkdownMathProps = {
   text: string;
@@ -45,6 +46,21 @@ const normalizeText = (value: string) =>
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const normalized = useMemo(() => normalizeText(text ?? ""), [text]);
+  const remarkMathToText = useMemo(
+    () =>
+      () =>
+        (tree: any) => {
+          visit(tree, "inlineMath", (node: any, index: number | null, parent: any) => {
+            if (!parent || typeof index !== "number") return;
+            parent.children[index] = { type: "text", value: `\\(${node.value}\\)` };
+          });
+          visit(tree, "math", (node: any, index: number | null, parent: any) => {
+            if (!parent || typeof index !== "number") return;
+            parent.children[index] = { type: "text", value: `\\[${node.value}\\]` };
+          });
+        },
+    []
+  );
 
   useEffect(() => {
     const host = ref.current;
@@ -72,13 +88,11 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
     ul: ({ children }: { children: React.ReactNode }) => <ul className="list-disc space-y-1 pl-6">{children}</ul>,
     ol: ({ children }: { children: React.ReactNode }) => <ol className="list-decimal space-y-1 pl-6">{children}</ol>,
     li: ({ children }: { children: React.ReactNode }) => <li className="text-[15px] leading-6">{children}</li>,
-    inlineMath: ({ value }: { value: string }) => <span>{`\\(${value}\\)`}</span>,
-    math: ({ value }: { value: string }) => <div>{`\\[${value}\\]`}</div>,
   } as any;
 
   return (
     <div ref={ref} className={className}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath, remarkMathToText]} components={components}>
         {normalized}
       </ReactMarkdown>
     </div>
