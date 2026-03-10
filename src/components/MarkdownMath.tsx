@@ -36,12 +36,17 @@ const ensureMathJax = (() => {
   };
 })();
 
-const normalizeText = (value: string) =>
-  value
+const normalizeText = (value: string) => {
+  const unescaped = value
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t")
     .replace(/\\r/g, "\r")
     .replace(/\\\$/g, "$");
+  // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
+  return unescaped.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+    return `${lead}$${bracket}$`;
+  });
+};
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   const ref = useRef<HTMLDivElement | null>(null);
