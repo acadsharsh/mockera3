@@ -55,11 +55,11 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
     () =>
       () =>
         (tree: any) => {
-          visit(tree, "inlineMath", (node: any, index: number | null, parent: any) => {
+          visit(tree, "inlineMath", (node: any, index: any, parent: any) => {
             if (!parent || typeof index !== "number") return;
             parent.children[index] = { type: "text", value: `\\(${node.value}\\)` };
           });
-          visit(tree, "math", (node: any, index: number | null, parent: any) => {
+          visit(tree, "math", (node: any, index: any, parent: any) => {
             if (!parent || typeof index !== "number") return;
             parent.children[index] = { type: "text", value: `\\[${node.value}\\]` };
           });
