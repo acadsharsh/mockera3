@@ -27,17 +27,12 @@ export default function ChemStructure({ name, className }: ChemStructureProps) {
       return;
     }
     setState({ smiles: null, error: null });
-    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(
-      safeName
-    )}/property/IsomericSMILES/JSON`;
+    const url = `/api/chem/structure?name=${encodeURIComponent(safeName)}`;
     fetch(url)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active) return;
-        const smiles =
-          data?.PropertyTable?.Properties?.[0]?.IsomericSMILES ??
-          data?.PropertyTable?.Properties?.[0]?.CanonicalSMILES ??
-          null;
+        const smiles = data?.smiles ?? null;
         if (!smiles) {
           setState({ smiles: null, error: "No structure found" });
           return;
@@ -60,13 +55,19 @@ export default function ChemStructure({ name, className }: ChemStructureProps) {
       padding: 12,
       compactDrawing: true,
     });
-    SmilesDrawer.parse(state.smiles, (tree: any) => {
-      if (!svgRef.current) return;
-      while (svgRef.current.firstChild) {
-        svgRef.current.removeChild(svgRef.current.firstChild);
+    SmilesDrawer.parse(
+      state.smiles,
+      (tree: any) => {
+        if (!svgRef.current) return;
+        while (svgRef.current.firstChild) {
+          svgRef.current.removeChild(svgRef.current.firstChild);
+        }
+        drawer.draw(tree, svgRef.current, "light", false);
+      },
+      () => {
+        setState({ smiles: null, error: "Structure render failed" });
       }
-      drawer.draw(tree, svgRef.current, "light", false);
-    });
+    );
   }, [state.smiles]);
 
   return (
@@ -79,9 +80,10 @@ export default function ChemStructure({ name, className }: ChemStructureProps) {
         ) : state.smiles ? (
           <svg ref={svgRef} className="mt-2 h-40 w-full" />
         ) : (
-          <div className="mt-2 text-xs text-white/50">Loading…</div>
+          <div className="mt-2 text-xs text-white/50">Loading...</div>
         )}
       </div>
     </div>
   );
 }
+
