@@ -441,7 +441,7 @@ export async function PATCH(request: Request) {
               correctNumeric: questionType === "NUM" ? (q.correctNumeric ?? "").trim() : null,
               marksCorrect: ownedTest.markingCorrect,
               marksIncorrect: ownedTest.markingIncorrect,
-              imageUrl: q.imageUrl ? q.imageUrl : null,
+              imageUrl: q.imageUrl ? q.imageUrl : "",
               cropX: 0,
               cropY: 0,
               cropW: 0,

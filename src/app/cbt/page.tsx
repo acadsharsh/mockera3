@@ -1165,11 +1165,8 @@ export default function CBT() {
     return (
       <div className="min-h-screen bg-[#f2f2f2] p-6 text-[#1f2937]">
         <div className="mx-auto w-full max-w-3xl rounded-lg border border-slate-200 bg-white p-8 text-center">
-          <h1 className="text-xl font-semibold">No test found</h1>
-          <p className="mt-2 text-sm text-slate-500">Create one in the Creator Studio.</p>
-          <a className="mt-4 inline-flex rounded bg-orange-500 px-4 py-2 text-sm font-semibold text-white" href="/studio">
-            Go to Studio
-          </a>
+          <h1 className="text-xl font-semibold">Loading... server is slow (free lol :()</h1>
+          <p className="mt-2 text-sm text-slate-500">Please wait a moment and try again if it keeps loading.</p>
         </div>
       </div>
     );
