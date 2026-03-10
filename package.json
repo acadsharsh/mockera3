@@ -27,7 +27,9 @@
     "pusher-js": "^8.4.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "recharts": "^3.7.0",
+    "remark-gfm": "^4.0.1",
     "resend": "^6.9.1",
     "smiles-drawer": "^2.1.7",
     "sonner": "^1.7.3"

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
 import ChemStructure from "@/components/ChemStructure";
 import { safeJson } from "@/lib/safe-json";
+import MarkdownMath from "@/components/MarkdownMath";
 
 type Crop = {
   id: string;
@@ -136,8 +137,32 @@ const cleanupLatex = (value: string) =>
     .replace(/\s{2,}/g, " ")
     .replace(/\u2212/g, "-")
     .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
-        .replace(/[\u2502\u2503\uFF5C\u00A6]/g, "|")
+    .replace(/[\u2502\u2503\uFF5C\u00A6]/g, "|")
     // Fix common OCR for fraction like \fracpi6 or fracpi6
+    .replace(/\\?frac\s*\\?pi\s*([0-9]+)/gi, "\\frac{\\pi}{$1}")
+    .replace(/\\?frac\s*\\?pi\s*\/\s*([0-9]+)/gi, "\\frac{\\pi}{$1}")
+    .replace(/\\?fracpi([0-9]+)/gi, "\\frac{\\pi}{$1}")
+    .replace(/double\s+subscripts:\s*use\s+braces\s+to\s+clarify\.?/gi, "")
+    .trim();
+
+const cleanupLatexForMarkdown = (value: string) =>
+  value
+    .normalize("NFKC")
+    .replace(/[\u{1D400}-\u{1D7FF}]/gu, (ch) => ch.normalize("NFKC"))
+    .replace(/\u0008/g, "\\b")
+    .replace(/\u0009/g, "\\t")
+    .replace(/\u000c/g, "\\f")
+    .replace(/[\u0000-\u0007\u000b\u000e-\u001f]/g, "")
+    .replace(/\p{Mn}/gu, "")
+    .replace(/\p{Cf}/gu, "")
+    .replace(/[\u2061-\u2064]/g, "")
+    .replace(/\\\\/g, "\\")
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u2028\u2029]/g, "\n")
+    .replace(/\u2212/g, "-")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-")
+    .replace(/[\u2502\u2503\uFF5C\u00A6]/g, "|")
     .replace(/\\?frac\s*\\?pi\s*([0-9]+)/gi, "\\frac{\\pi}{$1}")
     .replace(/\\?frac\s*\\?pi\s*\/\s*([0-9]+)/gi, "\\frac{\\pi}{$1}")
     .replace(/\\?fracpi([0-9]+)/gi, "\\frac{\\pi}{$1}")
@@ -432,175 +457,9 @@ const MathText = ({ text }: { text: string }) => {
   return <span ref={ref} className="whitespace-normal break-words" />;
 };
 
-const parseMatchList = (input: string) => {
-  const cleaned = cleanupLatex(input ?? "");
-  const lines = cleaned
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const parseFromLines = () => {
-    const listIIndex = lines.findIndex((line) => /list-?\s*i\b/i.test(line));
-    const listIIIndex = lines.findIndex((line) => /list-?\s*ii\b/i.test(line));
-    if (listIIndex === -1 || listIIIndex === -1 || listIIIndex <= listIIndex) {
-      return null;
-    }
-    const before = lines.slice(0, listIIndex).join(" ");
-    const listI = lines.slice(listIIndex + 1, listIIIndex);
-    const afterLines = lines.slice(listIIIndex + 1);
-    const cutoff = afterLines.findIndex((line) =>
-      /^(choose|options|select|in the light|answer)/i.test(line)
-    );
-    const listII = cutoff === -1 ? afterLines : afterLines.slice(0, cutoff);
-    const after = cutoff === -1 ? "" : afterLines.slice(cutoff).join(" ");
-    return { before, listI, listII, after };
-  };
-
-  const parseInline = () => {
-    if (!/list-?\s*i\b/i.test(cleaned) || !/list-?\s*ii\b/i.test(cleaned)) {
-      return null;
-    }
-    const normalized = cleaned.replace(/\s*\|\s*\|\s*/g, "||");
-    const tokens = normalized
-      .split(/\s*\|{2,}\s*/g)
-      .map((chunk) => chunk.trim())
-      .filter(Boolean);
-    const normalizeAlphaLabel = (value: string) => {
-      const match = value.toUpperCase().replace(/[^A-Z]/g, "").match(/[A-H]/);
-      return match ? `${match[0]}.` : null;
-    };
-    const normalizeRomanLabel = (value: string) => {
-      const roman = value.toUpperCase().replace(/[^IVX]/g, "");
-      if (!/^(?:I|II|III|IV|V|VI|VII|VIII|IX|X)$/.test(roman)) {
-        return null;
-      }
-      return `${roman}.`;
-    };
-    const parseRow = (row: string) => {
-      const cells = row
-        .split(/\s*\|\s*/)
-        .map((cell) => cell.trim())
-        .filter(Boolean);
-      if (!cells.length) return null;
-      const leftIndex = cells.findIndex((cell) => normalizeAlphaLabel(cell));
-      if (leftIndex === -1) return null;
-      const rightIndex = cells.findIndex(
-        (cell, index) => index > leftIndex && normalizeRomanLabel(cell)
-      );
-      if (rightIndex === -1) return null;
-      const leftLabel = normalizeAlphaLabel(cells[leftIndex]);
-      const rightLabel = normalizeRomanLabel(cells[rightIndex]);
-      const leftText = cells.slice(leftIndex + 1, rightIndex).join(" | ").trim();
-      const rightText = cells.slice(rightIndex + 1).join(" | ").trim();
-      if (!leftLabel || !rightLabel || !leftText || !rightText) return null;
-      return {
-        listIItem: `${leftLabel} ${leftText}`,
-        listIIItem: `${rightLabel} ${rightText}`,
-      };
-    };
-    const combinedHeaderIndex = tokens.findIndex((chunk) =>
-      /list-?\s*i\b[\s\S]*list-?\s*ii\b/i.test(chunk)
-    );
-    if (combinedHeaderIndex !== -1) {
-      const before = tokens
-        .slice(0, combinedHeaderIndex + 1)
-        .join(" ")
-        .replace(/list-?\s*i\b[\s\S]*?list-?\s*ii\b/i, "")
-        .trim();
-      const rows = tokens.slice(combinedHeaderIndex + 1);
-      const listI: string[] = [];
-      const listII: string[] = [];
-      const afterParts: string[] = [];
-      let startedRows = false;
-
-      rows.forEach((row) => {
-        if (/^(choose|options|select|in the light|answer)/i.test(row)) {
-          afterParts.push(row);
-          return;
-        }
-        if (/^[-|:\s]+$/.test(row)) {
-          return;
-        }
-        const parsedRow = parseRow(row);
-        if (parsedRow) {
-          startedRows = true;
-          listI.push(parsedRow.listIItem);
-          listII.push(parsedRow.listIIItem);
-          return;
-        }
-        if (startedRows) {
-          afterParts.push(row);
-        }
-      });
-
-      if (listI.length && listII.length) {
-        return { before, listI, listII, after: afterParts.join(" ") };
-      }
-    }
-
-    const listIIndex = tokens.findIndex((chunk) => /list-?\s*i\b/i.test(chunk));
-    const listIIIndex = tokens.findIndex(
-      (chunk, index) => index > listIIndex && /list-?\s*ii\b/i.test(chunk)
-    );
-    if (listIIndex === -1 || listIIIndex === -1) {
-      return null;
-    }
-
-    const before = tokens.slice(0, listIIndex).join(" ");
-    const listIText = tokens.slice(listIIndex + 1, listIIIndex).join(" | ");
-    const afterText = tokens.slice(listIIIndex + 1).join(" | ");
-    const listI = listIText.split("|").map((item) => item.trim()).filter(Boolean);
-    const listII = afterText.split("|").map((item) => item.trim()).filter(Boolean);
-    const after =
-      listII.find((item) => /^(choose|options|select|in the light|answer)/i.test(item)) ?? "";
-
-    return { before, listI, listII: listII.filter((item) => item !== after), after };
-  };
-
-  return parseFromLines() ?? parseInline();
-};
-
 const QuestionText = ({ text }: { text: string }) => {
-  const parsed = parseMatchList(text);
-  if (!parsed) {
-    return <MathText text={text} />;
-  }
-  return (
-    <div className="space-y-3">
-      {parsed.before && (
-        <p className="text-[16px] leading-7">
-          <MathText text={parsed.before} />
-        </p>
-      )}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="grid grid-cols-2 bg-slate-100 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
-          <div className="px-3 py-2">List-I</div>
-          <div className="px-3 py-2">List-II</div>
-        </div>
-        <div className="grid grid-cols-2 divide-x divide-slate-200">
-          <div className="space-y-2 p-3">
-            {parsed.listI.map((item, idx) => (
-              <div key={`list-i-${idx}`} className="text-[15px] leading-6 text-slate-700">
-                <MathText text={item} />
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2 p-3">
-            {parsed.listII.map((item, idx) => (
-              <div key={`list-ii-${idx}`} className="text-[15px] leading-6 text-slate-700">
-                <MathText text={item} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {parsed.after && (
-        <p className="text-[16px] leading-7">
-          <MathText text={parsed.after} />
-        </p>
-      )}
-    </div>
-  );
+  const cleaned = cleanupLatexForMarkdown(text ?? "");
+  return <MarkdownMath text={cleaned} className="space-y-3" />;
 };
 
 const SolutionBlock = ({ text }: { text: string }) => {
