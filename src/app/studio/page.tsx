@@ -1239,7 +1239,6 @@ const [isPanning, setIsPanning] = useState(false);
 
 Extract questions into strict JSON with this shape (include full details per question).
 CRITICAL: Return ALL questions from the paper in order. Do not skip any question. If a question is unclear, still include it with best-effort text. If it is unreadable, set text: "UNREADABLE" but keep the question number.
-
 \`\`\`json
 {
   "questions": [
@@ -1276,6 +1275,11 @@ CRITICAL: Return ALL questions from the paper in order. Do not skip any question
 - Use \\times for multiplication, \\cdot for dot product.
 - Use \\pi, \\sin, \\cos, \\tan, \\log, \\ln, \\sqrt{x} etc. with backslashes always inside $.
 
+### Ratios of Subscripted Variables — CRITICAL
+Never write two subscripted variables separated by / inside a single $...$. Always use \\frac{}{} instead.
+- ✅ Correct: $\\gamma = \\frac{C_p}{C_v}$, $\\frac{V_1}{V_2}$, $\\frac{T_1}{T_2}$, $\\frac{\\lambda_e}{\\lambda_p}$
+- ❌ Wrong: $C_p/C_v$, $V_1/V_2$, $T_1/T_2$ — MathJax sees chained subscripts and throws a double-subscript parse error
+
 ### Superscripts and Subscripts — CRITICAL
 - Single-character superscripts/subscripts do NOT need braces: x^2, a_n are fine.
 - Multi-character superscripts/subscripts MUST have braces: x^{10}, a_{ij}, e^{-x}, 10^{-3} — always use {} when the argument is 2 or more characters.
@@ -1302,10 +1306,29 @@ CRITICAL: Return ALL questions from the paper in order. Do not skip any question
 4. ✅ No chained subscripts: no _x_y anywhere.
 5. ✅ Every \\frac, \\sqrt, \\sum, \\int has all arguments in {}.
 6. ✅ All ion charges use \\text{} for the sign: ^{2\\text{+}}, ^{\\text{-}}, ^{\\text{+}} — never raw ^{2+} or ^{-} or ^+.
+7. ✅ No subscripted variable / subscripted variable inline — always use \\frac{}{} for ratios of subscripted quantities.
 
 ---
 
 ## Structure Rules
+
+### Statement-Type Questions
+For "Given below are two statements" questions, always format the text field as:
+
+"Given below are two statements:\\n\\n**Statement I:** <text>\\n\\n**Statement II:** <text>\\n\\nIn the light of the above statements, choose the correct answer from the options given below:"
+
+- Never write Statement I and Statement II inline in a single paragraph.
+- Always put each statement on its own line with a blank line separating them.
+
+### Match List Questions
+Always render List-I and List-II as a markdown table inside the text field:
+
+"Match List-I with List-II.\\n\\n| List-I | List-II |\\n|---|---|\\n| A. <text> | I. <text> |\\n| B. <text> | II. <text> |\\n| C. <text> | III. <text> |\\n| D. <text> | IV. <text> |\\n\\nChoose the correct answer:"
+
+- Never write match lists as plain paragraph text.
+- Math inside table cells must still follow all LaTeX rules above.
+
+### General Structure Rules
 - MCQ/MSQ: include options array, answer (single letter "A"/"B"/"C"/"D"), and correctOptions array. Omit correctNumeric.
 - NUM: include correctNumeric string. Omit options, answer, correctOptions.
 - Do NOT include section labels in question text.
@@ -1339,6 +1362,10 @@ Common corruption patterns to watch for and correct:
 | Corrupted (never use) | Correct LaTeX |
 |---|---|
 | fracpi2 | \\frac{\\pi}{2} |
+| fracpi3 | \\frac{\\pi}{3} |
+| fracpi4 | \\frac{\\pi}{4} |
+| fracpi6 | \\frac{\\pi}{6} |
+| frac2pi3 | \\frac{2\\pi}{3} |
 | fracab | \\frac{a}{b} |
 | frac12 | \\frac{1}{2} |
 | sin2x | \\sin^2 x |
