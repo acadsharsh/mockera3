@@ -8,16 +8,31 @@ const allowedPrefixes = [
   "/maintenance",
   "/admin",
   "/admin-login",
-  "/api/admin",
-  "/api/auth",
-  "/api/upload",
-  "/api/maintenance",
+  "/login",
+  "/dashboard",
+  "/library",
+  "/studio",
+  "/cbt",
+  "/test-analysis",
+  "/api",
   "/_next",
 ];
 const allowedPaths = ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/site.webmanifest"];
 const adminOnlyPrefixes = ["/studio", "/api/pyq", "/api/tests", "/api/upload"];
 
 export async function middleware(req: NextRequest) {
+  const { pathname, searchParams } = req.nextUrl;
+
+  if (
+    !allowedPaths.includes(pathname) &&
+    !allowedPrefixes.some((prefix) => pathname.startsWith(prefix))
+  ) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   let maintenanceEnabled = MAINTENANCE_MODE;
   if (!maintenanceEnabled) {
     try {
@@ -39,8 +54,6 @@ export async function middleware(req: NextRequest) {
   if (!maintenanceEnabled) {
     return NextResponse.next();
   }
-
-  const { pathname, searchParams } = req.nextUrl;
 
   if (allowedPaths.includes(pathname) || allowedPrefixes.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();

@@ -15,7 +15,6 @@ const SUBJECT_LINKS = [
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Library", href: "/library" },
-  { label: "PYQ Bank", href: "/pyq" },
   { label: "Creator Studio", href: "/studio" },
   { label: "Test Analysis", href: "/test-analysis" },
 ];
@@ -33,8 +32,6 @@ export default function GlassRail() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [focusIndex, setFocusIndex] = useState(0);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tests, setTests] = useState<TestItem[]>([]);
 
   useEffect(() => {
@@ -89,7 +86,7 @@ export default function GlassRail() {
           </div>
 
           <nav className="hidden items-center gap-2 md:flex">
-            {NAV_ITEMS.slice(0, 4).map((item) => {
+            {NAV_ITEMS.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
@@ -101,51 +98,6 @@ export default function GlassRail() {
                 </Link>
               );
             })}
-            <div
-              className="relative"
-              onMouseEnter={() => {
-                if (closeTimerRef.current) {
-                  clearTimeout(closeTimerRef.current);
-                }
-                setMoreOpen(true);
-              }}
-              onMouseLeave={() => {
-                closeTimerRef.current = setTimeout(() => setMoreOpen(false), 120);
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setMoreOpen((prev) => !prev)}
-                className="rounded-md px-3 py-2 text-xs text-white/70 hover:text-white"
-              >
-                More
-              </button>
-              {moreOpen && (
-                <div
-                  className="absolute right-0 top-10 z-50 w-52 rounded-xl border border-white/10 bg-black p-2 text-xs text-white"
-                  onMouseEnter={() => {
-                    if (closeTimerRef.current) {
-                      clearTimeout(closeTimerRef.current);
-                    }
-                    setMoreOpen(true);
-                  }}
-                  onMouseLeave={() => setMoreOpen(false)}
-                >
-                  {NAV_ITEMS.slice(4).map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMoreOpen(false)}
-                      className={`block rounded-lg px-3 py-2 ${
-                        pathname === item.href ? "bg-white/10 text-white" : "text-white/70"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
           </nav>
 
           <div className="flex items-center gap-2">
