@@ -30,6 +30,7 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.7.0",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "resend": "^6.9.1",
     "smiles-drawer": "^2.1.7",
     "sonner": "^1.7.3"

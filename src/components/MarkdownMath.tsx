@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 
 type MarkdownMathProps = {
   text: string;
@@ -56,7 +57,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   return (
     <div ref={ref} className={className}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
         components={{
           p: ({ children }) => <p className="text-[16px] leading-7">{children}</p>,
           strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
@@ -75,6 +76,8 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
           ul: ({ children }) => <ul className="list-disc space-y-1 pl-6">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal space-y-1 pl-6">{children}</ol>,
           li: ({ children }) => <li className="text-[15px] leading-6">{children}</li>,
+          inlineMath: ({ value }) => <span>{`\\(${value}\\)`}</span>,
+          math: ({ value }) => <div>{`\\[${value}\\]`}</div>,
         }}
       >
         {normalized}
