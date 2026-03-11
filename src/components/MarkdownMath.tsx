@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import { visit } from "unist-util-visit";
 
 type MarkdownMathProps = {
   text: string;
@@ -42,8 +40,11 @@ const normalizeText = (value: string) => {
     .replace(/\\t/g, "\t")
     .replace(/\\r/g, "\r")
     .replace(/\\\$/g, "$");
+  const normalizedLatex = unescaped
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content) => `$${content}$`)
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content) => `$$${content}$$`);
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return unescaped.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  return normalizedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
 };
@@ -51,21 +52,6 @@ const normalizeText = (value: string) => {
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const normalized = useMemo(() => normalizeText(text ?? ""), [text]);
-  const remarkMathToText = useMemo(
-    () =>
-      () =>
-        (tree: any) => {
-          visit(tree, "inlineMath", (node: any, index: any, parent: any) => {
-            if (!parent || typeof index !== "number") return;
-            parent.children[index] = { type: "text", value: `\\(${node.value}\\)` };
-          });
-          visit(tree, "math", (node: any, index: any, parent: any) => {
-            if (!parent || typeof index !== "number") return;
-            parent.children[index] = { type: "text", value: `\\[${node.value}\\]` };
-          });
-        },
-    []
-  );
 
   useEffect(() => {
     const host = ref.current;
@@ -97,7 +83,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
 
   return (
     <div ref={ref} className={className}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath, remarkMathToText]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {normalized}
       </ReactMarkdown>
     </div>
