@@ -41,8 +41,11 @@ const normalizeText = (value: string) => {
     .replace(/\\r/g, "\r")
     .replace(/\\\$/g, "$");
   const normalizedLatex = unescaped
-    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content) => `$${content}$`)
-    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content) => `$$${content}$$`);
+    // Normalize dollar-delimited math to MathJax's \\( \\) / \\[ \\] so markdown doesn't interfere.
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_match, content) => `\\[${content}\\]`)
+    .replace(/(^|[^\\])\$(?!\$)([^$\n]+?)\$(?!\$)/g, (_match, lead, content) => `${lead}\\(${content}\\)`)
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content) => `\\(${content}\\)`)
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content) => `\\[${content}\\]`);
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
   return normalizedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
