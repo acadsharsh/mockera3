@@ -228,10 +228,11 @@ type MathJaxChunkProps = {
 };
 
 const MathJaxChunk = ({ content, display = false }: MathJaxChunkProps) => {
-  const containerRef = useRef<HTMLDivElement | HTMLSpanElement | null>(null);
+  const divRef = useRef<HTMLDivElement | null>(null);
+  const spanRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
+    const container = display ? divRef.current : spanRef.current;
     if (!container || typeof window === "undefined") return;
     const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
     if (!mathJax?.typesetPromise) return;
@@ -240,9 +241,9 @@ const MathJaxChunk = ({ content, display = false }: MathJaxChunkProps) => {
   }, [content]);
 
   if (display) {
-    return <div ref={containerRef}>{content}</div>;
+    return <div ref={divRef}>{content}</div>;
   }
-  return <span ref={containerRef}>{content}</span>;
+  return <span ref={spanRef}>{content}</span>;
 };
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
