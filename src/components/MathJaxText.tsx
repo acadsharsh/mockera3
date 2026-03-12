@@ -23,10 +23,11 @@ export default function MathJaxText({ text, inline = false, className }: MathJax
       hasDelimiters(text) ? text : inline ? `\\(${text}\\)` : `\\[${text}\\]`,
     [inline, text]
   );
-  const containerRef = useRef<HTMLElement | null>(null);
+  const divRef = useRef<HTMLDivElement | null>(null);
+  const spanRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
+    const container = inline ? spanRef.current : divRef.current;
     if (!container || typeof window === "undefined") return;
     const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
     if (!mathJax?.typesetPromise) return;
@@ -34,10 +35,16 @@ export default function MathJaxText({ text, inline = false, className }: MathJax
     mathJax.typesetPromise([container]).catch(() => undefined);
   }, [content]);
 
-  const Wrapper = inline ? "span" : "div";
+  if (inline) {
+    return (
+      <span ref={spanRef} className={className}>
+        {content}
+      </span>
+    );
+  }
   return (
-    <Wrapper ref={containerRef} className={className}>
+    <div ref={divRef} className={className}>
       {content}
-    </Wrapper>
+    </div>
   );
 }
