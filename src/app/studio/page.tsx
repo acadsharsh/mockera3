@@ -1266,7 +1266,7 @@ CRITICAL: Return ALL questions from the paper in order. Do not skip any question
 
 ---
 
-## Rules (MathJax-safe LaTeX — read every rule carefully)
+## Rules (KaTeX-safe LaTeX — read every rule carefully)
 
 ### General Math Formatting
 - All LaTeX MUST be wrapped in $...$ (inline) or $$...$$ (display). Never write bare LaTeX commands like \\frac, \\sin, \\vec outside math delimiters.
@@ -1278,15 +1278,15 @@ CRITICAL: Return ALL questions from the paper in order. Do not skip any question
 ### Ratios of Subscripted Variables — CRITICAL
 Never write two subscripted variables separated by / inside a single $...$. Always use \\frac{}{} instead.
 - ✅ Correct: $\\gamma = \\frac{C_p}{C_v}$, $\\frac{V_1}{V_2}$, $\\frac{T_1}{T_2}$, $\\frac{\\lambda_e}{\\lambda_p}$
-- ❌ Wrong: $C_p/C_v$, $V_1/V_2$, $T_1/T_2$ — MathJax sees chained subscripts and throws a double-subscript parse error
+- ❌ Wrong: $C_p/C_v$, $V_1/V_2$, $T_1/T_2$ — KaTeX sees chained subscripts and throws a parse error
 
 ### Superscripts and Subscripts — CRITICAL
 - Single-character superscripts/subscripts do NOT need braces: x^2, a_n are fine.
 - Multi-character superscripts/subscripts MUST have braces: x^{10}, a_{ij}, e^{-x}, 10^{-3} — always use {} when the argument is 2 or more characters.
-- Ion charges MUST use \\text{} for the sign character — MathJax treats + and - inside ^{...} as binary operators, which causes "Missing superscript or subscript argument" errors. The only safe fix is to wrap the sign in \\text{}:
+- Ion charges MUST use \\text{} for the sign character — KaTeX treats + and - inside ^{...} as binary operators, which causes parse errors. The only safe fix is to wrap the sign in \\text{}:
   - ✅ Correct: Fe^{3\\text{+}}, Fe^{2\\text{+}}, Cu^{2\\text{+}}, Ca^{2\\text{+}}, O^{2\\text{-}}
   - ✅ Correct: I^{\\text{-}}, Cl^{\\text{-}}, e^{\\text{-}}, H^{\\text{+}}, Na^{\\text{+}}, NO^{\\text{+}}, NH_4^{\\text{+}}, MnO_4^{\\text{-}}, Cr_2O_7^{2\\text{-}}
-  - ❌ Wrong: Fe^{3+}, I^{-}, NO^{+}, e^{-}, H^{+} — +/− inside ^{} without \\text{} ALWAYS errors in MathJax
+  - ❌ Wrong: Fe^{3+}, I^{-}, NO^{+}, e^{-}, H^{+} — +/− inside ^{} without \\text{} ALWAYS errors in KaTeX
   - ❌ Wrong: I^-, NO^+, e^- — bare sign with no braces at all
 - Never chain subscripts or superscripts: never x_a_b or _{a}_{b}. Use x_{ab} or nest properly.
 
@@ -1346,7 +1346,7 @@ When two ion formulas are separated by / (e.g. electrode notation like Fe³⁺/F
 - ✅ Correct: $Fe^{3\\text{+}}$/$Fe^{2\\text{+}}$
 - ✅ Correct: $I_2$/$I^{\\text{-}}$
 - ✅ Correct: $MnO_4^{\\text{-}}$/$Mn^{2\\text{+}}$
-- ❌ Wrong: $Fe^{3\\text{+}}/Fe^{2\\text{+}}$ — slash inside a single $...$ after a charged superscript causes MathJax parser errors
+- ❌ Wrong: $Fe^{3\\text{+}}/Fe^{2\\text{+}}$ — slash inside a single $...$ after a charged superscript causes KaTeX parser errors
 
 This rule applies only to ion/charge formulas. Regular math fractions written with / inside a single $...$ are fine:
 - ✅ Fine: $PV^{5/3}$, $(1+2x)^{1/x}$, $\\sin(1/x)$, $T^{3/2}$, $x/m$
