@@ -1057,8 +1057,17 @@ export default function CBT() {
               <span className="text-[11px] font-semibold text-slate-500">PDF</span>
               Question Paper
             </button>
-            <div>
-              Time Left: <span className="font-semibold">{formatTime(secondsLeft)}</span>
+            <div className="flex items-center gap-3">
+              <span>
+                Time Left: <span className="font-semibold">{formatTime(secondsLeft)}</span>
+              </span>
+              <button
+                className="rounded bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                onClick={() => setShowConfirm(true)}
+                disabled={submitting || solutionMode}
+              >
+                {submitting ? "SUBMITTING..." : "SUBMIT"}
+              </button>
             </div>
           </div>
         </div>
@@ -1069,7 +1078,6 @@ export default function CBT() {
           <span className="rounded-sm bg-[#7d00b3] px-3 py-1 text-sm font-semibold text-white">
             {activeQuestion?.subject ?? "Section"} Section {currentSectionIndex + 1}
           </span>
-          <span className="text-sm text-slate-700">Time Left: {formatTime(secondsLeft)}</span>
         </div>
         <div className="mt-2 flex items-center justify-between border border-slate-300 bg-white px-4 py-2 text-sm">
           <span>Question Type: {activeQuestion?.questionType ?? "MCQ"}</span>
@@ -1084,23 +1092,14 @@ export default function CBT() {
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center justify-between border-b border-slate-300 bg-[#7a1fa2] px-5 py-2 text-sm font-semibold text-white">
             <span>Question No. {activeQuestion?.index}</span>
-            <div className="flex items-center gap-2">
-              <button
-                className="rounded bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
-                onClick={() => setShowConfirm(true)}
-                disabled={submitting || solutionMode}
-              >
-                {submitting ? "SUBMITTING..." : "SUBMIT"}
-              </button>
-              <button
-                type="button"
-                onClick={() => activeQuestion && toggleBookmark(activeQuestion.id)}
-                className={`rounded border border-white/40 px-2 py-1 text-[11px] font-semibold ${bookmarkedIds.has(activeQuestion?.id ?? "") ? "bg-white text-[#7a1fa2]" : "bg-transparent text-white"}`}
-                disabled={bookmarkBusy || !activeQuestion}
-              >
-                {bookmarkedIds.has(activeQuestion?.id ?? "") ? "Bookmarked" : "Bookmark"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => activeQuestion && toggleBookmark(activeQuestion.id)}
+              className={`rounded border border-white/40 px-2 py-1 text-[11px] font-semibold ${bookmarkedIds.has(activeQuestion?.id ?? "") ? "bg-white text-[#7a1fa2]" : "bg-transparent text-white"}`}
+              disabled={bookmarkBusy || !activeQuestion}
+            >
+              {bookmarkedIds.has(activeQuestion?.id ?? "") ? "Bookmarked" : "Bookmark"}
+            </button>
           </div>
           <div className="grid min-h-0 flex-1 gap-4 p-5">
                 {activeQuestion?.questionText && (
@@ -1294,13 +1293,13 @@ export default function CBT() {
 
             <div className="flex flex-wrap gap-2">
               <button
-                className="rounded border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-700 disabled:opacity-50"
+                className="rounded border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700 disabled:opacity-50"
                 onClick={() => setActiveIndex(findNextInSection("prev"))}
               >
                 BACK
               </button>
               <button
-                className="rounded bg-[#2f855a] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
+                className="rounded bg-[#2f855a] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
                 onClick={() =>
                   setActiveIndex((prev) => Math.min(questions.length - 1, prev + 1))
                 }
@@ -1309,14 +1308,14 @@ export default function CBT() {
                 SAVE & NEXT
               </button>
               <button
-                className="rounded bg-[#e2e8f0] px-3 py-1.5 text-[11px] font-semibold text-slate-700 disabled:opacity-50"
+                className="rounded bg-[#e2e8f0] px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 disabled:opacity-50"
                 onClick={() => setAnswers((prev) => ({ ...prev, [activeQuestion.id]: "" }))}
                 disabled={solutionMode}
               >
                 CLEAR
               </button>
               <button
-                className="rounded bg-[#f59e0b] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
+                className="rounded bg-[#f59e0b] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
                 onClick={() => {
                   toggleReview(activeQuestion.id);
                   setActiveIndex((prev) => Math.min(questions.length - 1, prev + 1));
@@ -1326,7 +1325,7 @@ export default function CBT() {
                 SAVE & MARK FOR REVIEW
               </button>
               <button
-                className="rounded bg-[#2563eb] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
+                className="rounded bg-[#2563eb] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
                 onClick={() => toggleReview(activeQuestion.id)}
                 disabled={solutionMode}
               >
