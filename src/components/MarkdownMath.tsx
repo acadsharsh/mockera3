@@ -113,9 +113,26 @@ const normalizeText = (value: string) => {
     .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content) => `\\(${normalizeMathContent(content)}\\)`)
     .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content) => `\\[${normalizeMathContent(content)}\\]`);
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return withTokensFixed.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  const withBracketed = withTokensFixed.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
+  return withBracketed
+    .replace(/\\\\rightleftharpoons/g, "\\rightleftharpoons")
+    .replace(/\r?\n+/g, "\n")
+    .split(/\n/)
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return "";
+      const hasMathWrap = /(\$|\\\(|\\\[)/.test(trimmed);
+      const looksLikeEquation =
+        /rightleftharpoons|leftrightarrow|rightarrow|leftarrow/.test(trimmed) &&
+        /[_^]/.test(trimmed);
+      if (looksLikeEquation && !hasMathWrap) {
+        return `$${trimmed}$`;
+      }
+      return trimmed;
+    })
+    .join("\n");
 };
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
