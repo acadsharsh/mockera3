@@ -41,15 +41,24 @@ const normalizeText = (value: string) => {
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t")
     .replace(/\\r/g, "\r")
-    .replace(/\\\$/g, "$");
+    .replace(/\\\$/g, "$")
+    .replace(/\\\\/g, "\\");
+  const normalizeMathContent = (content: string) =>
+    content.replace(
+      /(^|[^\\])\b(times|cdot|sin|cos|tan|log|ln|sqrt|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega|rightleftharpoons|leftrightarrow|rightarrow|leftarrow|implies|iff)\b/gi,
+      "$1\\\\$2"
+    );
   const normalizedLatex = unescaped
     // Normalize dollar-delimited math to MathJax's \\( \\) / \\[ \\] so markdown doesn't interfere.
     .replace(/\$\$([\s\S]+?)\$\$/g, (_match, content) => `\\[${content}\\]`)
     .replace(/(^|[^\\])\$(?!\$)([^$\n]+?)\$(?!\$)/g, (_match, lead, content) => `${lead}\\(${content}\\)`)
     .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content) => `\\(${content}\\)`)
     .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content) => `\\[${content}\\]`);
+  const withTokensFixed = normalizedLatex
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content) => `\\(${normalizeMathContent(content)}\\)`)
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content) => `\\[${normalizeMathContent(content)}\\]`);
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return normalizedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  return withTokensFixed.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
 };
