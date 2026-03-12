@@ -116,13 +116,16 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
           return (
             <div
               key={`table-${idx}`}
-              className="overflow-hidden rounded-lg border border-slate-200 bg-white"
+              className="overflow-hidden rounded-lg border border-slate-700/60 bg-slate-900"
             >
-              <table className="w-full border-collapse text-sm">
-                <thead className="bg-slate-100 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+              <table className="w-full border-collapse text-[15px]">
+                <thead className="bg-[#2f6be6] text-xs font-semibold uppercase tracking-[0.2em] text-white">
                   <tr>
                     {block.headers.map((header, headerIdx) => (
-                      <th key={`${header}-${headerIdx}`} className="px-3 py-2 text-left">
+                      <th
+                        key={`${header}-${headerIdx}`}
+                        className="border-r border-white/10 px-4 py-2 text-center last:border-r-0"
+                      >
                         {renderBold(header)}
                       </th>
                     ))}
@@ -130,9 +133,12 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
                 </thead>
                 <tbody>
                   {block.rows.map((row, rowIdx) => (
-                    <tr key={`row-${rowIdx}`} className="border-t border-slate-100">
+                    <tr key={`row-${rowIdx}`} className="border-t border-slate-700/60">
                       {row.map((cell, cellIdx) => (
-                        <td key={`${rowIdx}-${cellIdx}`} className="px-3 py-2 align-top text-slate-700">
+                        <td
+                          key={`${rowIdx}-${cellIdx}`}
+                          className="border-r border-slate-700/60 px-4 py-3 align-top text-slate-100 last:border-r-0"
+                        >
                           {renderBold(cell)}
                         </td>
                       ))}
