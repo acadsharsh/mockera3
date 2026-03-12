@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getPusherClient } from "@/lib/pusher/client";
 import MarkdownMath from "@/components/MarkdownMath";
-import { renderKatexInElement } from "@/lib/katex-render";
+import MathJaxText from "@/components/MathJaxText";
 
 type ExamItem = {
   id: string;
@@ -102,18 +102,9 @@ const cleanupLatexForMarkdown = (value: string) =>
     .trim();
 
 const MathBlock = ({ value, className }: { value: string; className?: string }) => {
-  const ref = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!ref.current) return;
-    const raw = String(value || "");
-    const hasTextOutsideMath = /[A-Za-z]/.test(raw.replace(/\$\$[\s\S]+?\$\$/g, ""));
-    const normalized = hasTextOutsideMath ? raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => `$${m}$`) : raw;
-    ref.current.textContent = cleanupLatex(normalized);
-    if (ref.current) {
-      requestAnimationFrame(() => renderKatexInElement(ref.current!));
-    }
-  }, [value]);
-  return <div ref={ref} className={className} />;
+  const raw = cleanupLatex(String(value || ""));
+  if (!raw) return null;
+  return <MathJaxText text={raw} className={className} />;
 };
 
 const QuestionPrompt = ({ text }: { text: string }) => {

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { renderKatexInElement } from "@/lib/katex-render";
 
 type QuestionItem = {
   id: string;
@@ -46,7 +45,6 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
   const subject = searchParams.get("subject") ?? "";
   const chapter = searchParams.get("chapter") ?? "";
   const [items, setItems] = useState<QuestionItem[]>([]);
-  const listRef = useRef<HTMLDivElement | null>(null);
   const prefetchedRef = useRef<Set<string>>(new Set());
   const cacheKey = useMemo(
     () => `pyq_list_v1_${examId}_${subject}_${chapter}`,
@@ -93,12 +91,6 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
     };
   }, [examId, subject, chapter, cacheKey]);
 
-  useEffect(() => {
-    if (!items.length) return;
-    const host = listRef.current;
-    if (!host) return;
-    requestAnimationFrame(() => renderKatexInElement(host));
-  }, [items]);
 
   const title = useMemo(() => {
     if (subject && chapter) return `${chapter}`;
@@ -203,10 +195,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
               <button className="text-xs uppercase tracking-[0.2em] text-[#6aa8ff]">Sort</button>
             </div>
 
-            <div
-              ref={listRef}
-              className="rounded-[10px] border border-white/10 bg-transparent p-3 pr-2"
-            >
+            <div className="rounded-[10px] border border-white/10 bg-transparent p-3 pr-2">
               <div
                 className="space-y-4 overflow-y-auto pr-2"
                 style={{ maxHeight: "calc(100vh - 360px)", minHeight: "360px" }}

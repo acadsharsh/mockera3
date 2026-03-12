@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
 import ChemStructure from "@/components/ChemStructure";
 import { safeJson } from "@/lib/safe-json";
-import { renderKatexInElement } from "@/lib/katex-render";
 import MarkdownMath from "@/components/MarkdownMath";
+import MathJaxText from "@/components/MathJaxText";
 
 type Crop = {
   id: string;
@@ -380,57 +380,9 @@ const splitInlineMathSegments = (
 
 
 const MathText = ({ text }: { text: string }) => {
-  const ref = useRef<HTMLSpanElement | null>(null);
-  useEffect(() => {
-    if (!ref.current) return;
-    const raw = cleanupLatex(text ?? "");
-    const host = ref.current;
-
-    host.innerHTML = "";
-
-    const explicitParts = splitMathSegments(raw);
-    const hasExplicitMath = !(
-      !explicitParts.length ||
-      (explicitParts.length === 1 && explicitParts[0].type === "text")
-    );
-
-    // Formula-dominant strings should be rendered as a single math expression.
-    if (!hasExplicitMath && looksLikeLatex(raw) && (isMathDominant(raw) || !hasPlainWords(raw))) {
-      const normalized = balanceBraces(normalizeMathToken(raw));
-      const span = document.createElement("span");
-      span.textContent = `\\(${normalized}\\)`;
-      host.appendChild(span);
-      requestAnimationFrame(() => renderKatexInElement(host));
-      return;
-    }
-
-    const baseParts = hasExplicitMath ? explicitParts : splitLooseMathSegments(raw);
-    const parts = hasExplicitMath
-      ? baseParts
-      : baseParts.flatMap((part) => (part.type === "text" ? splitInlineMathSegments(part.value) : [part]));
-
-    if (!parts.length || (parts.length === 1 && parts[0].type === "text")) {
-      if (!raw) return;
-      host.textContent = raw;
-      return;
-    }
-
-    const inlineDisplay = hasPlainWords(raw);
-    parts.forEach((part) => {
-      const span = document.createElement("span");
-      if (part.type === "math") {
-        const normalized = balanceBraces(normalizeMathToken(part.value));
-        const useDisplay = part.display && !inlineDisplay;
-        span.textContent = useDisplay ? `\\[${normalized}\\]` : `\\(${normalized}\\)`;
-      } else {
-        span.textContent = part.value;
-      }
-      host.appendChild(span);
-    });
-
-    requestAnimationFrame(() => renderKatexInElement(host));
-  }, [text]);
-  return <span ref={ref} className="whitespace-normal break-words" />;
+  const raw = cleanupLatex(text ?? "");
+  if (!raw) return null;
+  return <MathJaxText text={raw} inline />;
 };
 
 const QuestionText = ({ text }: { text: string }) => {

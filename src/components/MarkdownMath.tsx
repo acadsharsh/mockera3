@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import "katex/dist/katex.min.css";
-import { InlineMath, BlockMath } from "react-katex";
+import React, { useMemo } from "react";
+import { MathJax } from "better-react-mathjax";
 
 type MarkdownMathProps = {
   text: string;
@@ -16,20 +15,27 @@ type TextBlock =
 const normalizeText = (value: string) => {
   const convertMathMLToTex = (input: string) => {
     if (typeof window === "undefined" || typeof DOMParser === "undefined") return input;
-    const assistiveRegex = /<mjx-assistive-mml[\s\S]*?<\/mjx-assistive-mml>/gi;
-    return input.replace(assistiveRegex, (match) => {
+    
+    // Match the ENTIRE container, not just the assistive-mml, to prevent leaving raw SVG code behind
+    const containerRegex = /<mjx-container[\s\S]*?<\/mjx-container>/gi;
+    
+    return input.replace(containerRegex, (match) => {
       const mathMatch = match.match(/<math[\s\S]*?<\/math>/i);
-      if (!mathMatch) return "";
+      if (!mathMatch) return match; // fallback to original if extraction fails
+
       try {
         const doc = new DOMParser().parseFromString(mathMatch[0], "application/xml");
         const math = doc.querySelector("math");
-        if (!math) return "";
+        if (!math) return match;
 
         const nodeToTex = (node: Element): string => {
           const name = node.tagName.toLowerCase();
           const children = Array.from(node.children) as Element[];
           const text = node.textContent ?? "";
           const clean = text.replace(/\u2212/g, "-");
+
+          const childTex = (index: number) => (children[index] ? nodeToTex(children[index]) : "");
+
           switch (name) {
             case "mi":
             case "mn":
@@ -39,17 +45,17 @@ const normalizeText = (value: string) => {
             case "mrow":
               return children.map(nodeToTex).join("");
             case "msub":
-              return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}`;
+              return `${childTex(0)}_{${childTex(1)}}`;
             case "msup":
-              return `${nodeToTex(children[0])}^{${nodeToTex(children[1])}}`;
+              return `${childTex(0)}^{${childTex(1)}}`;
             case "msubsup":
-              return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}^{${nodeToTex(children[2])}}`;
+              return `${childTex(0)}_{${childTex(1)}}^{${childTex(2)}}`;
             case "mfrac":
-              return `\\frac{${nodeToTex(children[0])}}{${nodeToTex(children[1])}}`;
+              return `\\frac{${childTex(0)}}{${childTex(1)}}`;
             case "msqrt":
               return `\\sqrt{${children.map(nodeToTex).join("")}}`;
             case "mroot":
-              return `\\sqrt[${nodeToTex(children[1])}]{${nodeToTex(children[0])}}`;
+              return `\\sqrt[${childTex(1)}]{${childTex(0)}}`;
             case "mspace":
               return " ";
             default:
@@ -58,9 +64,9 @@ const normalizeText = (value: string) => {
         };
 
         const tex = nodeToTex(math);
-        return tex ? `$${tex}$` : "";
+        return tex ? `$${tex}$` : match;
       } catch {
-        return "";
+        return match;
       }
     });
   };
@@ -80,20 +86,15 @@ const normalizeText = (value: string) => {
 
 const fixLatexMath = (text: string): string => {
   if (!text) return "";
-  return text
-    .replace(/(?<!\\)rightleftharpoons/g, "\\rightleftharpoons")
-    .replace(/(?<!\\)leftharpoons/g, "\\leftharpoons")
-    .replace(/(?<!\\)rightarrow/g, "\\rightarrow")
-    .replace(/(?<!\\)leftarrow/g, "\\leftarrow")
-    .replace(/(?<!\\)times/g, "\\times")
-    .replace(/(?<!\\)cdot/g, "\\cdot")
-    .replace(/(?<!\\)infty/g, "\\infty")
-    .replace(/(?<!\\)approx/g, "\\approx")
-    .replace(/(?<!\\)neq/g, "\\neq")
-    .replace(/(?<!\\)leq/g, "\\leq")
-    .replace(/(?<!\\)geq/g, "\\geq")
-    .replace(/(?<!\\)pm/g, "\\pm")
-    .replace(/(?<!\\)text\{/g, "\\text{");
+  
+  // NOTE: Negative lookbehinds (e.g. `(?<!\\)`) throw fatal SyntaxErrors in Safari <16.4. 
+  // We handle unescaped LaTeX keywords safely with a capture group and a fallback function.
+  return text.replace(
+    /(\\)?(rightleftharpoons|leftharpoons|rightarrow|leftarrow|times|cdot|infty|approx|neq|leq|geq|pm|text\{)/g,
+    (match, backslash, keyword) => {
+      return backslash ? match : `\\${keyword}`;
+    }
+  );
 };
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
@@ -131,15 +132,16 @@ const parseBlocks = (value: string): TextBlock[] => {
 
 const renderBold = (text: string) => {
   const parts = text.split(/\*\*(.+?)\*\*/g);
-  return parts.map((part, idx) =>
-    idx % 2 === 1 ? (
-      <strong key={`${part}-${idx}`} className="font-semibold">
+  return parts.map((part, idx) => {
+    if (!part) return null;
+    return idx % 2 === 1 ? (
+      <strong key={`bold-${idx}`} className="font-semibold">
         {part}
       </strong>
     ) : (
-      <span key={`${part}-${idx}`}>{part}</span>
-    )
-  );
+      <span key={`text-${idx}`}>{part}</span>
+    );
+  });
 };
 
 const splitMathSegments = (input: string) => {
@@ -170,6 +172,7 @@ const splitMathSegments = (input: string) => {
 
     if (char === "$") {
       const isDouble = next === "$";
+
       if (!inMath) {
         flushText();
         inMath = true;
@@ -177,20 +180,30 @@ const splitMathSegments = (input: string) => {
         if (isDouble) i += 1;
         continue;
       }
-      if (inMath && display === isDouble) {
-        flushMath();
-        inMath = false;
-        display = false;
-        if (isDouble) i += 1;
-        continue;
+
+      if (inMath) {
+        if (display && isDouble) {
+          flushMath();
+          inMath = false;
+          display = false;
+          i += 1;
+          continue;
+        } else if (!display) {
+          flushMath();
+          inMath = false;
+          display = false;
+          continue;
+        }
       }
     }
 
     buffer += char;
   }
 
+  // Gracefully handle unclosed math elements
   if (inMath) {
-    segments.push({ type: "text", value: buffer });
+    const prefix = display ? "$$" : "$";
+    segments.push({ type: "text", value: prefix + buffer });
   } else if (buffer) {
     segments.push({ type: "text", value: buffer });
   }
@@ -203,13 +216,14 @@ const renderMathText = (text: string) => {
   return parts.map((part, idx) => {
     if (part.type === "math") {
       const math = fixLatexMath(part.value);
-      return part.display ? (
-        <BlockMath key={`block-${idx}`} math={math} errorColor="#cc0000" />
-      ) : (
-        <InlineMath key={`inline-${idx}`} math={math} errorColor="#cc0000" />
+      const wrapped = part.display ? `\\[${math}\\]` : `\\(${math}\\)`;
+      return (
+        <MathJax key={`math-${idx}`} inline={!part.display} dynamic>
+          {wrapped}
+        </MathJax>
       );
     }
-    return <span key={`text-${idx}`}>{renderBold(part.value)}</span>;
+    return <React.Fragment key={`text-frag-${idx}`}>{renderBold(part.value)}</React.Fragment>;
   });
 };
 
@@ -217,16 +231,8 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   const normalized = useMemo(() => normalizeText(text ?? ""), [text]);
   const blocks = useMemo(() => parseBlocks(normalized), [normalized]);
 
-  if (process.env.NODE_ENV !== "production") {
-    // Debug raw vs normalized text to find where backslashes are lost.
-    // eslint-disable-next-line no-console
-    console.log("RAW TEXT:", text);
-    // eslint-disable-next-line no-console
-    console.log("BEFORE KATEX:", normalized);
-  }
-
   return (
-    <div className={className}>
+    <div className={className} suppressHydrationWarning>
       {blocks.map((block, idx) => {
         if (block.type === "table") {
           return (
@@ -239,7 +245,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
                   <tr>
                     {block.headers.map((header, headerIdx) => (
                       <th
-                        key={`${header}-${headerIdx}`}
+                        key={`th-${headerIdx}`}
                         className="border-r border-white/10 px-4 py-2 text-center last:border-r-0"
                       >
                         {renderMathText(header)}
@@ -252,7 +258,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
                     <tr key={`row-${rowIdx}`} className="border-t border-slate-700/60">
                       {row.map((cell, cellIdx) => (
                         <td
-                          key={`${rowIdx}-${cellIdx}`}
+                          key={`td-${rowIdx}-${cellIdx}`}
                           className="border-r border-slate-700/60 px-4 py-3 align-top text-slate-100 last:border-r-0"
                         >
                           {renderMathText(cell)}
@@ -269,7 +275,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
         return (
           <p key={`para-${idx}`} className="text-[18px] leading-7">
             {block.lines.map((line, lineIdx) => (
-              <span key={`${line}-${lineIdx}`}>
+              <span key={`line-${idx}-${lineIdx}`}>
                 {renderMathText(line)}
                 {lineIdx < block.lines.length - 1 ? <br /> : null}
               </span>

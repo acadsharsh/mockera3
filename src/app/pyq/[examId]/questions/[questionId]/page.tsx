@@ -5,7 +5,7 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ChemStructure from "@/components/ChemStructure";
 import MarkdownMath from "@/components/MarkdownMath";
-import { renderKatexInElement } from "@/lib/katex-render";
+import MathJaxText from "@/components/MathJaxText";
 
 type QuestionDetail = {
   id: string;
@@ -146,20 +146,25 @@ const MathBlock = ({
   className?: string;
   preserveLineBreaks?: boolean;
 }) => {
-  const ref = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!ref.current) return;
-    const raw = String(value || "");
-    const hasTextOutsideMath = /[A-Za-z]/.test(raw.replace(/\$\$[\s\S]+?\$\$/g, ""));
-    const normalized = hasTextOutsideMath ? raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => `$${m}$`) : raw;
-    ref.current.textContent = preserveLineBreaks
-      ? cleanupLatexLines(normalized)
-      : cleanupLatex(normalized);
-    if (ref.current) {
-      requestAnimationFrame(() => renderKatexInElement(ref.current!));
-    }
-  }, [value, preserveLineBreaks]);
-  return <div ref={ref} className={className} />;
+  const raw = String(value || "");
+  if (!raw) return null;
+  const cleaned = preserveLineBreaks ? cleanupLatexLines(raw) : cleanupLatex(raw);
+  if (!preserveLineBreaks) {
+    return <MathJaxText text={cleaned} className={className} />;
+  }
+  const lines = cleaned
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return (
+    <div className={className}>
+      {lines.map((line, idx) => (
+        <div key={`${line}-${idx}`}>
+          <MathJaxText text={line} inline />
+        </div>
+      ))}
+    </div>
+  );
 };
 
 const QuestionPrompt = ({ text }: { text: string }) => {
@@ -202,7 +207,6 @@ export default function PyqQuestionAttempt({
   const [solutionsEnabled, setSolutionsEnabled] = useState(true);
   const [navTarget, setNavTarget] = useState<"prev" | "next" | null>(null);
   const [loggedAttempt, setLoggedAttempt] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const cacheHitRef = useRef(false);
   const questionCacheKey = useMemo(
     () => `pyq_question_v1_${questionId}`,
@@ -325,12 +329,6 @@ export default function PyqQuestionAttempt({
     return () => window.clearInterval(timer);
   }, [questionId]);
 
-  useEffect(() => {
-    if (!question || !containerRef.current) return;
-    if (containerRef.current) {
-      requestAnimationFrame(() => renderKatexInElement(containerRef.current!));
-    }
-  }, [question]);
 
   const questionIndex = useMemo(() => questionIds.findIndex((id) => id === questionId), [questionIds, questionId]);
   const questionNumber = questionIndex >= 0 ? questionIndex + 1 : 1;
@@ -432,7 +430,7 @@ export default function PyqQuestionAttempt({
             </div>
           </div>
 
-          <div ref={containerRef} className="mt-4 space-y-6">
+          <div className="mt-4 space-y-6">
             <QuestionPrompt text={question?.prompt ?? "Loading question..."} />
             {question?.imageUrl ? (
               <div className="rounded-[12px] border border-white/10 bg-[#10141d] p-3">
