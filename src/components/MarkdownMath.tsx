@@ -72,37 +72,28 @@ const normalizeText = (value: string) => {
     .replace(/\\r/g, "\r")
     .replace(/\\\$/g, "$");
 
-  // Fix backslash commands that appear outside math delimiters.
-  const fixedBareCmds = unescaped.replace(
-    /(\$[^$]*\$|\$\$[^$]*\$\$)|\\(rightleftharpoons|leftharpoons|rightarrow|leftarrow|times|cdot|infty|pm|leq|geq|neq|approx)\b/g,
-    (match, mathBlock) => {
-      if (mathBlock) return mathBlock;
-      return `$${match}$`;
-    }
-  );
-
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return fixedBareCmds.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  return unescaped.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
 };
 
-const fixLatexMath = (text: string) => {
+const fixLatexMath = (text: string): string => {
   if (!text) return "";
   return text
-    .replace(/(^|[^\\])rightleftharpoons\b/g, "$1\\rightleftharpoons")
-    .replace(/(^|[^\\])leftharpoons\b/g, "$1\\leftharpoons")
-    .replace(/(^|[^\\])rightarrow\b/g, "$1\\rightarrow")
-    .replace(/(^|[^\\])leftarrow\b/g, "$1\\leftarrow")
-    .replace(/(^|[^\\])times\b/g, "$1\\times")
-    .replace(/(^|[^\\])text\{/g, "$1\\text{")
-    .replace(/(^|[^\\])cdot\b/g, "$1\\cdot")
-    .replace(/(^|[^\\])infty\b/g, "$1\\infty")
-    .replace(/(^|[^\\])pm\b/g, "$1\\pm")
-    .replace(/(^|[^\\])leq\b/g, "$1\\leq")
-    .replace(/(^|[^\\])geq\b/g, "$1\\geq")
-    .replace(/(^|[^\\])neq\b/g, "$1\\neq")
-    .replace(/(^|[^\\])approx\b/g, "$1\\approx");
+    .replace(/(?<!\\)rightleftharpoons/g, "\\rightleftharpoons")
+    .replace(/(?<!\\)leftharpoons/g, "\\leftharpoons")
+    .replace(/(?<!\\)rightarrow/g, "\\rightarrow")
+    .replace(/(?<!\\)leftarrow/g, "\\leftarrow")
+    .replace(/(?<!\\)times/g, "\\times")
+    .replace(/(?<!\\)cdot/g, "\\cdot")
+    .replace(/(?<!\\)infty/g, "\\infty")
+    .replace(/(?<!\\)approx/g, "\\approx")
+    .replace(/(?<!\\)neq/g, "\\neq")
+    .replace(/(?<!\\)leq/g, "\\leq")
+    .replace(/(?<!\\)geq/g, "\\geq")
+    .replace(/(?<!\\)pm/g, "\\pm")
+    .replace(/(?<!\\)text\{/g, "\\text{");
 };
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
@@ -199,7 +190,7 @@ const splitMathSegments = (input: string) => {
   }
 
   if (inMath) {
-    segments.push({ type: "text", value: (display ? "$$" : "$") + buffer });
+    segments.push({ type: "text", value: buffer });
   } else if (buffer) {
     segments.push({ type: "text", value: buffer });
   }
