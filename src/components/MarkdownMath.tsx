@@ -140,6 +140,14 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   const normalized = useMemo(() => normalizeText(text ?? ""), [text]);
   const blocks = useMemo(() => parseBlocks(normalized), [normalized]);
 
+  if (process.env.NODE_ENV !== "production") {
+    // Debug raw vs normalized text to find where backslashes are lost.
+    // eslint-disable-next-line no-console
+    console.log("RAW TEXT:", text);
+    // eslint-disable-next-line no-console
+    console.log("NORMALIZED TEXT:", normalized);
+  }
+
   return (
     <div className={className}>
       {blocks.map((block, idx) => {
