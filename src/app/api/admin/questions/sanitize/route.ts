@@ -81,6 +81,10 @@ const runSanitize = async (request?: Request) => {
     nextCursor,
     done,
     auto,
+    debug: {
+      url: request?.url ?? null,
+      autoQuery: request ? new URL(request.url).searchParams.get("auto") : null,
+    },
   });
 };
 
