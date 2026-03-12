@@ -9,6 +9,13 @@ const runSanitize = async (request?: Request) => {
   let batchSize = 200;
   let cursor: string | null = null;
   if (request) {
+    const url = new URL(request.url);
+    const qsBatch = url.searchParams.get("batchSize");
+    const qsCursor = url.searchParams.get("cursor");
+    if (qsBatch && Number.isFinite(Number(qsBatch))) {
+      batchSize = Math.min(500, Math.max(50, Number(qsBatch)));
+    }
+    if (qsCursor) cursor = String(qsCursor);
     try {
       const body = await request.json();
       if (Number.isFinite(body?.batchSize)) {
