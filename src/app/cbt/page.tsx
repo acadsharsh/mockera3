@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import LottieLoader from "@/components/LottieLoader";
 import ChemStructure from "@/components/ChemStructure";
 import { safeJson } from "@/lib/safe-json";
+import { renderKatexInElement } from "@/lib/katex-render";
 import MarkdownMath from "@/components/MarkdownMath";
 
 type Crop = {
@@ -92,31 +93,6 @@ const missingAnswerKeyCount = (crops: Crop[]) => {
     return !crop.correctOption || String(crop.correctOption).trim() === "";
   }).length;
 };
-
-const ensureMathJax = (() => {
-  let loading: Promise<void> | null = null;
-  return () => {
-    if (typeof window === "undefined") return Promise.resolve();
-    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
-    if (loading) return loading;
-    (window as any).MathJax = {
-      tex: {
-        inlineMath: [["$", "$"], ["\\(", "\\)"]],
-        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
-        processEscapes: true,
-      },
-      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
-    };
-    loading = new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
-      script.async = true;
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
-    return loading;
-  };
-})();
 
 const cleanupLatex = (value: string) =>
   value
@@ -424,7 +400,7 @@ const MathText = ({ text }: { text: string }) => {
       const span = document.createElement("span");
       span.textContent = `\\(${normalized}\\)`;
       host.appendChild(span);
-      ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
+      requestAnimationFrame(() => renderKatexInElement(host));
       return;
     }
 
@@ -452,7 +428,7 @@ const MathText = ({ text }: { text: string }) => {
       host.appendChild(span);
     });
 
-    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
+    requestAnimationFrame(() => renderKatexInElement(host));
   }, [text]);
   return <span ref={ref} className="whitespace-normal break-words" />;
 };

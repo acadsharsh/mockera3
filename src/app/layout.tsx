@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import { Toaster } from "sonner";
 import "./globals.css";
+import "katex/dist/katex.min.css";
 
 const inter = Inter({
   variable: "--font-inter",

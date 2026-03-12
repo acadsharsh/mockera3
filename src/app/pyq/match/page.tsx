@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getPusherClient } from "@/lib/pusher/client";
 import MarkdownMath from "@/components/MarkdownMath";
+import { renderKatexInElement } from "@/lib/katex-render";
 
 type ExamItem = {
   id: string;
@@ -58,31 +59,6 @@ type MatchState = {
 
 const optionLabels = ["A", "B", "C", "D", "E"] as const;
 
-const ensureMathJax = (() => {
-  let loading: Promise<void> | null = null;
-  return () => {
-    if (typeof window === "undefined") return Promise.resolve();
-    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
-    if (loading) return loading;
-    (window as any).MathJax = {
-      tex: {
-        inlineMath: [["$", "$"], ["\\(", "\\)"]],
-        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
-        processEscapes: true,
-      },
-      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
-    };
-    loading = new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
-      script.async = true;
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
-    return loading;
-  };
-})();
-
 const cleanupLatex = (value: string) =>
   value
     .normalize("NFKC")
@@ -133,7 +109,9 @@ const MathBlock = ({ value, className }: { value: string; className?: string }) 
     const hasTextOutsideMath = /[A-Za-z]/.test(raw.replace(/\$\$[\s\S]+?\$\$/g, ""));
     const normalized = hasTextOutsideMath ? raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => `$${m}$`) : raw;
     ref.current.textContent = cleanupLatex(normalized);
-    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([ref.current]));
+    if (ref.current) {
+      requestAnimationFrame(() => renderKatexInElement(ref.current!));
+    }
   }, [value]);
   return <div ref={ref} className={className} />;
 };

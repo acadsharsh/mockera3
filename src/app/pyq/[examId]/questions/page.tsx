@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { renderKatexInElement } from "@/lib/katex-render";
 
 type QuestionItem = {
   id: string;
@@ -13,34 +14,6 @@ type QuestionItem = {
   topic?: string | null;
   test?: { id: string; title?: string | null; year?: number | null; shift?: string | null; exam?: string | null };
 };
-
-const ensureMathJax = (() => {
-  let loading: Promise<void> | null = null;
-  return () => {
-    if (typeof window === "undefined") return Promise.resolve();
-    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
-    if (loading) return loading;
-    (window as any).MathJax = {
-      tex: {
-        inlineMath: [["$", "$"], ["\\(", "\\)"]],
-        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
-        processEscapes: true,
-      },
-      options: {
-        enableMenu: false,
-        skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],
-      },
-    };
-    loading = new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
-      script.async = true;
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
-    return loading;
-  };
-})();
 
 const cleanupLatex = (value: string) => {
   const raw = String(value ?? "");
@@ -124,7 +97,7 @@ export default function PyqChapterQuestions({ params }: { params: Promise<{ exam
     if (!items.length) return;
     const host = listRef.current;
     if (!host) return;
-    ensureMathJax().then(() => (window as any).MathJax?.typesetPromise?.([host]));
+    requestAnimationFrame(() => renderKatexInElement(host));
   }, [items]);
 
   const title = useMemo(() => {

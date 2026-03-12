@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { renderKatexInElement } from "@/lib/katex-render";
 
 type MarkdownMathProps = {
   text: string;
@@ -10,31 +11,6 @@ type MarkdownMathProps = {
 type TextBlock =
   | { type: "text"; lines: string[] }
   | { type: "table"; headers: string[]; rows: string[][] };
-
-const ensureMathJax = (() => {
-  let loading: Promise<void> | null = null;
-  return () => {
-    if (typeof window === "undefined") return Promise.resolve();
-    if ((window as any).MathJax?.typesetPromise) return Promise.resolve();
-    if (loading) return loading;
-    (window as any).MathJax = {
-      tex: {
-        inlineMath: [["$", "$"], ["\\(", "\\)"]],
-        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
-        processEscapes: true,
-      },
-      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
-    };
-    loading = new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";
-      script.async = true;
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
-    return loading;
-  };
-})();
 
 const normalizeText = (value: string) => {
   const convertMathMLToTex = (input: string) => {
@@ -189,9 +165,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   useEffect(() => {
     const host = ref.current;
     if (!host) return;
-    ensureMathJax().then(() => {
-      requestAnimationFrame(() => (window as any).MathJax?.typesetPromise?.([host]));
-    });
+    requestAnimationFrame(() => renderKatexInElement(host));
   }, [normalized]);
 
   const blocks = useMemo(() => parseBlocks(normalized), [normalized]);
