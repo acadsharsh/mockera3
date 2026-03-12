@@ -22,6 +22,8 @@ const normalizeMathTokens = (value: string) =>
     .replace(/\r?\n+/g, " ")
     .replace(/(^|[^\\])\bightleftharpoons\b/gi, "$1\\\\rightleftharpoons")
     .replace(/(^|[^\\])\bimes\b/gi, "$1\\\\times")
+    .replace(/(^|[^\\])\btimes(?=\d)/gi, "$1\\\\times")
+    .replace(/(^|[^\\])\btext\s*([A-Za-z]+)\b/gi, "$1\\\\text{$2}")
     .replace(/\\left\s*\./g, "")
     .replace(/\\left(?=\s*(?:[A-Za-z0-9]|\\))/g, "")
     .replace(/\\right(?![\)\]\}|\|])/g, "")
