@@ -37,7 +37,59 @@ const ensureMathJax = (() => {
 })();
 
 const normalizeText = (value: string) => {
-  const unescaped = value
+  const convertMathMLToTex = (input: string) => {
+    if (typeof window === "undefined" || typeof DOMParser === "undefined") return input;
+    const assistiveRegex = /<mjx-assistive-mml[\s\S]*?<\/mjx-assistive-mml>/gi;
+    return input.replace(assistiveRegex, (match) => {
+      const mathMatch = match.match(/<math[\s\S]*?<\/math>/i);
+      if (!mathMatch) return "";
+      try {
+        const doc = new DOMParser().parseFromString(mathMatch[0], "application/xml");
+        const math = doc.querySelector("math");
+        if (!math) return "";
+
+        const nodeToTex = (node: Element): string => {
+          const name = node.tagName.toLowerCase();
+          const children = Array.from(node.children) as Element[];
+          const text = node.textContent ?? "";
+          const clean = text.replace(/\u2212/g, "-");
+          switch (name) {
+            case "mi":
+            case "mn":
+            case "mo":
+            case "mtext":
+              return clean;
+            case "mrow":
+              return children.map(nodeToTex).join("");
+            case "msub":
+              return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}`;
+            case "msup":
+              return `${nodeToTex(children[0])}^{${nodeToTex(children[1])}}`;
+            case "msubsup":
+              return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}^{${nodeToTex(children[2])}}`;
+            case "mfrac":
+              return `\\frac{${nodeToTex(children[0])}}{${nodeToTex(children[1])}}`;
+            case "msqrt":
+              return `\\sqrt{${children.map(nodeToTex).join("")}}`;
+            case "mroot":
+              return `\\sqrt[${nodeToTex(children[1])}]{${nodeToTex(children[0])}}`;
+            case "mspace":
+              return " ";
+            default:
+              return children.length ? children.map(nodeToTex).join("") : clean;
+          }
+        };
+
+        const tex = nodeToTex(math);
+        return tex ? `$${tex}$` : "";
+      } catch {
+        return "";
+      }
+    });
+  };
+
+  const withMathML = value.includes("<mjx-container") ? convertMathMLToTex(value) : value;
+  const unescaped = withMathML
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t")
     .replace(/\\r/g, "\r")
