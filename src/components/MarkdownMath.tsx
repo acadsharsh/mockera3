@@ -74,8 +74,11 @@ const normalizeText = (value: string) => {
 
   // Fix backslash commands that appear outside math delimiters.
   const fixedBareCmds = unescaped.replace(
-    /\\(rightleftharpoons|leftharpoons|rightarrow|leftarrow|times|frac|sqrt|cdot|infty|pm|leq|geq|neq|approx)\b/g,
-    (match) => `$${match}$`
+    /(\$[^$]*\$|\$\$[^$]*\$\$)|\\(rightleftharpoons|leftharpoons|rightarrow|leftarrow|times|cdot|infty|pm|leq|geq|neq|approx)\b/g,
+    (match, mathBlock) => {
+      if (mathBlock) return mathBlock;
+      return `$${match}$`;
+    }
   );
 
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
@@ -92,8 +95,6 @@ const fixLatexMath = (text: string) => {
     .replace(/(^|[^\\])rightarrow\b/g, "$1\\rightarrow")
     .replace(/(^|[^\\])leftarrow\b/g, "$1\\leftarrow")
     .replace(/(^|[^\\])times\b/g, "$1\\times")
-    .replace(/(^|[^\\])frac\b/g, "$1\\frac")
-    .replace(/(^|[^\\])sqrt\b/g, "$1\\sqrt")
     .replace(/(^|[^\\])text\{/g, "$1\\text{")
     .replace(/(^|[^\\])cdot\b/g, "$1\\cdot")
     .replace(/(^|[^\\])infty\b/g, "$1\\infty")
