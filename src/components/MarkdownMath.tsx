@@ -100,6 +100,8 @@ const normalizeText = (value: string) => {
       .replace(/\r?\n+/g, " ")
       .replace(/(^|[^\\])\bightleftharpoons\b/gi, "$1\\\\rightleftharpoons")
       .replace(/(^|[^\\])\bimes\b/gi, "$1\\\\times")
+      .replace(/(^|[^\\])\bext\s*\{/gi, "$1\\\\text{")
+      .replace(/(^|[^\\])\bext\b/gi, "$1\\\\text")
       .replace(
         /(^|[^\\])\b(times|cdot|sin|cos|tan|log|ln|sqrt|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega|rightleftharpoons|leftrightarrow|rightarrow|leftarrow|implies|iff)\b/gi,
         "$1\\\\$2"
