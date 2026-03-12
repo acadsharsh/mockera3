@@ -1084,50 +1084,59 @@ export default function CBT() {
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center justify-between border-b border-slate-300 bg-[#7a1fa2] px-5 py-2 text-sm font-semibold text-white">
             <span>Question No. {activeQuestion?.index}</span>
-            <button
-              type="button"
-              onClick={() => activeQuestion && toggleBookmark(activeQuestion.id)}
-              className={`rounded border border-white/40 px-2 py-1 text-[11px] font-semibold ${bookmarkedIds.has(activeQuestion?.id ?? "") ? "bg-white text-[#7a1fa2]" : "bg-transparent text-white"}`}
-              disabled={bookmarkBusy || !activeQuestion}
-            >
-              {bookmarkedIds.has(activeQuestion?.id ?? "") ? "Bookmarked" : "Bookmark"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="rounded bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                onClick={() => setShowConfirm(true)}
+                disabled={submitting || solutionMode}
+              >
+                {submitting ? "SUBMITTING..." : "SUBMIT"}
+              </button>
+              <button
+                type="button"
+                onClick={() => activeQuestion && toggleBookmark(activeQuestion.id)}
+                className={`rounded border border-white/40 px-2 py-1 text-[11px] font-semibold ${bookmarkedIds.has(activeQuestion?.id ?? "") ? "bg-white text-[#7a1fa2]" : "bg-transparent text-white"}`}
+                disabled={bookmarkBusy || !activeQuestion}
+              >
+                {bookmarkedIds.has(activeQuestion?.id ?? "") ? "Bookmarked" : "Bookmark"}
+              </button>
+            </div>
           </div>
           <div className="grid min-h-0 flex-1 gap-4 p-5">
                 {activeQuestion?.questionText && (
-                  <div className="rounded border border-slate-200 bg-slate-50 p-3 text-[16px] leading-7">
+                  <div className="rounded border border-slate-200 bg-slate-50 p-3 text-[18px] leading-7">
                     <QuestionText text={activeQuestion.questionText} />
                   </div>
                 )}
-            <div className="rounded border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
-                <span>Question Image</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    className="rounded border border-slate-200 px-2 py-1 text-[11px]"
-                    onClick={() => setImageZoom((prev) => Math.max(0.6, Number((prev - 0.1).toFixed(2))))}
-                    type="button"
-                  >
-                    -
-                  </button>
-                  <span className="w-12 text-center">{Math.round(imageZoom * 100)}%</span>
-                  <button
-                    className="rounded border border-slate-200 px-2 py-1 text-[11px]"
-                    onClick={() => setImageZoom((prev) => Math.min(2.4, Number((prev + 0.1).toFixed(2))))}
-                    type="button"
-                  >
-                    +
-                  </button>
-                  <button
-                    className="rounded border border-slate-200 px-2 py-1 text-[11px]"
-                    onClick={() => setImageZoom(1)}
-                    type="button"
-                  >
-                    Reset
-                  </button>
+            {activeQuestion?.imageDataUrl ? (
+              <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
+                  <span>Question Image</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="rounded border border-slate-200 px-2 py-1 text-[11px]"
+                      onClick={() => setImageZoom((prev) => Math.max(0.6, Number((prev - 0.1).toFixed(2))))}
+                      type="button"
+                    >
+                      -
+                    </button>
+                    <span className="w-12 text-center">{Math.round(imageZoom * 100)}%</span>
+                    <button
+                      className="rounded border border-slate-200 px-2 py-1 text-[11px]"
+                      onClick={() => setImageZoom((prev) => Math.min(2.4, Number((prev + 0.1).toFixed(2))))}
+                      type="button"
+                    >
+                      +
+                    </button>
+                    <button
+                      className="rounded border border-slate-200 px-2 py-1 text-[11px]"
+                      onClick={() => setImageZoom(1)}
+                      type="button"
+                    >
+                      Reset
+                    </button>
+                  </div>
                 </div>
-              </div>
-              {activeQuestion?.imageDataUrl ? (
                 <div className="max-h-[62vh] overflow-auto rounded border border-slate-200 bg-white p-2">
                   <img
                     src={activeQuestion.imageDataUrl}
@@ -1140,8 +1149,8 @@ export default function CBT() {
                     }}
                   />
                 </div>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
 
             <div className="grid gap-2">
               {activeQuestion.questionType === "NUM" ? (
@@ -1283,9 +1292,15 @@ export default function CBT() {
               </div>
             ) : null}
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               <button
-                className="rounded bg-[#2f855a] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                className="rounded border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-700 disabled:opacity-50"
+                onClick={() => setActiveIndex(findNextInSection("prev"))}
+              >
+                BACK
+              </button>
+              <button
+                className="rounded bg-[#2f855a] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
                 onClick={() =>
                   setActiveIndex((prev) => Math.min(questions.length - 1, prev + 1))
                 }
@@ -1294,14 +1309,14 @@ export default function CBT() {
                 SAVE & NEXT
               </button>
               <button
-                className="rounded bg-[#e2e8f0] px-4 py-2 text-xs font-semibold text-slate-700 disabled:opacity-50"
+                className="rounded bg-[#e2e8f0] px-3 py-1.5 text-[11px] font-semibold text-slate-700 disabled:opacity-50"
                 onClick={() => setAnswers((prev) => ({ ...prev, [activeQuestion.id]: "" }))}
                 disabled={solutionMode}
               >
                 CLEAR
               </button>
               <button
-                className="rounded bg-[#f59e0b] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                className="rounded bg-[#f59e0b] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
                 onClick={() => {
                   toggleReview(activeQuestion.id);
                   setActiveIndex((prev) => Math.min(questions.length - 1, prev + 1));
@@ -1311,34 +1326,11 @@ export default function CBT() {
                 SAVE & MARK FOR REVIEW
               </button>
               <button
-                className="rounded bg-[#2563eb] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                className="rounded bg-[#2563eb] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
                 onClick={() => toggleReview(activeQuestion.id)}
                 disabled={solutionMode}
               >
                 MARK FOR REVIEW & NEXT
-              </button>
-            </div>
-            <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-              <div className="flex gap-2">
-                <button
-                  className="rounded border border-slate-200 px-3 py-2 text-xs"
-                  onClick={() => setActiveIndex(findNextInSection("prev"))}
-                >
-                  &lt;&lt; BACK
-                </button>
-                <button
-                  className="rounded border border-slate-200 px-3 py-2 text-xs"
-                  onClick={() => setActiveIndex(findNextInSection("next"))}
-                >
-                  NEXT &gt;&gt;
-                </button>
-              </div>
-              <button
-                className="rounded bg-[#2f855a] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                onClick={() => setShowConfirm(true)}
-                disabled={submitting || solutionMode}
-              >
-                {submitting ? "SUBMITTING..." : "SUBMIT"}
               </button>
             </div>
           </div>
@@ -1346,19 +1338,6 @@ export default function CBT() {
 
         <aside className="space-y-4">
           <div className="rounded-lg border border-slate-300 bg-white">
-            <div className="flex items-center gap-4 border-b border-slate-300 px-4 py-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-2xl">
-                U
-              </div>
-              <div>
-                <div className="text-sm text-slate-500">User Name</div>
-                <input
-                  value={candidateName}
-                  onChange={(event) => setCandidateName(event.target.value)}
-                  className="mt-1 w-40 border-b border-dashed border-slate-300 bg-transparent text-sm font-semibold outline-none"
-                />
-              </div>
-            </div>
             <div className="grid grid-cols-2 gap-3 px-4 py-4 text-[11px] text-slate-700">
               <div className="flex items-center gap-2">
                 <span className="inline-flex h-8 w-10 items-center justify-center rounded bg-emerald-500 text-white">

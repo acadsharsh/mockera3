@@ -145,7 +145,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
         }
 
         return (
-          <p key={`para-${idx}`} className="text-[16px] leading-7">
+          <p key={`para-${idx}`} className="text-[18px] leading-7">
             {block.lines.map((line, lineIdx) => (
               <span key={`${line}-${lineIdx}`}>
                 {renderBold(line)}
