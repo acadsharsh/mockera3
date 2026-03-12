@@ -92,6 +92,6 @@ export async function POST(request: Request) {
   return runSanitize(request);
 }
 
-export async function GET() {
-  return runSanitize();
+export async function GET(request: Request) {
+  return runSanitize(request);
 }
