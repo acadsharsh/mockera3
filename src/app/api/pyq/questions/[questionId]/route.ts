@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sanitizeFromDB } from "@/lib/latex-escape";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ questionId: string }> }) {
   const cacheHeaders = {
@@ -63,5 +64,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ questio
     percent: total ? Math.round((count / total) * 100) : 0,
   }));
 
-  return NextResponse.json({ item, stats: { total, distribution } }, { headers: cacheHeaders });
+  const sanitized = {
+    ...item,
+    prompt: sanitizeFromDB(item.prompt ?? ""),
+    solution: sanitizeFromDB(item.solution ?? ""),
+    options: Array.isArray(item.options) ? (item.options as string[]).map(sanitizeFromDB) : item.options,
+  };
+
+  return NextResponse.json({ item: sanitized, stats: { total, distribution } }, { headers: cacheHeaders });
 }

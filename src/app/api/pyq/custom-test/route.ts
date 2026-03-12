@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/auth-helpers";
+import { sanitizeForDB, sanitizeFromDB } from "@/lib/latex-escape";
 
 const parseIntMaybe = (value: string | null) => {
   if (!value) return null;
@@ -86,9 +87,11 @@ export async function POST(req: Request) {
           cropY: q.cropY,
           cropW: q.cropW,
           cropH: q.cropH,
-          prompt: q.prompt,
-          solution: q.solution ?? null,
-          options: q.options ?? Prisma.JsonNull,
+          prompt: sanitizeForDB(sanitizeFromDB(q.prompt ?? "")),
+          solution: q.solution ? sanitizeForDB(sanitizeFromDB(q.solution)) : null,
+          options: Array.isArray(q.options)
+            ? (q.options as string[]).map((option) => sanitizeForDB(sanitizeFromDB(option)))
+            : Prisma.JsonNull,
           chapter: q.chapter,
           topic: q.topic,
         })),

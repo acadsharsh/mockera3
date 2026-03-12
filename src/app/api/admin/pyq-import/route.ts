@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptions, sanitizeQuestionText } from "@/lib/text-sanitize";
+import { sanitizeForDB } from "@/lib/latex-escape";
 import { v2 as cloudinary } from "cloudinary";
 
 type ImportLang = "en" | "hi";
@@ -444,9 +445,12 @@ const buildQuestionRows = (testId: string, questions: RawQuestion[]) =>
       cropY: 0,
       cropW: 1,
       cropH: 1,
-      prompt: question.prompt,
-      solution: question.solution,
-      options: question.questionType === "NUM" ? [] : question.options,
+      prompt: sanitizeForDB(question.prompt),
+      solution: question.solution ? sanitizeForDB(question.solution) : null,
+      options:
+        question.questionType === "NUM"
+          ? []
+          : question.options.map((option) => sanitizeForDB(option)),
     };
   });
 

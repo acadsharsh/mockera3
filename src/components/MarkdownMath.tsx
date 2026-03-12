@@ -69,8 +69,7 @@ const normalizeText = (value: string) => {
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t")
     .replace(/\\r/g, "\r")
-    .replace(/\\\$/g, "$")
-    .replace(/\\\\/g, "\\");
+    .replace(/\\\$/g, "$");
 
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
   return unescaped.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
@@ -89,16 +88,6 @@ const fixLatex = (text: string) => {
     .replace(/(?<!\\)sqrt/g, "\\sqrt")
     .replace(/(?<!\\)text\{/g, "\\text{")
     .replace(/(?<!\\)cdot/g, "\\cdot")
-    .replace(/(?<!\\)alpha/g, "\\alpha")
-    .replace(/(?<!\\)beta/g, "\\beta")
-    .replace(/(?<!\\)gamma/g, "\\gamma")
-    .replace(/(?<!\\)delta/g, "\\delta")
-    .replace(/(?<!\\)omega/g, "\\omega")
-    .replace(/(?<!\\)theta/g, "\\theta")
-    .replace(/(?<!\\)lambda/g, "\\lambda")
-    .replace(/(?<!\\)mu/g, "\\mu")
-    .replace(/(?<!\\)sigma/g, "\\sigma")
-    .replace(/(?<!\\)pi(?![a-z])/g, "\\pi")
     .replace(/(?<!\\)infty/g, "\\infty")
     .replace(/(?<!\\)pm/g, "\\pm")
     .replace(/(?<!\\)leq/g, "\\leq")
@@ -171,7 +160,7 @@ const renderMathText = (text: string) => {
 };
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
-  const normalized = useMemo(() => normalizeText(fixLatex(text ?? "")), [text]);
+  const normalized = useMemo(() => fixLatex(normalizeText(text ?? "")), [text]);
   const blocks = useMemo(() => parseBlocks(normalized), [normalized]);
 
   if (process.env.NODE_ENV !== "production") {
@@ -179,7 +168,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
     // eslint-disable-next-line no-console
     console.log("RAW TEXT:", text);
     // eslint-disable-next-line no-console
-    console.log("NORMALIZED TEXT:", normalized);
+    console.log("BEFORE KATEX:", normalized);
   }
 
   return (

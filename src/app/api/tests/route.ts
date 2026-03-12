@@ -8,6 +8,7 @@ const parseAdminEmails = () =>
     .filter(Boolean);
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptions, sanitizeQuestionText } from "@/lib/text-sanitize";
+import { sanitizeForDB, sanitizeFromDB } from "@/lib/latex-escape";
 import { Prisma } from "@prisma/client";
 
 type Crop = {
@@ -58,9 +59,9 @@ const mapTest = (test: any) => ({
     marks: "+4/-1",
     difficulty: q.difficulty,
     imageDataUrl: q.imageUrl,
-    questionText: q.prompt ?? "",
-    solution: q.solution ?? "",
-    options: (q.options as string[]) ?? [],
+    questionText: sanitizeFromDB(q.prompt ?? ""),
+    solution: sanitizeFromDB(q.solution ?? ""),
+    options: Array.isArray(q.options) ? (q.options as string[]).map(sanitizeFromDB) : [],
     questionType: q.questionType as Crop["questionType"],
     correctOptions: q.correctOption ? (q.correctOption as string).split(",") : [],
     correctNumeric: q.correctNumeric ?? undefined,
@@ -206,9 +207,9 @@ export async function POST(request: Request) {
           cropY: crop.y,
           cropW: crop.w,
           cropH: crop.h,
-          prompt: sanitizeQuestionText(crop.questionText ?? ""),
-          solution: crop.solution ? sanitizeQuestionText(crop.solution) : null,
-          options: sanitizeOptions(crop.options ?? []),
+          prompt: sanitizeForDB(sanitizeQuestionText(crop.questionText ?? "")),
+          solution: crop.solution ? sanitizeForDB(sanitizeQuestionText(crop.solution)) : null,
+          options: sanitizeOptions(crop.options ?? []).map(sanitizeForDB),
         })),
       },
     },
@@ -325,9 +326,9 @@ export async function PUT(request: Request) {
             cropY: crop.y,
             cropW: crop.w,
             cropH: crop.h,
-            prompt: sanitizeQuestionText(crop.questionText ?? ""),
-            solution: crop.solution ? sanitizeQuestionText(crop.solution) : null,
-            options: sanitizeOptions(crop.options ?? []),
+            prompt: sanitizeForDB(sanitizeQuestionText(crop.questionText ?? "")),
+            solution: crop.solution ? sanitizeForDB(sanitizeQuestionText(crop.solution)) : null,
+            options: sanitizeOptions(crop.options ?? []).map(sanitizeForDB),
           })),
         },
       },
@@ -447,9 +448,9 @@ export async function PATCH(request: Request) {
               cropY: 0,
               cropW: 0,
               cropH: 0,
-              prompt: sanitizeQuestionText(q.questionText ?? ""),
-              solution: q.solution ? sanitizeQuestionText(q.solution) : null,
-              options: sanitizeOptions(Array.isArray(q.options) ? q.options : []),
+              prompt: sanitizeForDB(sanitizeQuestionText(q.questionText ?? "")),
+              solution: q.solution ? sanitizeForDB(sanitizeQuestionText(q.solution)) : null,
+              options: sanitizeOptions(Array.isArray(q.options) ? q.options : []).map(sanitizeForDB),
             };
           }),
         },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
+import { sanitizeFromDB } from "@/lib/latex-escape";
 
 export async function GET(request: Request) {
   await requireUser();
@@ -75,6 +76,10 @@ export async function GET(request: Request) {
     questions: room.questions.map((q) => ({
       order: q.order,
       ...q.question,
+      prompt: sanitizeFromDB(q.question.prompt ?? ""),
+      options: Array.isArray(q.question.options)
+        ? (q.question.options as string[]).map(sanitizeFromDB)
+        : q.question.options,
     })),
   });
 }

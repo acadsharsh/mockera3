@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sanitizeFromDB } from "@/lib/latex-escape";
 
 const parseIntMaybe = (value: string | null) => {
   if (!value) return null;
@@ -50,5 +51,12 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  return NextResponse.json({ total, items }, { headers: cacheHeaders });
+  const sanitized = items.map((item) => ({
+    ...item,
+    prompt: sanitizeFromDB(item.prompt ?? ""),
+    solution: sanitizeFromDB(item.solution ?? ""),
+    options: Array.isArray(item.options) ? (item.options as string[]).map(sanitizeFromDB) : item.options,
+  }));
+
+  return NextResponse.json({ total, items: sanitized }, { headers: cacheHeaders });
 }

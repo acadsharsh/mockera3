@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptions, sanitizeQuestionText } from "@/lib/text-sanitize";
+import { sanitizeForDB } from "@/lib/latex-escape";
 
 const runSanitize = async (request?: Request) => {
   await requireAdmin();
@@ -68,9 +69,13 @@ const runSanitize = async (request?: Request) => {
     processed += questions.length;
 
     for (const question of questions) {
-      const nextPrompt = sanitizeQuestionText(question.prompt ?? "");
-      const nextSolution = question.solution ? sanitizeQuestionText(question.solution) : null;
-      const nextOptions = sanitizeOptions(Array.isArray(question.options) ? question.options : []);
+      const nextPrompt = sanitizeForDB(sanitizeQuestionText(question.prompt ?? ""));
+      const nextSolution = question.solution
+        ? sanitizeForDB(sanitizeQuestionText(question.solution))
+        : null;
+      const nextOptions = sanitizeOptions(Array.isArray(question.options) ? question.options : []).map(
+        sanitizeForDB
+      );
 
       const promptChanged = nextPrompt !== (question.prompt ?? "");
       const solutionChanged = (nextSolution ?? null) !== (question.solution ?? null);
