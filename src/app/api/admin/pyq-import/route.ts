@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
+import { sanitizeOptions, sanitizeQuestionText } from "@/lib/text-sanitize";
 import { v2 as cloudinary } from "cloudinary";
 
 type ImportLang = "en" | "hi";
@@ -208,10 +209,10 @@ const normalizeOptions = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
   return value
     .map((option) => {
-      if (typeof option === "string") return htmlToText(option);
+      if (typeof option === "string") return sanitizeQuestionText(option);
       if (option && typeof option === "object") {
         const record = option as Record<string, unknown>;
-        return htmlToText(record.content ?? record.text ?? "");
+        return sanitizeQuestionText(record.content ?? record.text ?? "");
       }
       return "";
     })
@@ -241,7 +242,7 @@ const parseExamGoalShape = (payload: any, lang: ImportLang): RawQuestion[] => {
         item?.question?.hi ??
         {};
 
-      const prompt = htmlToText(langBlock?.content ?? item?.prompt ?? item?.questionText ?? "");
+      const prompt = sanitizeQuestionText(langBlock?.content ?? item?.prompt ?? item?.questionText ?? "");
       if (!prompt) continue;
       const imageUrl = extractFirstImageUrl(
         langBlock?.content,
@@ -306,7 +307,7 @@ const parseExamGoalShape = (payload: any, lang: ImportLang): RawQuestion[] => {
         options: questionType === "NUM" ? [] : options,
         correctOptions: finalCorrectOptions,
         correctNumeric,
-        solution: htmlToText(langBlock?.explanation ?? item?.solution ?? "") || null,
+        solution: sanitizeQuestionText(langBlock?.explanation ?? item?.solution ?? "") || null,
         imageUrl,
       });
     }
@@ -321,7 +322,7 @@ const parseGenericShape = (payload: any): RawQuestion[] => {
   const meta = (payload?.meta ?? {}) as Record<string, unknown>;
 
   for (const item of questions) {
-    const prompt = htmlToText(item?.text ?? item?.prompt ?? item?.question ?? "");
+    const prompt = sanitizeQuestionText(item?.text ?? item?.prompt ?? item?.question ?? "");
     if (!prompt) continue;
     const questionType = normalizeQuestionType(item?.questionType ?? item?.type);
     const answerValue = String(item?.answer ?? "").trim();
@@ -386,7 +387,7 @@ const parseGenericShape = (payload: any): RawQuestion[] => {
         questionType === "NUM"
           ? String(item?.correctNumeric ?? answerValue ?? "").trim() || null
           : null,
-      solution: htmlToText(item?.solution ?? item?.explanation ?? "") || null,
+      solution: sanitizeQuestionText(item?.solution ?? item?.explanation ?? "") || null,
       imageUrl,
     });
   }

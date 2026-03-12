@@ -7,6 +7,7 @@ const parseAdminEmails = () =>
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
 import { prisma } from "@/lib/prisma";
+import { sanitizeOptions, sanitizeQuestionText } from "@/lib/text-sanitize";
 import { Prisma } from "@prisma/client";
 
 type Crop = {
@@ -205,9 +206,9 @@ export async function POST(request: Request) {
           cropY: crop.y,
           cropW: crop.w,
           cropH: crop.h,
-          prompt: crop.questionText ?? "",
-          solution: crop.solution ?? null,
-          options: crop.options ?? [],
+          prompt: sanitizeQuestionText(crop.questionText ?? ""),
+          solution: crop.solution ? sanitizeQuestionText(crop.solution) : null,
+          options: sanitizeOptions(crop.options ?? []),
         })),
       },
     },
@@ -324,9 +325,9 @@ export async function PUT(request: Request) {
             cropY: crop.y,
             cropW: crop.w,
             cropH: crop.h,
-            prompt: crop.questionText ?? "",
-            solution: crop.solution ?? null,
-            options: crop.options ?? [],
+            prompt: sanitizeQuestionText(crop.questionText ?? ""),
+            solution: crop.solution ? sanitizeQuestionText(crop.solution) : null,
+            options: sanitizeOptions(crop.options ?? []),
           })),
         },
       },
@@ -446,9 +447,9 @@ export async function PATCH(request: Request) {
               cropY: 0,
               cropW: 0,
               cropH: 0,
-              prompt: q.questionText ?? "",
-              solution: q.solution ?? null,
-              options: Array.isArray(q.options) ? q.options : [],
+              prompt: sanitizeQuestionText(q.questionText ?? ""),
+              solution: q.solution ? sanitizeQuestionText(q.solution) : null,
+              options: sanitizeOptions(Array.isArray(q.options) ? q.options : []),
             };
           }),
         },
