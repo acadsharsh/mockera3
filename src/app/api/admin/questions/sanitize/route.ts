@@ -3,19 +3,21 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptions, sanitizeQuestionText } from "@/lib/text-sanitize";
 
-export async function POST(request: Request) {
+const runSanitize = async (request?: Request) => {
   await requireAdmin();
 
   let batchSize = 200;
   let cursor: string | null = null;
-  try {
-    const body = await request.json();
-    if (Number.isFinite(body?.batchSize)) {
-      batchSize = Math.min(500, Math.max(50, Number(body.batchSize)));
+  if (request) {
+    try {
+      const body = await request.json();
+      if (Number.isFinite(body?.batchSize)) {
+        batchSize = Math.min(500, Math.max(50, Number(body.batchSize)));
+      }
+      if (body?.cursor) cursor = String(body.cursor);
+    } catch {
+      // ignore
     }
-    if (body?.cursor) cursor = String(body.cursor);
-  } catch {
-    // ignore
   }
 
   const questions = await prisma.question.findMany({
@@ -55,4 +57,12 @@ export async function POST(request: Request) {
     nextCursor,
     done: questions.length < batchSize,
   });
+};
+
+export async function POST(request: Request) {
+  return runSanitize(request);
+}
+
+export async function GET() {
+  return runSanitize();
 }
