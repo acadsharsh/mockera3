@@ -228,7 +228,7 @@ type MathJaxChunkProps = {
 };
 
 const MathJaxChunk = ({ content, display = false }: MathJaxChunkProps) => {
-  const containerRef = useRef<HTMLElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | HTMLSpanElement | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -239,8 +239,10 @@ const MathJaxChunk = ({ content, display = false }: MathJaxChunkProps) => {
     mathJax.typesetPromise([container]).catch(() => undefined);
   }, [content]);
 
-  const Wrapper = display ? "div" : "span";
-  return <Wrapper ref={containerRef}>{content}</Wrapper>;
+  if (display) {
+    return <div ref={containerRef}>{content}</div>;
+  }
+  return <span ref={containerRef}>{content}</span>;
 };
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
