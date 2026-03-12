@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
 
 type MarkdownMathProps = {
@@ -77,28 +78,24 @@ const normalizeText = (value: string) => {
   });
 };
 
-const fixLatex = (text: string) => {
+const fixLatexMath = (text: string) => {
   if (!text) return "";
   return text
-    .replace(/(?<!\\)times/g, "\\times")
-    .replace(/(?<!\\)leftharpoons/g, "\\leftharpoons")
-    .replace(/(?<!\\)rightarrow/g, "\\rightarrow")
-    .replace(/(?<!\\)leftarrow/g, "\\leftarrow")
-    .replace(/(?<!\\)frac/g, "\\frac")
-    .replace(/(?<!\\)sqrt/g, "\\sqrt")
-    .replace(/(?<!\\)text\{/g, "\\text{")
-    .replace(/(?<!\\)cdot/g, "\\cdot")
-    .replace(/(?<!\\)infty/g, "\\infty")
-    .replace(/(?<!\\)pm/g, "\\pm")
-    .replace(/(?<!\\)leq/g, "\\leq")
-    .replace(/(?<!\\)geq/g, "\\geq")
-    .replace(/(?<!\\)neq/g, "\\neq")
-    .replace(/(?<!\\)approx/g, "\\approx")
-    .replace(/(?<!\\)rightleftharpoons/g, "\\rightleftharpoons")
-    .replace(/imes/g, "\\times")
-    .replace(/ext\{/g, "\\text{")
-    .replace(/rac\{/g, "\\frac{")
-    .replace(/qrt\{/g, "\\sqrt{");
+    .replace(/(^|[^\\])rightleftharpoons\b/g, "$1\\rightleftharpoons")
+    .replace(/(^|[^\\])leftharpoons\b/g, "$1\\leftharpoons")
+    .replace(/(^|[^\\])rightarrow\b/g, "$1\\rightarrow")
+    .replace(/(^|[^\\])leftarrow\b/g, "$1\\leftarrow")
+    .replace(/(^|[^\\])times\b/g, "$1\\times")
+    .replace(/(^|[^\\])frac\b/g, "$1\\frac")
+    .replace(/(^|[^\\])sqrt\b/g, "$1\\sqrt")
+    .replace(/(^|[^\\])text\{/g, "$1\\text{")
+    .replace(/(^|[^\\])cdot\b/g, "$1\\cdot")
+    .replace(/(^|[^\\])infty\b/g, "$1\\infty")
+    .replace(/(^|[^\\])pm\b/g, "$1\\pm")
+    .replace(/(^|[^\\])leq\b/g, "$1\\leq")
+    .replace(/(^|[^\\])geq\b/g, "$1\\geq")
+    .replace(/(^|[^\\])neq\b/g, "$1\\neq")
+    .replace(/(^|[^\\])approx\b/g, "$1\\approx");
 };
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
@@ -119,7 +116,12 @@ const parseBlocks = (value: string): TextBlock[] => {
     const lines = block.split(/\n/).filter((line) => line.trim().length > 0);
     if (lines.length >= 2 && lines[0].includes("|") && isTableSeparator(lines[1])) {
       const headers = parseTableRow(lines[0]);
-      const rows = lines.slice(2).map(parseTableRow);
+      const rows = lines.slice(2).map((line) => {
+        const cells = parseTableRow(line);
+        const trimmed = cells.slice(0, headers.length);
+        while (trimmed.length < headers.length) trimmed.push("");
+        return trimmed;
+      });
       parsed.push({ type: "table", headers, rows });
       return;
     }
@@ -142,25 +144,79 @@ const renderBold = (text: string) => {
   );
 };
 
+const splitMathSegments = (input: string) => {
+  const segments: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
+  let buffer = "";
+  let inMath = false;
+  let display = false;
+
+  const flushText = () => {
+    if (buffer) segments.push({ type: "text", value: buffer });
+    buffer = "";
+  };
+
+  const flushMath = () => {
+    if (buffer) segments.push({ type: "math", value: buffer, display });
+    buffer = "";
+  };
+
+  for (let i = 0; i < input.length; i += 1) {
+    const char = input[i];
+    const next = input[i + 1];
+
+    if (char === "\\" && next === "$") {
+      buffer += "$";
+      i += 1;
+      continue;
+    }
+
+    if (char === "$") {
+      const isDouble = next === "$";
+      if (!inMath) {
+        flushText();
+        inMath = true;
+        display = isDouble;
+        if (isDouble) i += 1;
+        continue;
+      }
+      if (inMath && display === isDouble) {
+        flushMath();
+        inMath = false;
+        display = false;
+        if (isDouble) i += 1;
+        continue;
+      }
+    }
+
+    buffer += char;
+  }
+
+  if (inMath) {
+    segments.push({ type: "text", value: (display ? "$$" : "$") + buffer });
+  } else if (buffer) {
+    segments.push({ type: "text", value: buffer });
+  }
+
+  return segments;
+};
+
 const renderMathText = (text: string) => {
-  const parts = text.split(/(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g);
-  return parts
-    .filter((part) => part.length > 0)
-    .map((part, idx) => {
-      if (part.startsWith("$$") && part.endsWith("$$")) {
-        const math = part.slice(2, -2);
-        return <BlockMath key={`block-${idx}`} math={math} />;
-      }
-      if (part.startsWith("$") && part.endsWith("$")) {
-        const math = part.slice(1, -1);
-        return <InlineMath key={`inline-${idx}`} math={math} />;
-      }
-      return <span key={`text-${idx}`}>{renderBold(part)}</span>;
-    });
+  const parts = splitMathSegments(text);
+  return parts.map((part, idx) => {
+    if (part.type === "math") {
+      const math = fixLatexMath(part.value);
+      return part.display ? (
+        <BlockMath key={`block-${idx}`} math={math} errorColor="#cc0000" />
+      ) : (
+        <InlineMath key={`inline-${idx}`} math={math} errorColor="#cc0000" />
+      );
+    }
+    return <span key={`text-${idx}`}>{renderBold(part.value)}</span>;
+  });
 };
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
-  const normalized = useMemo(() => fixLatex(normalizeText(text ?? "")), [text]);
+  const normalized = useMemo(() => normalizeText(text ?? ""), [text]);
   const blocks = useMemo(() => parseBlocks(normalized), [normalized]);
 
   if (process.env.NODE_ENV !== "production") {
