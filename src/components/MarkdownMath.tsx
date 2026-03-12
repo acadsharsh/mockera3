@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { MathJax } from "better-react-mathjax";
+import { Fragment, useEffect, useMemo, useRef } from "react";
 
 type MarkdownMathProps = {
   text: string;
@@ -217,14 +216,31 @@ const renderMathText = (text: string) => {
     if (part.type === "math") {
       const math = fixLatexMath(part.value);
       const wrapped = part.display ? `\\[${math}\\]` : `\\(${math}\\)`;
-      return (
-        <MathJax key={`math-${idx}`} inline={!part.display} dynamic>
-          {wrapped}
-        </MathJax>
-      );
+      return <MathJaxChunk key={`math-${idx}`} content={wrapped} display={part.display} />;
     }
-    return <React.Fragment key={`text-frag-${idx}`}>{renderBold(part.value)}</React.Fragment>;
+    return <Fragment key={`text-frag-${idx}`}>{renderBold(part.value)}</Fragment>;
   });
+};
+
+type MathJaxChunkProps = {
+  content: string;
+  display?: boolean;
+};
+
+const MathJaxChunk = ({ content, display = false }: MathJaxChunkProps) => {
+  const containerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof window === "undefined") return;
+    const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
+    if (!mathJax?.typesetPromise) return;
+    mathJax.typesetClear?.([container]);
+    mathJax.typesetPromise([container]).catch(() => undefined);
+  }, [content]);
+
+  const Wrapper = display ? "div" : "span";
+  return <Wrapper ref={containerRef}>{content}</Wrapper>;
 };
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {

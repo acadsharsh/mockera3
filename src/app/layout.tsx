@@ -58,6 +58,24 @@ export default function RootLayout({
           type="module"
           strategy="afterInteractive"
         />
+        <Script id="mathjax-config" strategy="beforeInteractive">
+          {`window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
+    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],
+    processEscapes: true,
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+};`}
+        </Script>
+        <Script
+          id="mathjax-script"
+          async
+          src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"
+          strategy="beforeInteractive"
+        />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-D1VHC992WK"
           strategy="afterInteractive"

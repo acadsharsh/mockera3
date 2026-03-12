@@ -1,6 +1,6 @@
 "use client";
 
-import { MathJax } from "better-react-mathjax";
+import { useEffect, useMemo, useRef } from "react";
 
 type MathJaxTextProps = {
   text: string;
@@ -18,17 +18,26 @@ export default function MathJaxText({ text, inline = false, className }: MathJax
     return <span className={className}>{text}</span>;
   }
 
-  const content = hasDelimiters(text)
-    ? text
-    : inline
-    ? `\\(${text}\\)`
-    : `\\[${text}\\]`;
+  const content = useMemo(
+    () =>
+      hasDelimiters(text) ? text : inline ? `\\(${text}\\)` : `\\[${text}\\]`,
+    [inline, text]
+  );
+  const containerRef = useRef<HTMLElement | null>(null);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof window === "undefined") return;
+    const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
+    if (!mathJax?.typesetPromise) return;
+    mathJax.typesetClear?.([container]);
+    mathJax.typesetPromise([container]).catch(() => undefined);
+  }, [content]);
+
+  const Wrapper = inline ? "span" : "div";
   return (
-    <span className={className}>
-      <MathJax inline={inline} dynamic>
-        {content}
-      </MathJax>
-    </span>
+    <Wrapper ref={containerRef} className={className}>
+      {content}
+    </Wrapper>
   );
 }
