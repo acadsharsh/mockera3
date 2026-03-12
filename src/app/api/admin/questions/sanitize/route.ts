@@ -18,7 +18,10 @@ const runSanitize = async (request?: Request) => {
       batchSize = Math.min(500, Math.max(50, Number(qsBatch)));
     }
     if (qsCursor) cursor = String(qsCursor);
-    if (qsAuto === "1" || qsAuto === "true") auto = true;
+    if (qsAuto !== null) {
+      const normalized = qsAuto.trim().toLowerCase();
+      auto = normalized === "" || normalized === "1" || normalized === "true" || normalized === "yes";
+    }
     try {
       const body = await request.json();
       if (Number.isFinite(body?.batchSize)) {
