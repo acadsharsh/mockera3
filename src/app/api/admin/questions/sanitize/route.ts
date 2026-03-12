@@ -8,6 +8,8 @@ const runSanitize = async (request?: Request) => {
 
   let batchSize = 200;
   let auto = false;
+  let maxBatches = 1;
+  let maxSeconds = 6;
   let cursor: string | null = null;
   if (request) {
     const url = new URL(request.url);
@@ -22,6 +24,14 @@ const runSanitize = async (request?: Request) => {
       const normalized = qsAuto.trim().toLowerCase();
       auto = normalized === "" || normalized === "1" || normalized === "true" || normalized === "yes";
     }
+    const qsBatches = url.searchParams.get("batches");
+    if (qsBatches && Number.isFinite(Number(qsBatches))) {
+      maxBatches = Math.min(20, Math.max(1, Number(qsBatches)));
+    }
+    const qsSeconds = url.searchParams.get("seconds");
+    if (qsSeconds && Number.isFinite(Number(qsSeconds))) {
+      maxSeconds = Math.min(20, Math.max(2, Number(qsSeconds)));
+    }
     try {
       const body = await request.json();
       if (Number.isFinite(body?.batchSize)) {
@@ -29,6 +39,12 @@ const runSanitize = async (request?: Request) => {
       }
       if (body?.cursor) cursor = String(body.cursor);
       if (body?.auto) auto = true;
+      if (Number.isFinite(body?.batches)) {
+        maxBatches = Math.min(20, Math.max(1, Number(body.batches)));
+      }
+      if (Number.isFinite(body?.seconds)) {
+        maxSeconds = Math.min(20, Math.max(2, Number(body.seconds)));
+      }
     } catch {
       // ignore
     }
@@ -39,6 +55,8 @@ const runSanitize = async (request?: Request) => {
   let nextCursor = cursor;
   let done = false;
 
+  const started = Date.now();
+  let batches = 0;
   do {
     const questions = await prisma.question.findMany({
       take: batchSize,
@@ -73,7 +91,8 @@ const runSanitize = async (request?: Request) => {
 
     nextCursor = questions.length ? questions[questions.length - 1].id : null;
     done = questions.length < batchSize;
-  } while (auto && !done);
+    batches += 1;
+  } while (auto && !done && batches < maxBatches && Date.now() - started < maxSeconds * 1000);
 
   return NextResponse.json({
     processed,
@@ -81,6 +100,9 @@ const runSanitize = async (request?: Request) => {
     nextCursor,
     done,
     auto,
+    batches,
+    maxBatches,
+    maxSeconds,
     debug: {
       url: request?.url ?? null,
       autoQuery: request ? new URL(request.url).searchParams.get("auto") : null,
