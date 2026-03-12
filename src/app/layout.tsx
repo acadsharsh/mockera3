@@ -60,10 +60,15 @@ export default function RootLayout({
         />
         <Script id="mathjax-config" strategy="beforeInteractive">
           {`window.MathJax = {
+  loader: { load: ['[tex]/mhchem', 'input/asciimath'] },
   tex: {
     inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
     displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],
     processEscapes: true,
+    packages: { '[+]': ['mhchem'] },
+  },
+  asciimath: {
+    delimiters: [['`', '`']],
   },
   options: {
     skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
