@@ -44,10 +44,13 @@ const normalizeText = (value: string) => {
     .replace(/\\\$/g, "$")
     .replace(/\\\\/g, "\\");
   const normalizeMathContent = (content: string) =>
-    content.replace(
-      /(^|[^\\])\b(times|cdot|sin|cos|tan|log|ln|sqrt|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega|rightleftharpoons|leftrightarrow|rightarrow|leftarrow|implies|iff)\b/gi,
-      "$1\\\\$2"
-    );
+    content
+      .replace(/\r?\n+/g, " ")
+      .replace(/(^|[^\\])\bightleftharpoons\b/gi, "$1\\\\rightleftharpoons")
+      .replace(
+        /(^|[^\\])\b(times|cdot|sin|cos|tan|log|ln|sqrt|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega|rightleftharpoons|leftrightarrow|rightarrow|leftarrow|implies|iff)\b/gi,
+        "$1\\\\$2"
+      );
   const normalizedLatex = unescaped
     // Normalize dollar-delimited math to MathJax's \\( \\) / \\[ \\] so markdown doesn't interfere.
     .replace(/\$\$([\s\S]+?)\$\$/g, (_match, content) => `\\[${content}\\]`)
