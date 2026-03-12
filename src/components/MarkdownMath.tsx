@@ -72,8 +72,14 @@ const normalizeText = (value: string) => {
     .replace(/\\r/g, "\r")
     .replace(/\\\$/g, "$");
 
+  // Fix backslash commands that appear outside math delimiters.
+  const fixedBareCmds = unescaped.replace(
+    /\\(rightleftharpoons|leftharpoons|rightarrow|leftarrow|times|frac|sqrt|cdot|infty|pm|leq|geq|neq|approx)\b/g,
+    (match) => `$${match}$`
+  );
+
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return unescaped.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  return fixedBareCmds.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
 };
