@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { renderKatexInElement } from "@/lib/katex-render";
+import { useMemo } from "react";
+import { InlineMath, BlockMath } from "react-katex";
 
 type MarkdownMathProps = {
   text: string;
@@ -71,52 +71,11 @@ const normalizeText = (value: string) => {
     .replace(/\\r/g, "\r")
     .replace(/\\\$/g, "$")
     .replace(/\\\\/g, "\\");
-  const normalizeMathContent = (content: string) =>
-    content
-      .replace(/\r?\n+/g, " ")
-      .replace(/(^|[^\\])\bightleftharpoons\b/gi, "$1\\\\rightleftharpoons")
-      .replace(/(^|[^\\])\bimes\b/gi, "$1\\\\times")
-      .replace(/(^|[^\\])\btimes(?=\d)/gi, "$1\\\\times")
-      .replace(/(^|[^\\])\btext\s*([A-Za-z]+)\b/gi, "$1\\\\text{$2}")
-      .replace(/\\left\s*\./g, "")
-      .replace(/\\left(?=\s*(?:[A-Za-z0-9]|\\))/g, "")
-      .replace(/\\right(?![\)\]\}|\|])/g, "")
-      .replace(/(^|[^\\])\bext\s*\{/gi, "$1\\\\text{")
-      .replace(/(^|[^\\])\bext\b/gi, "$1\\\\text")
-      .replace(
-        /(^|[^\\])\b(times|cdot|sin|cos|tan|log|ln|sqrt|pi|alpha|beta|gamma|theta|lambda|mu|eta|phi|psi|omega|rightleftharpoons|leftrightarrow|rightarrow|leftarrow|implies|iff)\b/gi,
-        "$1\\\\$2"
-      );
-  const normalizedLatex = unescaped
-    // Normalize dollar-delimited math to MathJax's \\( \\) / \\[ \\] so markdown doesn't interfere.
-    .replace(/\$\$([\s\S]+?)\$\$/g, (_match, content) => `\\[${content}\\]`)
-    .replace(/(^|[^\\])\$(?!\$)([^$\n]+?)\$(?!\$)/g, (_match, lead, content) => `${lead}\\(${content}\\)`)
-    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content) => `\\(${content}\\)`)
-    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content) => `\\[${content}\\]`);
-  const withTokensFixed = normalizedLatex
-    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content) => `\\(${normalizeMathContent(content)}\\)`)
-    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content) => `\\[${normalizeMathContent(content)}\\]`);
+
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  const withBracketed = withTokensFixed.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  return unescaped.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
-  return withBracketed
-    .replace(/\\\\rightleftharpoons/g, "\\rightleftharpoons")
-    .replace(/\r?\n+/g, "\n")
-    .split(/\n/)
-    .map((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return "";
-      const hasMathWrap = /(\$|\\\(|\\\[)/.test(trimmed);
-      const looksLikeEquation =
-        /rightleftharpoons|leftrightarrow|rightarrow|leftarrow/.test(trimmed) &&
-        /[_^]/.test(trimmed);
-      if (looksLikeEquation && !hasMathWrap) {
-        return `$${trimmed}$`;
-      }
-      return trimmed;
-    })
-    .join("\n");
 };
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
@@ -160,20 +119,29 @@ const renderBold = (text: string) => {
   );
 };
 
+const renderMathText = (text: string) => {
+  const parts = text.split(/(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g);
+  return parts
+    .filter((part) => part.length > 0)
+    .map((part, idx) => {
+      if (part.startsWith("$$") && part.endsWith("$$")) {
+        const math = part.slice(2, -2);
+        return <BlockMath key={`block-${idx}`} math={math} />;
+      }
+      if (part.startsWith("$") && part.endsWith("$")) {
+        const math = part.slice(1, -1);
+        return <InlineMath key={`inline-${idx}`} math={math} />;
+      }
+      return <span key={`text-${idx}`}>{renderBold(part)}</span>;
+    });
+};
+
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
-  const ref = useRef<HTMLDivElement | null>(null);
   const normalized = useMemo(() => normalizeText(text ?? ""), [text]);
-
-  useEffect(() => {
-    const host = ref.current;
-    if (!host) return;
-    requestAnimationFrame(() => renderKatexInElement(host));
-  }, [normalized]);
-
   const blocks = useMemo(() => parseBlocks(normalized), [normalized]);
 
   return (
-    <div ref={ref} className={className}>
+    <div className={className}>
       {blocks.map((block, idx) => {
         if (block.type === "table") {
           return (
@@ -189,7 +157,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
                         key={`${header}-${headerIdx}`}
                         className="border-r border-white/10 px-4 py-2 text-center last:border-r-0"
                       >
-                        {renderBold(header)}
+                        {renderMathText(header)}
                       </th>
                     ))}
                   </tr>
@@ -202,7 +170,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
                           key={`${rowIdx}-${cellIdx}`}
                           className="border-r border-slate-700/60 px-4 py-3 align-top text-slate-100 last:border-r-0"
                         >
-                          {renderBold(cell)}
+                          {renderMathText(cell)}
                         </td>
                       ))}
                     </tr>
@@ -217,7 +185,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
           <p key={`para-${idx}`} className="text-[18px] leading-7">
             {block.lines.map((line, lineIdx) => (
               <span key={`${line}-${lineIdx}`}>
-                {renderBold(line)}
+                {renderMathText(line)}
                 {lineIdx < block.lines.length - 1 ? <br /> : null}
               </span>
             ))}
