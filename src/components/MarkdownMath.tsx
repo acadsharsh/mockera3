@@ -78,6 +78,40 @@ const normalizeText = (value: string) => {
   });
 };
 
+const fixLatex = (text: string) => {
+  if (!text) return "";
+  return text
+    .replace(/(?<!\\)times/g, "\\times")
+    .replace(/(?<!\\)leftharpoons/g, "\\leftharpoons")
+    .replace(/(?<!\\)rightarrow/g, "\\rightarrow")
+    .replace(/(?<!\\)leftarrow/g, "\\leftarrow")
+    .replace(/(?<!\\)frac/g, "\\frac")
+    .replace(/(?<!\\)sqrt/g, "\\sqrt")
+    .replace(/(?<!\\)text\{/g, "\\text{")
+    .replace(/(?<!\\)cdot/g, "\\cdot")
+    .replace(/(?<!\\)alpha/g, "\\alpha")
+    .replace(/(?<!\\)beta/g, "\\beta")
+    .replace(/(?<!\\)gamma/g, "\\gamma")
+    .replace(/(?<!\\)delta/g, "\\delta")
+    .replace(/(?<!\\)omega/g, "\\omega")
+    .replace(/(?<!\\)theta/g, "\\theta")
+    .replace(/(?<!\\)lambda/g, "\\lambda")
+    .replace(/(?<!\\)mu/g, "\\mu")
+    .replace(/(?<!\\)sigma/g, "\\sigma")
+    .replace(/(?<!\\)pi(?![a-z])/g, "\\pi")
+    .replace(/(?<!\\)infty/g, "\\infty")
+    .replace(/(?<!\\)pm/g, "\\pm")
+    .replace(/(?<!\\)leq/g, "\\leq")
+    .replace(/(?<!\\)geq/g, "\\geq")
+    .replace(/(?<!\\)neq/g, "\\neq")
+    .replace(/(?<!\\)approx/g, "\\approx")
+    .replace(/(?<!\\)rightleftharpoons/g, "\\rightleftharpoons")
+    .replace(/imes/g, "\\times")
+    .replace(/ext\{/g, "\\text{")
+    .replace(/rac\{/g, "\\frac{")
+    .replace(/qrt\{/g, "\\sqrt{");
+};
+
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
 
 const parseTableRow = (line: string) =>
@@ -137,7 +171,7 @@ const renderMathText = (text: string) => {
 };
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
-  const normalized = useMemo(() => normalizeText(text ?? ""), [text]);
+  const normalized = useMemo(() => normalizeText(fixLatex(text ?? "")), [text]);
   const blocks = useMemo(() => parseBlocks(normalized), [normalized]);
 
   if (process.env.NODE_ENV !== "production") {
