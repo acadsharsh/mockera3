@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
+import { MathJax } from "better-react-mathjax";
 
 type MarkdownMathProps = {
   text: string;
@@ -11,30 +12,87 @@ type TextBlock =
   | { type: "text"; lines: string[] }
   | { type: "table"; headers: string[]; rows: string[][] };
 
+const deUnicodeText = (value: string): string => {
+  return value
+    // Unicode invisible times (U+2062) — main culprit in garbled PDF extraction
+    .replace(/\u2062/g, "")
+    // Unicode invisible separator characters
+    .replace(/\u2061/g, "") // function application
+    .replace(/\u2063/g, "") // invisible separator
+    .replace(/\u2064/g, "") // invisible plus
+    // Unicode minus → ASCII minus
+    .replace(/\u2212/g, "-")
+    // Superscript digits → ^{n}
+    .replace(/⁰/g, "^{0}").replace(/¹/g, "^{1}").replace(/²/g, "^{2}")
+    .replace(/³/g, "^{3}").replace(/⁴/g, "^{4}").replace(/⁵/g, "^{5}")
+    .replace(/⁶/g, "^{6}").replace(/⁷/g, "^{7}").replace(/⁸/g, "^{8}")
+    .replace(/⁹/g, "^{9}")
+    // Subscript digits → _{n}
+    .replace(/₀/g, "_{0}").replace(/₁/g, "_{1}").replace(/₂/g, "_{2}")
+    .replace(/₃/g, "_{3}").replace(/₄/g, "_{4}").replace(/₅/g, "_{5}")
+    .replace(/₆/g, "_{6}").replace(/₇/g, "_{7}").replace(/₈/g, "_{8}")
+    .replace(/₉/g, "_{9}")
+    // Unicode math operators
+    .replace(/×/g, "\\times ")
+    .replace(/·/g, "\\cdot ")
+    .replace(/÷/g, "\\div ")
+    .replace(/±/g, "\\pm ")
+    .replace(/≈/g, "\\approx ")
+    .replace(/≠/g, "\\neq ")
+    .replace(/≤/g, "\\leq ")
+    .replace(/≥/g, "\\geq ")
+    .replace(/→/g, "\\rightarrow ")
+    .replace(/←/g, "\\leftarrow ")
+    .replace(/⇌/g, "\\rightleftharpoons ")
+    // Italic Unicode letters (𝑎–𝑧) → plain ASCII a–z
+    .replace(/[\uD835][\uDC4E-\uDC67]/g, (c) => {
+      const cp = c.codePointAt(0);
+      return cp ? String.fromCharCode(cp - 0x1D44E + 97) : c;
+    })
+    // Italic Unicode letters (𝐴–𝑍) → plain ASCII A–Z
+    .replace(/[\uD835][\uDC34-\uDC4D]/g, (c) => {
+      const cp = c.codePointAt(0);
+      return cp ? String.fromCharCode(cp - 0x1D434 + 65) : c;
+    })
+    // Greek italic letters (𝛼 𝛽 𝛾 𝛿 etc.) → LaTeX commands
+    .replace(/𝛼/g, "\\alpha").replace(/𝛽/g, "\\beta").replace(/𝛾/g, "\\gamma")
+    .replace(/𝛿/g, "\\delta").replace(/𝜀/g, "\\varepsilon").replace(/𝜁/g, "\\zeta")
+    .replace(/𝜂/g, "\\eta").replace(/𝜃/g, "\\theta").replace(/𝜄/g, "\\iota")
+    .replace(/𝜅/g, "\\kappa").replace(/𝜆/g, "\\lambda").replace(/𝜇/g, "\\mu")
+    .replace(/𝜈/g, "\\nu").replace(/𝜉/g, "\\xi").replace(/𝜋/g, "\\pi")
+    .replace(/𝜌/g, "\\rho").replace(/𝜎/g, "\\sigma").replace(/𝜏/g, "\\tau")
+    .replace(/𝜐/g, "\\upsilon").replace(/𝜙/g, "\\phi").replace(/𝜒/g, "\\chi")
+    .replace(/𝜓/g, "\\psi").replace(/𝜔/g, "\\omega")
+    // Regular Unicode Greek letters
+    .replace(/α/g, "\\alpha").replace(/β/g, "\\beta").replace(/γ/g, "\\gamma")
+    .replace(/δ/g, "\\delta").replace(/ε/g, "\\varepsilon").replace(/ζ/g, "\\zeta")
+    .replace(/η/g, "\\eta").replace(/θ/g, "\\theta").replace(/λ/g, "\\lambda")
+    .replace(/μ/g, "\\mu").replace(/ν/g, "\\nu").replace(/ξ/g, "\\xi")
+    .replace(/π/g, "\\pi").replace(/ρ/g, "\\rho").replace(/σ/g, "\\sigma")
+    .replace(/τ/g, "\\tau").replace(/φ/g, "\\phi").replace(/χ/g, "\\chi")
+    .replace(/ψ/g, "\\psi").replace(/ω/g, "\\omega")
+    .replace(/Ω/g, "\\Omega").replace(/Δ/g, "\\Delta").replace(/Σ/g, "\\Sigma")
+    .replace(/Γ/g, "\\Gamma").replace(/Λ/g, "\\Lambda").replace(/Π/g, "\\Pi")
+    .replace(/Φ/g, "\\Phi").replace(/Ψ/g, "\\Psi");
+};
+
 const normalizeText = (value: string) => {
   const convertMathMLToTex = (input: string) => {
     if (typeof window === "undefined" || typeof DOMParser === "undefined") return input;
-    
-    // Match the ENTIRE container, not just the assistive-mml, to prevent leaving raw SVG code behind
-    const containerRegex = /<mjx-container[\s\S]*?<\/mjx-container>/gi;
-    
-    return input.replace(containerRegex, (match) => {
+    const assistiveRegex = /<mjx-assistive-mml[\s\S]*?<\/mjx-assistive-mml>/gi;
+    return input.replace(assistiveRegex, (match) => {
       const mathMatch = match.match(/<math[\s\S]*?<\/math>/i);
-      if (!mathMatch) return match; // fallback to original if extraction fails
-
+      if (!mathMatch) return "";
       try {
         const doc = new DOMParser().parseFromString(mathMatch[0], "application/xml");
         const math = doc.querySelector("math");
-        if (!math) return match;
+        if (!math) return "";
 
         const nodeToTex = (node: Element): string => {
           const name = node.tagName.toLowerCase();
           const children = Array.from(node.children) as Element[];
           const text = node.textContent ?? "";
           const clean = text.replace(/\u2212/g, "-");
-
-          const childTex = (index: number) => (children[index] ? nodeToTex(children[index]) : "");
-
           switch (name) {
             case "mi":
             case "mn":
@@ -44,17 +102,17 @@ const normalizeText = (value: string) => {
             case "mrow":
               return children.map(nodeToTex).join("");
             case "msub":
-              return `${childTex(0)}_{${childTex(1)}}`;
+              return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}`;
             case "msup":
-              return `${childTex(0)}^{${childTex(1)}}`;
+              return `${nodeToTex(children[0])}^{${nodeToTex(children[1])}}`;
             case "msubsup":
-              return `${childTex(0)}_{${childTex(1)}}^{${childTex(2)}}`;
+              return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}^{${nodeToTex(children[2])}}`;
             case "mfrac":
-              return `\\frac{${childTex(0)}}{${childTex(1)}}`;
+              return `\\frac{${nodeToTex(children[0])}}{${nodeToTex(children[1])}}`;
             case "msqrt":
               return `\\sqrt{${children.map(nodeToTex).join("")}}`;
             case "mroot":
-              return `\\sqrt[${childTex(1)}]{${childTex(0)}}`;
+              return `\\sqrt[${nodeToTex(children[1])}]{${nodeToTex(children[0])}}`;
             case "mspace":
               return " ";
             default:
@@ -63,9 +121,9 @@ const normalizeText = (value: string) => {
         };
 
         const tex = nodeToTex(math);
-        return tex ? `$${tex}$` : match;
+        return tex ? `$${tex}$` : "";
       } catch {
-        return match;
+        return "";
       }
     });
   };
@@ -77,31 +135,8 @@ const normalizeText = (value: string) => {
     .replace(/\\r/g, "\r")
     .replace(/\\\$/g, "$");
 
-  const deUnicode = unescaped
-    .replace(/\u2062/g, "")
-    .replace(/\u2212/g, "-")
-    .replace(/⁰/g, "^{0}").replace(/¹/g, "^{1}").replace(/²/g, "^{2}")
-    .replace(/³/g, "^{3}").replace(/⁴/g, "^{4}").replace(/⁵/g, "^{5}")
-    .replace(/⁶/g, "^{6}").replace(/⁷/g, "^{7}").replace(/⁸/g, "^{8}")
-    .replace(/⁹/g, "^{9}")
-    .replace(/₀/g, "_{0}").replace(/₁/g, "_{1}").replace(/₂/g, "_{2}")
-    .replace(/₃/g, "_{3}").replace(/₄/g, "_{4}").replace(/₅/g, "_{5}")
-    .replace(/₆/g, "_{6}").replace(/₇/g, "_{7}").replace(/₈/g, "_{8}")
-    .replace(/₉/g, "_{9}")
-    .replace(/×/g, "\\times ")
-    .replace(/·/g, "\\cdot ")
-    .replace(/÷/g, "\\div ")
-    .replace(/±/g, "\\pm ")
-    .replace(/≈/g, "\\approx ")
-    .replace(/≠/g, "\\neq ")
-    .replace(/≤/g, "\\leq ")
-    .replace(/≥/g, "\\geq ")
-    .replace(/[\u{1D44E}-\u{1D467}]/gu, (c) =>
-      String.fromCharCode(c.codePointAt(0)! - 0x1d44e + 97)
-    )
-    .replace(/[\u{1D434}-\u{1D44D}]/gu, (c) =>
-      String.fromCharCode(c.codePointAt(0)! - 0x1d434 + 65)
-    );
+  // Strip Unicode math corruption (invisible chars, Unicode operators, italic letters)
+  const deUnicode = deUnicodeText(unescaped);
 
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
   return deUnicode.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
@@ -111,15 +146,20 @@ const normalizeText = (value: string) => {
 
 const fixLatexMath = (text: string): string => {
   if (!text) return "";
-  
-  // NOTE: Negative lookbehinds (e.g. `(?<!\\)`) throw fatal SyntaxErrors in Safari <16.4. 
-  // We handle unescaped LaTeX keywords safely with a capture group and a fallback function.
-  return text.replace(
-    /(\\)?(rightleftharpoons|leftharpoons|rightarrow|leftarrow|times|cdot|infty|approx|neq|leq|geq|pm|text\{)/g,
-    (match, backslash, keyword) => {
-      return backslash ? match : `\\${keyword}`;
-    }
-  );
+  return text
+    .replace(/(?<!\\)rightleftharpoons/g, "\\rightleftharpoons")
+    .replace(/(?<!\\)leftharpoons/g, "\\leftharpoons")
+    .replace(/(?<!\\)rightarrow/g, "\\rightarrow")
+    .replace(/(?<!\\)leftarrow/g, "\\leftarrow")
+    .replace(/(?<!\\)times/g, "\\times")
+    .replace(/(?<!\\)cdot/g, "\\cdot")
+    .replace(/(?<!\\)infty/g, "\\infty")
+    .replace(/(?<!\\)approx/g, "\\approx")
+    .replace(/(?<!\\)neq/g, "\\neq")
+    .replace(/(?<!\\)leq/g, "\\leq")
+    .replace(/(?<!\\)geq/g, "\\geq")
+    .replace(/(?<!\\)pm/g, "\\pm")
+    .replace(/(?<!\\)text\{/g, "\\text{");
 };
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
@@ -157,37 +197,30 @@ const parseBlocks = (value: string): TextBlock[] => {
 
 const renderBold = (text: string) => {
   const parts = text.split(/\*\*(.+?)\*\*/g);
-  return parts.map((part, idx) => {
-    if (!part) return null;
-    return idx % 2 === 1 ? (
-      <strong key={`bold-${idx}`} className="font-semibold">
+  return parts.map((part, idx) =>
+    idx % 2 === 1 ? (
+      <strong key={`${part}-${idx}`} className="font-semibold">
         {part}
       </strong>
     ) : (
-      <span key={`text-${idx}`}>{part}</span>
-    );
-  });
-};
-
-type MathSegment = {
-  type: "text" | "math";
-  value: string;
-  display?: boolean;
-  kind?: "tex" | "asciimath";
+      <span key={`${part}-${idx}`}>{part}</span>
+    )
+  );
 };
 
 const splitMathSegments = (input: string) => {
-  const segments: MathSegment[] = [];
+  const segments: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
   let buffer = "";
-  let mode: "text" | "tex-inline" | "tex-display" | "asciimath" = "text";
+  let inMath = false;
+  let display = false;
 
   const flushText = () => {
     if (buffer) segments.push({ type: "text", value: buffer });
     buffer = "";
   };
 
-  const flushMath = (kind: "tex" | "asciimath", display = false) => {
-    if (buffer) segments.push({ type: "math", value: buffer, display, kind });
+  const flushMath = () => {
+    if (buffer) segments.push({ type: "math", value: buffer, display });
     buffer = "";
   };
 
@@ -195,42 +228,26 @@ const splitMathSegments = (input: string) => {
     const char = input[i];
     const next = input[i + 1];
 
-    if (char === "\\" && (next === "$" || next === "`")) {
-      buffer += next;
+    if (char === "\\" && next === "$") {
+      buffer += "$";
       i += 1;
       continue;
     }
 
-    if (mode === "text") {
-      if (char === "$") {
-        const isDouble = next === "$";
+    if (char === "$") {
+      const isDouble = next === "$";
+      if (!inMath) {
         flushText();
-        mode = isDouble ? "tex-display" : "tex-inline";
+        inMath = true;
+        display = isDouble;
         if (isDouble) i += 1;
         continue;
       }
-      if (char === "`") {
-        flushText();
-        mode = "asciimath";
-        continue;
-      }
-    } else if (mode === "tex-inline") {
-      if (char === "$") {
-        flushMath("tex", false);
-        mode = "text";
-        continue;
-      }
-    } else if (mode === "tex-display") {
-      if (char === "$" && next === "$") {
-        flushMath("tex", true);
-        mode = "text";
-        i += 1;
-        continue;
-      }
-    } else if (mode === "asciimath") {
-      if (char === "`") {
-        flushMath("asciimath", false);
-        mode = "text";
+      if (inMath && display === isDouble) {
+        flushMath();
+        inMath = false;
+        display = false;
+        if (isDouble) i += 1;
         continue;
       }
     }
@@ -238,10 +255,8 @@ const splitMathSegments = (input: string) => {
     buffer += char;
   }
 
-  // Gracefully handle unclosed math elements
-  if (mode !== "text") {
-    const prefix = mode === "tex-display" ? "$$" : mode === "tex-inline" ? "$" : "`";
-    segments.push({ type: "text", value: prefix + buffer });
+  if (inMath) {
+    segments.push({ type: "text", value: buffer });
   } else if (buffer) {
     segments.push({ type: "text", value: buffer });
   }
@@ -253,56 +268,16 @@ const renderMathText = (text: string) => {
   const parts = splitMathSegments(text);
   return parts.map((part, idx) => {
     if (part.type === "math") {
-      if (part.kind === "asciimath") {
-        return <MathJaxChunk key={`math-${idx}`} content={`\`${part.value}\``} display={false} />;
-      }
       const math = fixLatexMath(part.value);
       const wrapped = part.display ? `\\[${math}\\]` : `\\(${math}\\)`;
-      return <MathJaxChunk key={`math-${idx}`} content={wrapped} display={part.display} />;
+      return (
+        <MathJax key={`math-${idx}`} inline={!part.display} dynamic>
+          {wrapped}
+        </MathJax>
+      );
     }
-    return <Fragment key={`text-frag-${idx}`}>{renderBold(part.value)}</Fragment>;
+    return <span key={`text-${idx}`}>{renderBold(part.value)}</span>;
   });
-};
-
-type MathJaxChunkProps = {
-  content: string;
-  display?: boolean;
-};
-
-const MathJaxChunk = ({ content, display = false }: MathJaxChunkProps) => {
-  const divRef = useRef<HTMLDivElement | null>(null);
-  const spanRef = useRef<HTMLSpanElement | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const container = display ? divRef.current : spanRef.current;
-    if (!container || typeof window === "undefined") return;
-
-    const typeset = async () => {
-      const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
-      if (!mathJax) return;
-      if (mathJax.startup?.promise) {
-        try {
-          await mathJax.startup.promise;
-        } catch {
-          return;
-        }
-      }
-      if (cancelled || !mathJax.typesetPromise) return;
-      mathJax.typesetClear?.([container]);
-      mathJax.typesetPromise([container]).catch(() => undefined);
-    };
-
-    void typeset();
-    return () => {
-      cancelled = true;
-    };
-  }, [content]);
-
-  if (display) {
-    return <div ref={divRef}>{content}</div>;
-  }
-  return <span ref={spanRef}>{content}</span>;
 };
 
 export default function MarkdownMath({ text, className }: MarkdownMathProps) {
@@ -310,7 +285,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
   const blocks = useMemo(() => parseBlocks(normalized), [normalized]);
 
   return (
-    <div className={className} suppressHydrationWarning>
+    <div className={className}>
       {blocks.map((block, idx) => {
         if (block.type === "table") {
           return (
@@ -323,7 +298,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
                   <tr>
                     {block.headers.map((header, headerIdx) => (
                       <th
-                        key={`th-${headerIdx}`}
+                        key={`${header}-${headerIdx}`}
                         className="border-r border-white/10 px-4 py-2 text-center last:border-r-0"
                       >
                         {renderMathText(header)}
@@ -336,7 +311,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
                     <tr key={`row-${rowIdx}`} className="border-t border-slate-700/60">
                       {row.map((cell, cellIdx) => (
                         <td
-                          key={`td-${rowIdx}-${cellIdx}`}
+                          key={`${rowIdx}-${cellIdx}`}
                           className="border-r border-slate-700/60 px-4 py-3 align-top text-slate-100 last:border-r-0"
                         >
                           {renderMathText(cell)}
@@ -353,7 +328,7 @@ export default function MarkdownMath({ text, className }: MarkdownMathProps) {
         return (
           <p key={`para-${idx}`} className="text-[18px] leading-7">
             {block.lines.map((line, lineIdx) => (
-              <span key={`line-${idx}-${lineIdx}`}>
+              <span key={`${line}-${lineIdx}`}>
                 {renderMathText(line)}
                 {lineIdx < block.lines.length - 1 ? <br /> : null}
               </span>

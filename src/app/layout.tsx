@@ -4,7 +4,6 @@ import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import Script from "next/script";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -53,44 +52,19 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${marcellus.variable} antialiased`}
       >
-        <Script
+        <script
           src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.11/dist/dotlottie-wc.js"
           type="module"
-          strategy="afterInteractive"
         />
-        <Script id="mathjax-config" strategy="beforeInteractive">
-          {`window.MathJax = {
-  loader: { load: ['[tex]/mhchem', 'input/asciimath'] },
-  tex: {
-    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
-    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],
-    processEscapes: true,
-    packages: { '[+]': ['mhchem'] },
-  },
-  asciimath: {
-    delimiters: [['\\u0060', '\\u0060']],
-  },
-  options: {
-    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-  },
-};`}
-        </Script>
-        <Script
-          id="mathjax-script"
-          async
-          src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"
-          strategy="beforeInteractive"
-        />
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-D1VHC992WK"
-          strategy="afterInteractive"
-        />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
+        <script src="https://www.googletagmanager.com/gtag/js?id=G-D1VHC992WK" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', 'G-D1VHC992WK');`}
-        </Script>
+gtag('config', 'G-D1VHC992WK');`,
+          }}
+        />
         <Providers>
           <PageTransition>{children}</PageTransition>
           <Toaster richColors />
