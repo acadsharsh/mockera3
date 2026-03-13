@@ -96,8 +96,12 @@ const normalizeText = (value: string) => {
     .replace(/≠/g, "\\neq ")
     .replace(/≤/g, "\\leq ")
     .replace(/≥/g, "\\geq ")
-    .replace(/[𝑎-𝑧]/g, (c) => String.fromCharCode(c.codePointAt(0)! - 0x1D44E + 97))
-    .replace(/[𝐴-𝑍]/g, (c) => String.fromCharCode(c.codePointAt(0)! - 0x1D434 + 65));
+    .replace(/[\u{1D44E}-\u{1D467}]/gu, (c) =>
+      String.fromCharCode(c.codePointAt(0)! - 0x1d44e + 97)
+    )
+    .replace(/[\u{1D434}-\u{1D44D}]/gu, (c) =>
+      String.fromCharCode(c.codePointAt(0)! - 0x1d434 + 65)
+    );
 
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
   return deUnicode.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
