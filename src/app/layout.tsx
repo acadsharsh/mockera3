@@ -68,7 +68,7 @@ export default function RootLayout({
     packages: { '[+]': ['mhchem'] },
   },
   asciimath: {
-    delimiters: [['\\`', '\\`']],
+    delimiters: [['\\u0060', '\\u0060']],
   },
   options: {
     skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
