@@ -77,8 +77,30 @@ const normalizeText = (value: string) => {
     .replace(/\\r/g, "\r")
     .replace(/\\\$/g, "$");
 
+  const deUnicode = unescaped
+    .replace(/\u2062/g, "")
+    .replace(/\u2212/g, "-")
+    .replace(/⁰/g, "^{0}").replace(/¹/g, "^{1}").replace(/²/g, "^{2}")
+    .replace(/³/g, "^{3}").replace(/⁴/g, "^{4}").replace(/⁵/g, "^{5}")
+    .replace(/⁶/g, "^{6}").replace(/⁷/g, "^{7}").replace(/⁸/g, "^{8}")
+    .replace(/⁹/g, "^{9}")
+    .replace(/₀/g, "_{0}").replace(/₁/g, "_{1}").replace(/₂/g, "_{2}")
+    .replace(/₃/g, "_{3}").replace(/₄/g, "_{4}").replace(/₅/g, "_{5}")
+    .replace(/₆/g, "_{6}").replace(/₇/g, "_{7}").replace(/₈/g, "_{8}")
+    .replace(/₉/g, "_{9}")
+    .replace(/×/g, "\\times ")
+    .replace(/·/g, "\\cdot ")
+    .replace(/÷/g, "\\div ")
+    .replace(/±/g, "\\pm ")
+    .replace(/≈/g, "\\approx ")
+    .replace(/≠/g, "\\neq ")
+    .replace(/≤/g, "\\leq ")
+    .replace(/≥/g, "\\geq ")
+    .replace(/[𝑎-𝑧]/g, (c) => String.fromCharCode(c.codePointAt(0)! - 0x1D44E + 97))
+    .replace(/[𝐴-𝑍]/g, (c) => String.fromCharCode(c.codePointAt(0)! - 0x1D434 + 65));
+
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return unescaped.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  return deUnicode.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
 };
@@ -143,19 +165,25 @@ const renderBold = (text: string) => {
   });
 };
 
+type MathSegment = {
+  type: "text" | "math";
+  value: string;
+  display?: boolean;
+  kind?: "tex" | "asciimath";
+};
+
 const splitMathSegments = (input: string) => {
-  const segments: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
+  const segments: MathSegment[] = [];
   let buffer = "";
-  let inMath = false;
-  let display = false;
+  let mode: "text" | "tex-inline" | "tex-display" | "asciimath" = "text";
 
   const flushText = () => {
     if (buffer) segments.push({ type: "text", value: buffer });
     buffer = "";
   };
 
-  const flushMath = () => {
-    if (buffer) segments.push({ type: "math", value: buffer, display });
+  const flushMath = (kind: "tex" | "asciimath", display = false) => {
+    if (buffer) segments.push({ type: "math", value: buffer, display, kind });
     buffer = "";
   };
 
@@ -163,36 +191,43 @@ const splitMathSegments = (input: string) => {
     const char = input[i];
     const next = input[i + 1];
 
-    if (char === "\\" && next === "$") {
-      buffer += "$";
+    if (char === "\\" && (next === "$" || next === "`")) {
+      buffer += next;
       i += 1;
       continue;
     }
 
-    if (char === "$") {
-      const isDouble = next === "$";
-
-      if (!inMath) {
+    if (mode === "text") {
+      if (char === "$") {
+        const isDouble = next === "$";
         flushText();
-        inMath = true;
-        display = isDouble;
+        mode = isDouble ? "tex-display" : "tex-inline";
         if (isDouble) i += 1;
         continue;
       }
-
-      if (inMath) {
-        if (display && isDouble) {
-          flushMath();
-          inMath = false;
-          display = false;
-          i += 1;
-          continue;
-        } else if (!display) {
-          flushMath();
-          inMath = false;
-          display = false;
-          continue;
-        }
+      if (char === "`") {
+        flushText();
+        mode = "asciimath";
+        continue;
+      }
+    } else if (mode === "tex-inline") {
+      if (char === "$") {
+        flushMath("tex", false);
+        mode = "text";
+        continue;
+      }
+    } else if (mode === "tex-display") {
+      if (char === "$" && next === "$") {
+        flushMath("tex", true);
+        mode = "text";
+        i += 1;
+        continue;
+      }
+    } else if (mode === "asciimath") {
+      if (char === "`") {
+        flushMath("asciimath", false);
+        mode = "text";
+        continue;
       }
     }
 
@@ -200,8 +235,8 @@ const splitMathSegments = (input: string) => {
   }
 
   // Gracefully handle unclosed math elements
-  if (inMath) {
-    const prefix = display ? "$$" : "$";
+  if (mode !== "text") {
+    const prefix = mode === "tex-display" ? "$$" : mode === "tex-inline" ? "$" : "`";
     segments.push({ type: "text", value: prefix + buffer });
   } else if (buffer) {
     segments.push({ type: "text", value: buffer });
@@ -214,6 +249,9 @@ const renderMathText = (text: string) => {
   const parts = splitMathSegments(text);
   return parts.map((part, idx) => {
     if (part.type === "math") {
+      if (part.kind === "asciimath") {
+        return <MathJaxChunk key={`math-${idx}`} content={`\`${part.value}\``} display={false} />;
+      }
       const math = fixLatexMath(part.value);
       const wrapped = part.display ? `\\[${math}\\]` : `\\(${math}\\)`;
       return <MathJaxChunk key={`math-${idx}`} content={wrapped} display={part.display} />;
@@ -232,12 +270,29 @@ const MathJaxChunk = ({ content, display = false }: MathJaxChunkProps) => {
   const spanRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const container = display ? divRef.current : spanRef.current;
     if (!container || typeof window === "undefined") return;
-    const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
-    if (!mathJax?.typesetPromise) return;
-    mathJax.typesetClear?.([container]);
-    mathJax.typesetPromise([container]).catch(() => undefined);
+
+    const typeset = async () => {
+      const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
+      if (!mathJax) return;
+      if (mathJax.startup?.promise) {
+        try {
+          await mathJax.startup.promise;
+        } catch {
+          return;
+        }
+      }
+      if (cancelled || !mathJax.typesetPromise) return;
+      mathJax.typesetClear?.([container]);
+      mathJax.typesetPromise([container]).catch(() => undefined);
+    };
+
+    void typeset();
+    return () => {
+      cancelled = true;
+    };
   }, [content]);
 
   if (display) {

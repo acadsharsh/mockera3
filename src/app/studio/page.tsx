@@ -1266,47 +1266,72 @@ CRITICAL: Return ALL questions from the paper in order. Do not skip any question
 
 ---
 
-## Rules (KaTeX-safe LaTeX — read every rule carefully)
+## Rules (KaTeX-safe LaTeX ? read every rule carefully)
+
+### Unicode Math Characters ? CRITICAL
+Never output Unicode math characters as plain text. This includes:
+- Superscript digits: ⁰¹²³⁴⁵⁶⁷⁸⁹ ? always use ^{} inside $...$
+- Subscript digits: ₀₁₂₃₄₅₆₇₈₉ ? always use _{} inside $...$
+- Unicode minus sign: − (U+2212) ? always use - inside $...$
+- Unicode multiplication: × ? always 	imes inside $...$
+- Unicode middle dot: · ? always \cdot inside $...$
+- Unicode division: ÷ ? always \div inside $...$
+- Unicode plus-minus: ± ? always \pm inside $...$
+- Unicode approximately: ≈ ? always pprox inside $...$
+- Unicode not-equal: ≠ ? always 
+eq inside $...$
+- Unicode leq/geq: ≤ ≥ ? always \leq \geq inside $...$
+- Unicode arrows: → ← ⇌ → ? always ightarrow \leftarrow ightleftharpoons inside $...$
+- Italic/bold Unicode letters used as variables: 𝑖 𝑚 𝑥 𝑎 𝑛 etc. ? plain letter inside $...$
+- Unicode invisible times (U+2062) between characters ? use 	imes or \cdot inside $...$
+
+Examples of correct reconstruction:
+- PDF shows: 𝑖⁢𝑚⁢𝑒⁢𝑠⁢10−1 M ? correct: $i 	imes 10^{-1}$ M
+- PDF shows: 1.8 × 10⁻⁵ ? correct: $1.8 	imes 10^{-5}$
+- PDF shows: K_a value ? correct: $K_a$
+- PDF shows: v² − u² ? correct: $v^2 - u^2$
+- PDF shows: 2·5 (middle dot) ? correct: $2 \cdot 5$
 
 ### General Math Formatting
-- All LaTeX MUST be wrapped in $...$ (inline) or $$...$$ (display). Never write bare LaTeX commands like \\frac, \\sin, \\vec outside math delimiters.
-- Use \\frac{a}{b} for fractions. Never write a/b for math fractions or use frac without backslash.
-- Use \\vec{a} for vectors, \\hat{a} for unit vectors.
-- Use \\times for multiplication, \\cdot for dot product.
-- Use \\pi, \\sin, \\cos, \\tan, \\log, \\ln, \\sqrt{x} etc. with backslashes always inside $.
+- All LaTeX MUST be wrapped in $...$ (inline) or $$...$$ (display). Never write bare LaTeX commands like rac, \sin, ec outside math delimiters.
+- Use rac{a}{b} for fractions. Never write a/b for math fractions or use frac without backslash.
+- Use ec{a} for vectors, \hat{a} for unit vectors.
+- Use 	imes for multiplication, \cdot for dot product.
+- Use \pi, \sin, \cos, 	an, \log, \ln, \sqrt{x} etc. with backslashes always inside $.
 
-### Ratios of Subscripted Variables — CRITICAL
-Never write two subscripted variables separated by / inside a single $...$. Always use \\frac{}{} instead.
-- ✅ Correct: $\\gamma = \\frac{C_p}{C_v}$, $\\frac{V_1}{V_2}$, $\\frac{T_1}{T_2}$, $\\frac{\\lambda_e}{\\lambda_p}$
-- ❌ Wrong: $C_p/C_v$, $V_1/V_2$, $T_1/T_2$ — KaTeX sees chained subscripts and throws a parse error
+### Ratios of Subscripted Variables ? CRITICAL
+Never write two subscripted variables separated by / inside a single $...$. Always use rac{}{} instead.
+- ? Correct: $\gamma = rac{C_p}{C_v}$, $rac{V_1}{V_2}$, $rac{T_1}{T_2}$, $rac{\lambda_e}{\lambda_p}$
+- ? Wrong: $C_p/C_v$, $V_1/V_2$, $T_1/T_2$ ? KaTeX sees chained subscripts and throws a parse error
 
-### Superscripts and Subscripts — CRITICAL
+### Superscripts and Subscripts ? CRITICAL
 - Single-character superscripts/subscripts do NOT need braces: x^2, a_n are fine.
-- Multi-character superscripts/subscripts MUST have braces: x^{10}, a_{ij}, e^{-x}, 10^{-3} — always use {} when the argument is 2 or more characters.
-- Ion charges MUST use \\text{} for the sign character — KaTeX treats + and - inside ^{...} as binary operators, which causes parse errors. The only safe fix is to wrap the sign in \\text{}:
-  - ✅ Correct: Fe^{3\\text{+}}, Fe^{2\\text{+}}, Cu^{2\\text{+}}, Ca^{2\\text{+}}, O^{2\\text{-}}
-  - ✅ Correct: I^{\\text{-}}, Cl^{\\text{-}}, e^{\\text{-}}, H^{\\text{+}}, Na^{\\text{+}}, NO^{\\text{+}}, NH_4^{\\text{+}}, MnO_4^{\\text{-}}, Cr_2O_7^{2\\text{-}}
-  - ❌ Wrong: Fe^{3+}, I^{-}, NO^{+}, e^{-}, H^{+} — +/− inside ^{} without \\text{} ALWAYS errors in KaTeX
-  - ❌ Wrong: I^-, NO^+, e^- — bare sign with no braces at all
+- Multi-character superscripts/subscripts MUST have braces: x^{10}, a_{ij}, e^{-x}, 10^{-3} ? always use {} when the argument is 2 or more characters.
+- Ion charges MUST use 	ext{} for the sign character ? KaTeX treats + and - inside ^{...} as binary operators, which causes parse errors. The only safe fix is to wrap the sign in 	ext{}:
+  - ? Correct: Fe^{3	ext{+}}, Fe^{2	ext{+}}, Cu^{2	ext{+}}, Ca^{2	ext{+}}, O^{2	ext{-}}
+  - ? Correct: I^{	ext{-}}, Cl^{	ext{-}}, e^{	ext{-}}, H^{	ext{+}}, Na^{	ext{+}}, NO^{	ext{+}}, NH_4^{	ext{+}}, MnO_4^{	ext{-}}, Cr_2O_7^{2	ext{-}}
+  - ? Wrong: Fe^{3+}, I^{-}, NO^{+}, e^{-}, H^{+} ? +/? inside ^{} without 	ext{} ALWAYS errors in KaTeX
+  - ? Wrong: I^-, NO^+, e^- ? bare sign with no braces at all
 - Never chain subscripts or superscripts: never x_a_b or _{a}_{b}. Use x_{ab} or nest properly.
 
 ### Subscripts in Named Constants and Variables
 - Multi-letter subscripts must be braced: k_{B}T, E_{cell}, E_{cathode}, n_{i}, C_{eq}, I_{total}, v_{max}, m_{eff}.
-- Single-letter or Greek subscripts need no braces: \\mu_0, \\epsilon_0, C_v, T_1.
+- Single-letter or Greek subscripts need no braces: \mu_0, \epsilon_0, C_v, T_1.
 
 ### Fractions and Operators
-- Always \\frac{numerator}{denominator} — both arguments must be brace-wrapped even for single chars: \\frac{1}{2} not \\frac12.
-- Square roots: \\sqrt{expr} — always brace the argument: \\sqrt{3} not \\sqrt3.
-- Integrals and sums: \\int_{a}^{b}, \\sum_{n=1}^{\\infty} — all limits in braces.
+- Always rac{numerator}{denominator} ? both arguments must be brace-wrapped even for single chars: rac{1}{2} not rac12.
+- Square roots: \sqrt{expr} ? always brace the argument: \sqrt{3} not \sqrt3.
+- Integrals and sums: \int_{a}^{b}, \sum_{n=1}^{\infty} ? all limits in braces.
 
 ### Pre-Submit Checklist (verify mentally for every field before finalizing)
-1. ✅ Every \\command is inside $...$ or $$...$$.
-2. ✅ Every ^ or _ with 2+ characters has {} around the full argument.
-3. ✅ Every bare ^+ or ^- replaced with ^{+} or ^{-}.
-4. ✅ No chained subscripts: no _x_y anywhere.
-5. ✅ Every \\frac, \\sqrt, \\sum, \\int has all arguments in {}.
-6. ✅ All ion charges use \\text{} for the sign: ^{2\\text{+}}, ^{\\text{-}}, ^{\\text{+}} — never raw ^{2+} or ^{-} or ^+.
-7. ✅ No subscripted variable / subscripted variable inline — always use \\frac{}{} for ratios of subscripted quantities.
+1. ? Every \command is inside $...$ or $$...$$.
+2. ? Every ^ or _ with 2+ characters has {} around the full argument.
+3. ? Every bare ^+ or ^- replaced with ^{+} or ^{-}.
+4. ? No chained subscripts: no _x_y anywhere.
+5. ? Every rac, \sqrt, \sum, \int has all arguments in {}.
+6. ? All ion charges use 	ext{} for the sign: ^{2	ext{+}}, ^{	ext{-}}, ^{	ext{+}} ? never raw ^{2+} or ^{-} or ^+.
+7. ? No subscripted variable / subscripted variable inline ? always use rac{}{} for ratios of subscripted quantities.
+8. ? No Unicode math characters anywhere in the output ? every superscript, subscript, operator, and symbol is proper LaTeX inside $...$.
 
 ---
 
@@ -1315,7 +1340,13 @@ Never write two subscripted variables separated by / inside a single $...$. Alwa
 ### Statement-Type Questions
 For "Given below are two statements" questions, always format the text field as:
 
-"Given below are two statements:\\n\\n**Statement I:** <text>\\n\\n**Statement II:** <text>\\n\\nIn the light of the above statements, choose the correct answer from the options given below:"
+"Given below are two statements:
+
+**Statement I:** <text>
+
+**Statement II:** <text>
+
+In the light of the above statements, choose the correct answer from the options given below:"
 
 - Never write Statement I and Statement II inline in a single paragraph.
 - Always put each statement on its own line with a blank line separating them.
@@ -1323,7 +1354,16 @@ For "Given below are two statements" questions, always format the text field as:
 ### Match List Questions
 Always render List-I and List-II as a markdown table inside the text field:
 
-"Match List-I with List-II.\\n\\n| List-I | List-II |\\n|---|---|\\n| A. <text> | I. <text> |\\n| B. <text> | II. <text> |\\n| C. <text> | III. <text> |\\n| D. <text> | IV. <text> |\\n\\nChoose the correct answer:"
+"Match List-I with List-II.
+
+| List-I | List-II |
+|---|---|
+| A. <text> | I. <text> |
+| B. <text> | II. <text> |
+| C. <text> | III. <text> |
+| D. <text> | IV. <text> |
+
+Choose the correct answer:"
 
 - Never write match lists as plain paragraph text.
 - Math inside table cells must still follow all LaTeX rules above.
@@ -1339,21 +1379,21 @@ Always render List-I and List-II as a markdown table inside the text field:
 
 ---
 
-### Ion Formulas with Slashes — CRITICAL
+### Ion Formulas with Slashes ? CRITICAL
 
-When two ion formulas are separated by / (e.g. electrode notation like Fe³⁺/Fe²⁺), they MUST be written as two separate $...$ blocks with the slash outside math entirely:
+When two ion formulas are separated by / (e.g. electrode notation like Fe??/Fe??), they MUST be written as two separate $...$ blocks with the slash outside math entirely:
 
-- ✅ Correct: $Fe^{3\\text{+}}$/$Fe^{2\\text{+}}$
-- ✅ Correct: $I_2$/$I^{\\text{-}}$
-- ✅ Correct: $MnO_4^{\\text{-}}$/$Mn^{2\\text{+}}$
-- ❌ Wrong: $Fe^{3\\text{+}}/Fe^{2\\text{+}}$ — slash inside a single $...$ after a charged superscript causes KaTeX parser errors
+- ? Correct: $Fe^{3	ext{+}}$/$Fe^{2	ext{+}}$
+- ? Correct: $I_2$/$I^{	ext{-}}$
+- ? Correct: $MnO_4^{	ext{-}}$/$Mn^{2	ext{+}}$
+- ? Wrong: $Fe^{3	ext{+}}/Fe^{2	ext{+}}$ ? slash inside a single $...$ after a charged superscript causes KaTeX parser errors
 
 This rule applies only to ion/charge formulas. Regular math fractions written with / inside a single $...$ are fine:
-- ✅ Fine: $PV^{5/3}$, $(1+2x)^{1/x}$, $\\sin(1/x)$, $T^{3/2}$, $x/m$
+- ? Fine: $PV^{5/3}$, $(1+2x)^{1/x}$, $\sin(1/x)$, $T^{3/2}$, $x/m$
 
 ---
 
-### PDF Text Extraction Corruption — CRITICAL
+### PDF Text Extraction Corruption ? CRITICAL
 
 PDF-to-text parsers often mangle math expressions into garbage strings. Never copy raw extracted text for mathematical expressions. Always visually read the rendered formula from the PDF/image and reconstruct the LaTeX from scratch.
 
@@ -1361,27 +1401,35 @@ Common corruption patterns to watch for and correct:
 
 | Corrupted (never use) | Correct LaTeX |
 |---|---|
-| fracpi2 | \\frac{\\pi}{2} |
-| fracpi3 | \\frac{\\pi}{3} |
-| fracpi4 | \\frac{\\pi}{4} |
-| fracpi6 | \\frac{\\pi}{6} |
-| frac2pi3 | \\frac{2\\pi}{3} |
-| fracab | \\frac{a}{b} |
-| frac12 | \\frac{1}{2} |
-| sin2x | \\sin^2 x |
-| cos2x | \\cos^{2} x |
+| fracpi2 | rac{\pi}{2} |
+| fracpi3 | rac{\pi}{3} |
+| fracpi4 | rac{\pi}{4} |
+| fracpi6 | rac{\pi}{6} |
+| frac2pi3 | rac{2\pi}{3} |
+| fracab | rac{a}{b} |
+| frac12 | rac{1}{2} |
+| sin2x | \sin^2 x |
+| cos2x | \cos^{2} x |
 | 1+2x (from 1+2^x) | 1+2^x |
-| Jfracpi2 (from integral) | \\int_{-\\pi/2}^{\\pi/2} |
-| S-fracpi2 (from integral) | \\int_{-\\pi/2}^{\\pi/2} |
-| sqrtx | \\sqrt{x} |
-| limx-0 | \\lim_{x \\to 0} |
-| sumni1 | \\sum_{n=1}^{\\infty} |
+| Jfracpi2 (from integral) | \int_{-\pi/2}^{\pi/2} |
+| S-fracpi2 (from integral) | \int_{-\pi/2}^{\pi/2} |
+| sqrtx | \sqrt{x} |
+| limx-0 | \lim_{x 	o 0} |
+| sumni1 | \sum_{n=1}^{\infty} |
+| 𝑖⁢𝑚⁢𝑒⁢𝑠⁢10−1 M | $i 	imes 10^{-1}$ M |
+| 1.8 × 10⁻⁵ | $1.8 	imes 10^{-5}$ |
+| v² − u² | $v^2 - u^2$ |
+| K_a (plain text) | $K_a$ |
+| 10⁻¹ (Unicode superscript) | $10^{-1}$ |
+| ⁻¹, ⁻², ⁻³ (Unicode) | ^{-1}, ^{-2}, ^{-3} inside $...$ |
+| · (Unicode middle dot) | \cdot inside $...$ |
 
 Rule: If you see any string that looks like concatenated LaTeX command names without backslashes or braces (e.g. fracpi2, sqrta, sin2x), it is a corrupted extraction. Stop, look at the original rendered image, and write the correct LaTeX manually.
 
 The integral from the image above is a perfect example:
 - Corrupted extraction: I = Jfracpi2-fracpi2 sin2x / 1+2x dx
-- Correct LaTeX: $I = \\int_{-\\pi/2}^{\\pi/2} \\frac{\\sin^2 x}{1+2^x}\\, dx$`;
+- Correct LaTeX: $I = \int_{-\pi/2}^{\pi/2} rac{\sin^2 x}{1+2^x}\, dx$
+`;
 
   const userJsonPrompt = adminJsonPrompt;
 

@@ -27,12 +27,29 @@ export default function MathJaxText({ text, inline = false, className }: MathJax
   const spanRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const container = inline ? spanRef.current : divRef.current;
     if (!container || typeof window === "undefined") return;
-    const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
-    if (!mathJax?.typesetPromise) return;
-    mathJax.typesetClear?.([container]);
-    mathJax.typesetPromise([container]).catch(() => undefined);
+
+    const typeset = async () => {
+      const mathJax = (window as typeof window & { MathJax?: any }).MathJax;
+      if (!mathJax) return;
+      if (mathJax.startup?.promise) {
+        try {
+          await mathJax.startup.promise;
+        } catch {
+          return;
+        }
+      }
+      if (cancelled || !mathJax.typesetPromise) return;
+      mathJax.typesetClear?.([container]);
+      mathJax.typesetPromise([container]).catch(() => undefined);
+    };
+
+    void typeset();
+    return () => {
+      cancelled = true;
+    };
   }, [content]);
 
   if (inline) {
