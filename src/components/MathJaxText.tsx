@@ -13,16 +13,35 @@ const hasMathSyntax = (value: string) => /\\[A-Za-z]+|[_^$]/.test(value);
 
 const hasDelimiters = (value: string) => /\$\$|\$|\\\[|\\\]|\\\(|\\\)/.test(value);
 
+const normalizeChemFormula = (value: string) => {
+  if (!value) return value;
+  if (hasDelimiters(value) || /\\[A-Za-z]+/.test(value)) return value;
+  if (!/[A-Za-z]/.test(value)) return value;
+  if (!/\d/.test(value) && !/[+-]\s*$/.test(value)) return value;
+  if (!/^[A-Za-z0-9\s()+\-]+$/.test(value)) return value;
+
+  let out = value.trim().replace(/\s+/g, " ");
+  out = out.replace(/([A-Z][a-z]?)(\d+)/g, "$1_{$2}");
+  out = out.replace(/(.+?)\s*([0-9]+)\s*([+-])$/, (_m, base, num, sign) => {
+    return `${base}^{${num}\\text{${sign}}}`;
+  });
+  out = out.replace(/(.+?)\s*([+-])$/, (_m, base, sign) => {
+    return `${base}^{\\text{${sign}}}`;
+  });
+  return out;
+};
+
 export default function MathJaxText({ text, inline = false, className }: MathJaxTextProps) {
   if (!text) return null;
-  if (!hasMathSyntax(text)) {
-    return <span className={className}>{text}</span>;
+  const normalizedText = normalizeChemFormula(text);
+  if (!hasMathSyntax(normalizedText)) {
+    return <span className={className}>{normalizedText}</span>;
   }
 
   const content = useMemo(() => {
-    if (hasDelimiters(text)) return text;
-    return inline ? `$${text}$` : `$$${text}$$`;
-  }, [inline, text]);
+    if (hasDelimiters(normalizedText)) return normalizedText;
+    return inline ? `$${normalizedText}$` : `$$${normalizedText}$$`;
+  }, [inline, normalizedText]);
 
   if (inline) {
     return (
