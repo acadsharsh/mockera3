@@ -139,10 +139,21 @@ const normalizeText = (value: string) => {
   const deUnicode = deUnicodeText(unescaped);
   const cleanedLatex = deUnicode.replace(/(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
 
-  // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return cleanedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  const withBracketedDims = cleanedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
+
+  const formattedOptions = withBracketedDims.replace(
+    /(^|[\s;])\(([A-D])\)\s*/g,
+    (match, lead, label, offset, str) => {
+      const normalized = `${label.toLowerCase()}) `;
+      if (offset === 0) return `${lead}${normalized}`;
+      if (lead && lead !== "\n") return `\n${normalized}`;
+      return `${lead}${normalized}`;
+    }
+  );
+
+  return formattedOptions;
 };
 
 const fixLatexMath = (text: string): string => {
