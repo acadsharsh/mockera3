@@ -153,6 +153,35 @@ const normalizeText = (value: string) => {
     }
   );
 
+  const inlineTablePattern = /\|\s*-{3,}\s*\|\s*-{3,}\s*\|/;
+  if (inlineTablePattern.test(formattedOptions) && !formattedOptions.includes("\n")) {
+    const tokens = formattedOptions
+      .split("|")
+      .map((token) => token.trim())
+      .filter((token) => token.length > 0);
+    if (tokens.length >= 5 && tokens[3]?.startsWith("-") && tokens[4]?.startsWith("-")) {
+      const intro = tokens[0];
+      const header1 = tokens[1];
+      const header2 = tokens[2];
+      let idx = 5;
+      const rows: Array<[string, string]> = [];
+      while (idx + 1 < tokens.length) {
+        const left = tokens[idx];
+        const right = tokens[idx + 1];
+        if (left.toLowerCase().startsWith("choose the correct answer")) break;
+        rows.push([left, right]);
+        idx += 2;
+      }
+      const trailing = tokens.slice(idx).join(" ").trim();
+      const tableLines = [
+        `| ${header1} | ${header2} |`,
+        "|---|---|",
+        ...rows.map(([left, right]) => `| ${left} | ${right} |`),
+      ];
+      return [intro, "", ...tableLines, ...(trailing ? ["", trailing] : [])].join("\n");
+    }
+  }
+
   return formattedOptions;
 };
 
