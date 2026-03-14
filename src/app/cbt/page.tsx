@@ -1221,13 +1221,13 @@ export default function CBT() {
 
             <div className="flex flex-wrap gap-2">
               <button
-                className="rounded border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700 disabled:opacity-50"
+                className="h-10 w-[180px] flex-none whitespace-nowrap rounded border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700 disabled:opacity-50"
                 onClick={() => setActiveIndex(findNextInSection("prev"))}
               >
                 BACK
               </button>
               <button
-                className="rounded bg-[#2f855a] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
+                className="h-10 w-[180px] flex-none whitespace-nowrap rounded bg-[#2f855a] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
                 onClick={() =>
                   setActiveIndex((prev) => Math.min(questions.length - 1, prev + 1))
                 }
@@ -1236,14 +1236,14 @@ export default function CBT() {
                 SAVE & NEXT
               </button>
               <button
-                className="rounded bg-[#e2e8f0] px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 disabled:opacity-50"
+                className="h-10 w-[180px] flex-none whitespace-nowrap rounded bg-[#e2e8f0] px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 disabled:opacity-50"
                 onClick={() => setAnswers((prev) => ({ ...prev, [activeQuestion.id]: "" }))}
                 disabled={solutionMode}
               >
                 CLEAR
               </button>
               <button
-                className="rounded bg-[#f59e0b] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
+                className="h-10 w-[180px] flex-none whitespace-nowrap rounded bg-[#f59e0b] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
                 onClick={() => {
                   toggleReview(activeQuestion.id);
                   setActiveIndex((prev) => Math.min(questions.length - 1, prev + 1));
@@ -1253,7 +1253,7 @@ export default function CBT() {
                 SAVE & MARK FOR REVIEW
               </button>
               <button
-                className="rounded bg-[#2563eb] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
+                className="h-10 w-[180px] flex-none whitespace-nowrap rounded bg-[#2563eb] px-2.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
                 onClick={() => toggleReview(activeQuestion.id)}
                 disabled={solutionMode}
               >
