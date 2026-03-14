@@ -188,6 +188,7 @@ const normalizeText = (value: string) => {
 const fixLatexMath = (text: string): string => {
   if (!text) return "";
   return text
+    .replace(/\\t\{([+-])\}/g, "$1")
     .replace(/\\t([A-Za-z]+)/g, "\\text{$1}")
     .replace(/\\left(?!\s*[\(\[\{\|\.])/g, "\\left.")
     .replace(/\\right(?!\s*[\)\]\}\|\.])/g, "\\right.")
