@@ -164,7 +164,7 @@ const fixLatexMath = (text: string): string => {
 };
 
 const fixMathOnlyGlitches = (text: string): string =>
-  text.replace(/3ext-/g, "^{3-}").replace(/2ext-/g, "^{2-}");
+  text.replace(/(?:\^)?\s*([23])\s*ext\s*[-−]/g, (_match, charge) => `^{${charge}-}`);
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
 
