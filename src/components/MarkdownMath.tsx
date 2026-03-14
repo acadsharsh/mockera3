@@ -159,6 +159,7 @@ const normalizeText = (value: string) => {
 const fixLatexMath = (text: string): string => {
   if (!text) return "";
   return text
+    .replace(/\\t([A-Za-z]+)/g, "\\text{$1}")
     .replace(/\\left(?!\s*[\(\[\{\|\.])/g, "\\left.")
     .replace(/\\right(?!\s*[\)\]\}\|\.])/g, "\\right.")
     .replace(/\\x\s*(?=(?:\\rightarrow|→|\\to))/g, "")
@@ -305,7 +306,7 @@ const expandTextCommands = (
   parts: Array<{ type: "text" | "math"; value: string; display?: boolean }>
 ) => {
   const expanded: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
-  const pattern = /\\text\{[^}]+\}/g;
+  const pattern = /\\(?:text\{[^}]+\}|Omega|mu|implies)/g;
 
   parts.forEach((part) => {
     if (part.type !== "text") {
