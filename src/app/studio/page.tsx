@@ -1237,19 +1237,19 @@ const [isPanning, setIsPanning] = useState(false);
 
   const adminJsonPrompt = `# JEE Question Extraction Prompt (v3.0 - JSON & MathJax Optimized)
 
-Extract all questions from the provided document into a strict JSON format. 
+Extract all questions from the provided document into a strict JSON format.
 
 ### 1. THE GOLDEN RULE: JSON ESCAPING
-Every LaTeX backslash MUST be double-escaped (\\) to prevent JSON parsing errors.
-- Correct: "\\\\frac", "\\\\times", "\\\\Omega", "\\\\text{+}"
-- Incorrect: "\frac", "\times", "\t", "\n" (These will break the JSON parser)
+Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing errors.
+- Correct: "\\\\\\\\frac", "\\\\\\\\times", "\\\\\\\\Omega", "\\\\\\\\text{+}"
+- Incorrect: "\\\\frac", "\\\\times", "\\\\t", "\\\\n" (These will break the JSON parser)
 
 ### 2. JSON Schema
 {
   "questions": [
     {
       "number": 1,
-      "text": "Question text with double-escaped LaTeX (e.g., $1.8 \\\\times 10^{-5}$)",
+      "text": "Question text with double-escaped LaTeX (e.g., $1.8 \\\\\\\\times 10^{-5}$)",
       "questionType": "MCQ|MSQ|NUM",
       "options": ["A", "B", "C", "D"],
       "answer": "A",
@@ -1270,23 +1270,23 @@ Every LaTeX backslash MUST be double-escaped (\\) to prevent JSON parsing errors
 ---
 
 ### 3. MathJax & Rendering Rules
-- **Encapsulation:** Wrap ALL math/variables in `$ ... $`.
-- **Braces:** Always use braces `{}` for subscripts/superscripts with 2+ characters (e.g., $10^{-3}$).
-- **Ion Charges:** MathJax requires signs to be in text. Use `^{2 \\text{+}}` or `^{ \\text{-}}`.
-- **Broken Symbols:** Fix OCR errors manually:
-    - 'imes' -> `\\times`
-    - 'xo0' -> `x \\to 0`
-    - 'fracpi2' -> `\\frac{\\pi}{2}`
-- **Unicode:** Never use plain Unicode (?, ?, ?, ?, ?). Convert them to LaTeX.
-- **Ratios:** Never use `C_p/C_v` in math mode; always use `\\frac{C_p}{C_v}`.
+- Encapsulation: Wrap ALL math/variables in $ ... $.
+- Braces: Always use braces {} for subscripts/superscripts with 2+ characters (e.g., $10^{-3}$).
+- Ion Charges: MathJax requires signs to be in text. Use ^{2 \\\\text{+}} or ^{ \\\\text{-}}.
+- Broken Symbols: Fix OCR errors manually:
+    - 'imes' -> \\\\\\\\times
+    - 'xo0' -> x \\\\\\\\to 0
+    - 'fracpi2' -> \\\\\\\\frac{\\\\\\\\pi}{2}
+- Unicode: Never use plain Unicode (?, ?, ?, ?, ?). Convert them to LaTeX.
+- Ratios: Never use C_p/C_v in math mode; always use \\\\\\\\frac{C_p}{C_v}.
 
 ### 4. Structure & Cleaning
-- **Statement Questions:** Format as:
+- Statement Questions: Format as:
     **Statement I:** [Text]
     **Statement II:** [Text]
-- **Match Lists:** Use a Markdown table inside the "text" field.
-- **Cleanup:** Remove labels like "[Section A]" or "Part-I".
-- **Finality:** No self-talk or reasoning. Output ONLY the JSON object.
+- Match Lists: Use a Markdown table inside the "text" field.
+- Cleanup: Remove labels like "[Section A]" or "Part-I".
+- Finality: No self-talk or reasoning. Output ONLY the JSON object.
 `;
 
   const userJsonPrompt = adminJsonPrompt;
