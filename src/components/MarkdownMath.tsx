@@ -288,7 +288,11 @@ const splitMathSegments = (input: string) => {
 };
 
 const renderMathText = (text: string) => {
-  const parts = splitMathSegments(text);
+  const textWithTextCmdsWrapped = text.replace(/(^|[^$])\\text\{[^}]+\}/g, (match, lead) => {
+    const cmd = match.slice(lead.length);
+    return `${lead}$${cmd}$`;
+  });
+  const parts = splitMathSegments(textWithTextCmdsWrapped);
   return parts.map((part, idx) => {
     if (part.type === "math") {
       const math = fixLatexMath(fixMathOnlyGlitches(part.value));
