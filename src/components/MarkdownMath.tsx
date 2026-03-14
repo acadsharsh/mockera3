@@ -139,7 +139,9 @@ const normalizeText = (value: string) => {
   const deUnicode = deUnicodeText(unescaped);
   const cleanedLatex = deUnicode.replace(/(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
 
-  const withBracketedDims = cleanedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  const withTimesFix = cleanedLatex.replace(/([A-Za-z0-9])imes(?=\s*\d)/g, "$1\\times ");
+
+  const withBracketedDims = withTimesFix.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
 
@@ -336,7 +338,7 @@ const expandTextCommands = (
   parts: Array<{ type: "text" | "math"; value: string; display?: boolean }>
 ) => {
   const expanded: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
-  const pattern = /\\(?:text\{[^}]+\}|Omega|mu|implies)/g;
+  const pattern = /\\(?:text\{[^}]+\}|Omega|mu|implies|t[A-Za-z]+)/g;
 
   parts.forEach((part) => {
     if (part.type !== "text") {
