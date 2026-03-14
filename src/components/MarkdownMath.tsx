@@ -301,12 +301,36 @@ const splitMathSegments = (input: string) => {
   return segments;
 };
 
-const renderMathText = (text: string) => {
-  const textWithTextCmdsWrapped = text.replace(/(^|[^$])\\text\{[^}]+\}/g, (match, lead) => {
-    const cmd = match.slice(lead.length);
-    return `${lead}$${cmd}$`;
+const expandTextCommands = (
+  parts: Array<{ type: "text" | "math"; value: string; display?: boolean }>
+) => {
+  const expanded: Array<{ type: "text" | "math"; value: string; display?: boolean }> = [];
+  const pattern = /\\text\{[^}]+\}/g;
+
+  parts.forEach((part) => {
+    if (part.type !== "text") {
+      expanded.push(part);
+      return;
+    }
+    let last = 0;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(part.value))) {
+      if (match.index > last) {
+        expanded.push({ type: "text", value: part.value.slice(last, match.index) });
+      }
+      expanded.push({ type: "math", value: match[0], display: false });
+      last = match.index + match[0].length;
+    }
+    if (last < part.value.length) {
+      expanded.push({ type: "text", value: part.value.slice(last) });
+    }
   });
-  const parts = splitMathSegments(textWithTextCmdsWrapped);
+
+  return expanded;
+};
+
+const renderMathText = (text: string) => {
+  const parts = expandTextCommands(splitMathSegments(text));
   return parts.map((part, idx) => {
     if (part.type === "math") {
       const math = fixLatexMath(fixMathOnlyGlitches(part.value));
