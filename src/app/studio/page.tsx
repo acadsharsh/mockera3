@@ -1269,11 +1269,11 @@ CRITICAL: Return ALL questions from the paper in order. Do not skip any question
 ## Rules (KaTeX-safe LaTeX ? read every rule carefully)
 
 ### Rendering Safety (avoid runtime MathJax errors)
-- Never escape LaTeX commands like \times, \nu, \rho as \\t, \\n, \\r in the JSON. Only use actual LaTeX commands inside $...$.
-- Never output stray \left or \right without a matching delimiter. If no delimiter is intended, use \left. or \right. explicitly.
-- Never output unknown commands like \x. If you need an arrow, use \rightarrow or \to directly.
+- Never escape LaTeX commands like \\times, \\nu, \\rho as \\\\t, \\\\n, \\\\r in the JSON. Only use actual LaTeX commands inside $...$.
+- Never output stray \\left or \\right without a matching delimiter. If no delimiter is intended, use \\left. or \\right. explicitly.
+- Never output unknown commands like \\x. If you need an arrow, use \\rightarrow or \\to directly.
 - Fix corrupted ion charge patterns like 3ext- or 2ext- into proper superscripts: $^{3-}$, $^{2-}$.
-- Use \text{...} only inside $...$.
+- Use \\text{...} only inside $...$.
 
 ### Unicode Math Characters ? CRITICAL
 Never output Unicode math characters as plain text. This includes:
