@@ -1274,6 +1274,7 @@ CRITICAL: Return ALL questions from the paper in order. Do not skip any question
 - Never output unknown commands like \\x. If you need an arrow, use \\rightarrow or \\to directly.
 - Fix corrupted ion charge patterns like 3ext- or 2ext- into proper superscripts: $^{3-}$, $^{2-}$.
 - Use \\text{...} only inside $...$.
+- Only use math symbols and macros listed in the official MathJax TeX macros list: `https://docs.mathjax.org/en/v4.0/input/tex/macros/index.html`.
 
 ### Unicode Math Characters ? CRITICAL
 Never output Unicode math characters as plain text. This includes:
