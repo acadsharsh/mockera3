@@ -133,16 +133,34 @@ const normalizeText = (value: string) => {
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t")
     .replace(/\\r/g, "\r")
-    .replace(/\\\$/g, "$");
+    .replace(/\\\$/g, "$);
 
   // Strip Unicode math corruption (invisible chars, Unicode operators, italic letters)
   const deUnicode = deUnicodeText(unescaped);
-  const cleanedLatex = deUnicode.replace(/(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
+  let cleanedLatex = deUnicode.replace(/(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
 
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return cleanedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  cleanedLatex = cleanedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
+
+  // Auto-wrap standalone LaTeX commands (e.g., \cdot, \rightarrow, \leq, etc.) in $...$
+  // Only wrap if not already inside $...$
+  cleanedLatex = cleanedLatex.replace(/(\\(?:cdot|times|div|pm|approx|neq|leq|geq|rightarrow|leftarrow|rightleftharpoons|infty|text\{[^}]+\}))/g, (match, cmd, offset, str) => {
+    // Check if already inside $...$
+    // Count $ before and after
+    const before = str.slice(0, offset);
+    const after = str.slice(offset + match.length);
+    const countBefore = (before.match(/\$/g) || []).length;
+    const countAfter = (after.match(/\$/g) || []).length;
+    if (countBefore % 2 === 1 && countAfter % 2 === 1) {
+      // Already inside $...$
+      return match;
+    }
+    return `$${match}$`;
+  });
+
+  return cleanedLatex;
 };
 
 const fixLatexMath = (text: string): string => {
@@ -164,7 +182,10 @@ const fixLatexMath = (text: string): string => {
 };
 
 const fixMathOnlyGlitches = (text: string): string =>
-  text.replace(/(?:\^)?\s*([23])\s*ext\s*[-−]/g, (_match, charge) => `^{${charge}-}`);
+  // Replace ^{3ext-} or ^{2ext-} with ^{3-}\,\text{ext}
+  text.replace(/\^\{([23])ext[-−]\}/g, (_match, charge) => `^{${charge}-}\\,\\text{ext}`)
+      // Also handle cases like ^3ext- (without braces)
+      .replace(/\^([23])ext[-−]/g, (_match, charge) => `^{${charge}-}\\,\\text{ext}`);
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
 

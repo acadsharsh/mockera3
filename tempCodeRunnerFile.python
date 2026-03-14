@@ -1,0 +1,241 @@
+import os
+import urllib.request
+import urllib.parse
+
+# Creating the extremely detailed LaTeX document for the JEE Paper
+latex_code = r"""\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{geometry}
+\geometry{left=18mm, right=18mm, top=20mm, bottom=20mm}
+\usepackage{tikz}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textbf{JEE Advanced Mock Paper}}
+\fancyhead[R]{\textbf{Time: 1 Hour \quad Max Marks: 36}}
+\fancyfoot[C]{\thepage}
+
+\begin{document}
+
+\begin{center}
+    \Large\textbf{THE ILLUSION OF SIMPLICITY} \\
+    \vspace{0.2cm}
+    \normalsize \textit{Topics: Basic Kinematics, Mole Concept, Ideal Gases, Quadratics, Basic Geometry.} \\
+    \textit{Difficulty: Extreme (JEE Advanced Level)}
+\end{center}
+\vspace{0.5cm}
+
+\hrule
+\vspace{0.3cm}
+\noindent \textbf{SECTION 1: One or More Than One Options Correct Type} \\
+\textit{Marking Scheme: +4 for all correct, partial marks as per JEE, -2 for incorrect.}
+\vspace{0.3cm}
+\hrule
+\vspace{0.5cm}
+
+\noindent \textbf{Q1. [Physics - Newton's Laws \& Constrained Motion]} \\
+A smooth wedge of mass $M$ is placed on a smooth horizontal floor. A small block of mass $m$ is placed on its inclined face, which makes an angle $\theta$ with the horizontal. An inextensible, massless string is attached to the block, passes over a frictionless, massless pulley fixed at the top of the wedge, and is finally tied to a fixed vertical wall as shown in the diagram. The string segment between the pulley and the wall is strictly horizontal. The system is released from rest. Let $a_w$ be the horizontal acceleration of the wedge (taking right as positive). Which of the following statements is/are CORRECT?
+
+\begin{center}
+\begin{tikzpicture}
+    % Floor and Wall
+    \draw[thick] (-2,0) -- (6,0);
+    \draw[thick, pattern=north west lines] (-2,-0.2) rectangle (6,0);
+    \draw[thick] (-2,0) -- (-2,4);
+    \draw[thick, pattern=north west lines] (-2.2,0) rectangle (-2,4);
+    
+    % Wedge
+    \draw[thick, fill=gray!10] (1,0) -- (5,0) -- (1,3) -- cycle;
+    \node at (2,0.5) {$M$};
+    \node at (4.2,0.3) {$\theta$};
+    \draw (4.5,0) arc (180:143.13:0.5);
+    
+    % Pulley
+    \draw[thick, fill=white] (1,3) circle (0.2);
+    
+    % Block
+    \begin{scope}[rotate around={-36.87:(5,0)}]
+        \draw[thick, fill=gray!30] (1.5,0) rectangle (2.5,0.6);
+        \node at (2,0.3) {$m$};
+    \end{scope}
+    
+    % String
+    \draw[thick] (-2,3.2) -- (1,3.2); % to wall
+    \draw[thick] (0.84,2.88) -- (3.0, 1.25); % to block
+\end{tikzpicture}
+\end{center}
+
+\begin{enumerate}[label=(\Alph*)]
+    \item The acceleration of the block relative to the wedge is equal in magnitude to the acceleration of the wedge relative to the ground.
+    \item If $\theta < 60^\circ$, the wedge will move towards the left ($a_w < 0$).
+    \item The normal reaction exerted by the wedge on the block is $mg \cos \theta$.
+    \item The acceleration of the wedge is $a_w = \frac{mg \sin \theta (1 - 2\cos \theta)}{M + 2m \sin^2 \theta}$.
+\end{enumerate}
+
+\vspace{0.5cm}
+\noindent \textbf{Q2. [Physics - Ideal Gases \& Mechanical Thermodynamics]} \\
+One mole of an ideal monoatomic gas is enclosed in a vertical cylinder fitted with a frictionless piston of area $A$. The piston is connected to the ceiling by an ideal spring of force constant $k$. Above the piston, there is a perfect vacuum. When the piston is at the very bottom of the cylinder ($V \to 0$), the spring is at its natural length. Heat is slowly supplied to the gas, causing the piston to rise, moving from absolute temperature $T_0$ to $2T_0$. Which of the following is/are CORRECT?
+
+\begin{center}
+\begin{tikzpicture}
+    % Ceiling
+    \draw[thick] (0,4) -- (4,4);
+    \draw[thick, pattern=north east lines] (0,4) rectangle (4,4.2);
+    
+    % Cylinder
+    \draw[thick] (1,0) -- (1,3);
+    \draw[thick] (3,0) -- (3,3);
+    \draw[thick] (1,0) -- (3,0);
+    
+    % Piston
+    \draw[thick, fill=black!60] (1,1.5) rectangle (3,1.7);
+    
+    % Spring
+    \draw[thick, decorate, decoration={coil,aspect=0.4,segment length=2mm,amplitude=2mm}] (2,1.7) -- (2,4);
+    
+    % Labels
+    \node at (2,0.7) {Ideal Gas};
+    \node at (2,2.8) {Vacuum};
+    \node at (4.5, 3) {Spring ($k$)};
+\end{tikzpicture}
+\end{center}
+
+\begin{enumerate}[label=(\Alph*)]
+    \item The process on a P-V diagram is a straight line passing through the origin.
+    \item The molar heat capacity of the gas during this process is $2R$.
+    \item Exactly $75\%$ of the total heat supplied is utilized in increasing the internal energy.
+    \item The work done by the gas during this expansion is exactly $R T_0$.
+\end{enumerate}
+
+\vspace{0.5cm}
+\noindent \textbf{Q3. [Mathematics - Quadratics \& Telescoping Sequences]} \\
+Let $P(x) = x^2 - x - 1$. A sequence $\{x_n\}$ is defined as $x_1 = 3$ and $x_{n+1} = P(x_n)$ for all integers $n \ge 1$. Let $S = \sum_{n=1}^{\infty} \frac{1}{x_n}$. Which of the following statements is/are CORRECT?
+\begin{enumerate}[label=(\Alph*)]
+    \item $x_n$ is an integer for all $n \ge 1$.
+    \item The sum $S$ is strictly less than 1.
+    \item The exact value of $S$ is $\frac{1}{2}$.
+    \item $x_{10}$ ends with the digit 5.
+\end{enumerate}
+
+\newpage
+\hrule
+\vspace{0.3cm}
+\noindent \textbf{SECTION 2: Numerical Answer Type} \\
+\textit{Marking Scheme: +3 for correct answer, 0 for incorrect. Answer should be rounded off to 2 decimal places if not an integer.}
+\vspace{0.3cm}
+\hrule
+\vspace{0.5cm}
+
+\noindent \textbf{Q4. [Chemistry - Mole Concept \& Thermochemistry]} \\
+A rigid, closed, thermally insulated two-bulb vessel is connected by a thin tube of negligible volume with a valve. Initially, the valve is closed. Bulb A (Volume = 2 L) contains 4 moles of $NH_3$ gas. Bulb B (Volume = 3 L) contains 6 moles of $HCl$ gas. Initial temperature is $300$ K. The valve is opened, gases mix and react completely to form solid $NH_4Cl_{(s)}$ (negligible volume). The reaction is exothermic, liberating $42$ kJ per mole of product formed. Assume $C_v$ for the unreacted gas is $21 \text{ J/(mol K)}$. Neglect heat capacity of solid and vessel. Find final pressure (in atm). (Take $R = 0.0821 \text{ L atm K}^{-1}\text{mol}^{-1}$ or $8.314 \text{ J K}^{-1}\text{mol}^{-1}$).
+
+\begin{center}
+\begin{tikzpicture}
+    % Bulbs
+    \draw[thick] (0,0) circle (1.5);
+    \draw[thick] (5,0) circle (1.8);
+    
+    % Tube
+    \draw[thick, fill=white] (1.4,-0.2) rectangle (3.3,0.2);
+    
+    % Valve
+    \draw[thick, fill=black] (2.2,-0.4) rectangle (2.5,0.4);
+    \node at (2.35, 0.7) {Valve (V)};
+    
+    % Text
+    \node at (0,0.3) {Bulb A (2 L)};
+    \node at (0,-0.3) {4 mol $NH_3$};
+    
+    \node at (5,0.3) {Bulb B (3 L)};
+    \node at (5,-0.3) {6 mol $HCl$};
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.8cm}
+\noindent \textbf{Q5. [Mathematics - Geometry \& Theory of Equations]} \\
+From point $P$ outside a circle with center $O$, a tangent $PT$ and a secant $PAB$ are drawn. The lengths $PA$ and $PB$ are roots of $x^2 - 12x + 24 = 0$. The chord $AB$ subtends an angle of $60^\circ$ at the center $O$. The area of the circle is $K\pi$. Find the exact integer value of $K$.
+
+\begin{center}
+\begin{tikzpicture}
+    % Circle
+    \draw[thick] (4,0) circle (2);
+    \filldraw (4,0) circle (1.5pt) node[below] {$O$};
+    
+    % Point P
+    \filldraw (0,0) circle (1.5pt) node[left] {$P$};
+    
+    % Secant
+    \draw[thick] (0,0) -- (5.8, -0.86);
+    \filldraw (2.1, -0.63) circle (1.5pt) node[below] {$A$};
+    \filldraw (5.8, -0.86) circle (1.5pt) node[right] {$B$};
+    
+    % Tangent
+    \draw[thick] (0,0) -- (3, 1.732);
+    \filldraw (3, 1.732) circle (1.5pt) node[above] {$T$};
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.8cm}
+\noindent \textbf{Q6. [Physics - Work, Power, Energy \& Calculus]} \\
+A flexible chain of mass $M$ and length $L=10$ m is held on a smooth horizontal table such that a tiny fraction hangs through a hole. It is released from rest. The linear mass density varies as $\lambda(x) = kx$, where $x$ is the distance from the end at the hole. Find the velocity squared ($v^2$ in m$^2$/s$^2$) of the chain when it completely slips through the hole. (Take $g = 10 \text{ m/s}^2$).
+
+\newpage
+\begin{center}
+    \Large\textbf{SOLUTIONS \& EXPLANATIONS}
+\end{center}
+\vspace{0.5cm}
+
+\textbf{Q1. Answer: (A), (B), (D)} \\
+\textit{Concept:} Constrained Motion. Because the string is tied to the wall, if the wedge moves right by $x$, the pulley moves right by $x$. The horizontal string segment releases $x$ length. To keep the string taut, the block must slide DOWN the incline by $x$. Hence, $a_{rel} = a_w$. \\
+Using Newton's Laws in wedge frame: $N = m(g\cos\theta + a\sin\theta)$. 
+Equation along incline: $mg\sin\theta - ma\cos\theta - T = m(a)$. \\
+FBD of Wedge: Horizontal forces are $T$ (from wall pulling right), $-T\cos\theta$ (from block), and $-N\sin\theta$. 
+Solving $T(1-\cos\theta) - N\sin\theta = Ma$ gives $a = \frac{mg \sin \theta (1 - 2\cos \theta)}{M + 2m \sin^2 \theta}$. \\
+If $\theta < 60^\circ$, $1 - 2\cos\theta < 0$, so $a_w < 0$ (moves left).
+
+\vspace{0.5cm}
+\textbf{Q2. Answer: (A), (B), (C)} \\
+\textit{Concept:} Mechanical equilibrium to Thermodynamics. $P_{gas} A = k x$. Since $V = Ax$, $P = \frac{k}{A^2} V \implies P \propto V$. This is a polytropic process $PV^{-1} = const$ ($n = -1$). 
+$C = C_v + \frac{R}{1-n} = 1.5R + 0.5R = 2R$. \\
+Heat fraction $\Delta U / \Delta Q = 1.5R / 2R = 0.75$ (75\%). \\
+Work done $W = \int P dV$. Area under P-V graph is a triangle, $W = \frac{1}{2} nR\Delta T = 0.5 R T_0$. Option D is false.
+
+\vspace{0.5cm}
+\textbf{Q3. Answer: (A), (C)} \\
+\textit{Concept:} Telescoping sequence. $x_{n+1} = x_n^2 - x_n - 1 \implies x_{n+1} - x_n = x_n^2 - 2x_n - 1$. 
+Rewrite as $x_{n+1} + 1 = x_n(x_n - 1)$. Taking reciprocals: $\frac{1}{x_n - 1} - \frac{1}{x_n} = \frac{1}{x_{n+1} + 1}$. 
+The identity is $\frac{1}{x_n+1} = \frac{1}{x_n} - \frac{1}{x_{n+1}}$. The sum $\sum \frac{1}{x_n}$ evaluates perfectly to $\frac{1}{x_1 - 1} = \frac{1}{3-1} = \frac{1}{2}$.
+
+\vspace{0.5cm}
+\textbf{Q4. Answer: 141.21} \\
+\textit{Concept:} Stoichiometry + Heat. $NH_3$ (4 mol) limits the reaction. 4 moles of solid formed. 2 moles of $HCl$ gas remain.
+Heat released $q = 4 \times 42,000 = 168,000$ J. 
+Gas heats up: $q = n C_v \Delta T \implies 168,000 = 2 \times 21 \times \Delta T \implies \Delta T = 4000$ K.
+$T_{final} = 300 + 4000 = 4300$ K.
+$P_{final} = \frac{n R T_{final}}{V} = \frac{2 \times 0.0821 \times 4300}{5} = 141.21$ atm.
+
+\vspace{0.5cm}
+\textbf{Q5. Answer: 48} \\
+\textit{Concept:} Roots and Geometry. $PA + PB = 12$, $PA \cdot PB = 24$.
+Chord $AB = PB - PA = \sqrt{(PA+PB)^2 - 4(PA \cdot PB)} = \sqrt{144 - 96} = \sqrt{48}$.
+Since $AB$ subtends $60^\circ$ at the center, $\Delta OAB$ is equilateral. Radius $R = AB = \sqrt{48}$.
+Area $= \pi R^2 = 48\pi$. $K = 48$.
+
+\vspace{0.5cm}
+\textbf{Q6. Answer: 133.33} \\
+\textit{Concept:} Variable Mass WPE. Total mass $M = \int_0^L kx dx = kL^2/2$.
+Loss in PE of the whole chain when it drops vertically $= \int_0^L (dm) g y$. $dm = ky dy$.
+$\Delta PE = \int_0^L kyg y dy = k g [y^3/3] = kgL^3/3$.
+Gain in KE $= \frac{1}{2} M v^2 = \frac{1}{2} (kL^2/2) v^2 = \frac{kL^2}{4} v^2$.
+Equating: $v^2 = \frac{4gL}{3} = \frac{4 \times 10 \times 10}{3} = 133.33$.
+
+\end{document}
+"""
+
+# I will use LaTeX-on-HTTP API to compile this directly to a PDF link for the user.
+# Since network requests in standard output are not executed actively, I'll provide instructions.
