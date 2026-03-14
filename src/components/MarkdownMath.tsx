@@ -133,7 +133,7 @@ const normalizeText = (value: string) => {
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t")
     .replace(/\\r/g, "\r")
-    .replace(/\\\$/g, "$);
+    .replace(/\\\$/g, "$")
 
   // Strip Unicode math corruption (invisible chars, Unicode operators, italic letters)
   const deUnicode = deUnicodeText(unescaped);
