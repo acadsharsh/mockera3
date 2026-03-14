@@ -20,15 +20,12 @@ const normalizeChemFormula = (value: string) => {
   if (!/\d/.test(value) && !/[+-]\s*$/.test(value)) return value;
   if (!/^[A-Za-z0-9\s()+\-]+$/.test(value)) return value;
 
-  let out = value.trim().replace(/\s+/g, " ");
-  out = out.replace(/([A-Z][a-z]?)(\d+)/g, "$1_{$2}");
-  out = out.replace(/(.+?)\s*([0-9]+)\s*([+-])$/, (_m, base, num, sign) => {
-    return `${base}^{${num}\\text{${sign}}}`;
+  let out = value.trim().replace(/\s+/g, "");
+  out = out.replace(/^(.+?)(\d+)?([+-])$/, (_m, base, num, sign) => {
+    const charge = `${num ?? ""}${sign}`;
+    return `${base}^{${charge}}`;
   });
-  out = out.replace(/(.+?)\s*([+-])$/, (_m, base, sign) => {
-    return `${base}^{\\text{${sign}}}`;
-  });
-  return out;
+  return `\\ce{${out}}`;
 };
 
 export default function MathJaxText({ text, inline = false, className }: MathJaxTextProps) {
