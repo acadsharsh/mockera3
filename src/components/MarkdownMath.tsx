@@ -139,7 +139,8 @@ const normalizeText = (value: string) => {
   const deUnicode = deUnicodeText(unescaped);
   const cleanedLatex = deUnicode.replace(/(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
 
-  const withTimesFix = cleanedLatex.replace(/([A-Za-z0-9])imes(?=\s*\d)/g, "$1\\times ");
+  const withTextFix = cleanedLatex.replace(/\\t([A-Za-z]+)/g, "\\text{$1}");
+  const withTimesFix = withTextFix.replace(/([A-Za-z0-9])imes(?=\s*\d)/g, "$1\\times ");
 
   const withBracketedDims = withTimesFix.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
