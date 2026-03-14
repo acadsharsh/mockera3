@@ -137,9 +137,10 @@ const normalizeText = (value: string) => {
 
   // Strip Unicode math corruption (invisible chars, Unicode operators, italic letters)
   const deUnicode = deUnicodeText(unescaped);
+  const cleanedLatex = deUnicode.replace(/(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
 
   // Auto-wrap bracketed dimension expressions like [L^2 T^{-2} K^{-1}] in math delimiters.
-  return deUnicode.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
+  return cleanedLatex.replace(/(^|[^$])(\[[^\]\n]*[\^_][^\]\n]*\])/g, (_match, lead, bracket) => {
     return `${lead}$${bracket}$`;
   });
 };
@@ -161,6 +162,9 @@ const fixLatexMath = (text: string): string => {
     .replace(/(?<!\\)pm/g, "\\pm")
     .replace(/(?<!\\)text\{/g, "\\text{");
 };
+
+const fixMathOnlyGlitches = (text: string): string =>
+  text.replace(/3ext-/g, "^{3-}").replace(/2ext-/g, "^{2-}");
 
 const isTableSeparator = (line: string) => /^\s*\|?[\s:-]+\|[\s|:-]*$/.test(line);
 
@@ -268,7 +272,7 @@ const renderMathText = (text: string) => {
   const parts = splitMathSegments(text);
   return parts.map((part, idx) => {
     if (part.type === "math") {
-      const math = fixLatexMath(part.value);
+      const math = fixLatexMath(fixMathOnlyGlitches(part.value));
       const wrapped = part.display ? `\\[${math}\\]` : `\\(${math}\\)`;
       return (
         <MathJax key={`math-${idx}`} inline={!part.display} dynamic>
