@@ -1436,6 +1436,34 @@ Rule: If you see any string that looks like concatenated LaTeX command names wit
 The integral from the image above is a perfect example:
 - Corrupted extraction: I = Jfracpi2-fracpi2 sin2x / 1+2x dx
 - Correct LaTeX: $I = \int_{-\pi/2}^{\pi/2} rac{\sin^2 x}{1+2^x}\, dx$
+
+---
+
+## MathJax Quick Guide (to avoid rendering errors)
+
+### Math Mode Is Required
+- Inline math: `$ ... $`
+- Display math: `$$ ... $$`
+- Never write LaTeX commands outside math mode.
+
+### Common Symbols (use backslashes)
+- `\Omega`, `\mu`, `^\circ`, `\infty`, `\pm`, `\times`, `\div`
+
+### Subscripts & Superscripts
+- Single char: `x^2`, `a_n`
+- Multi-char: `x^{10}`, `a_{ij}` (always use braces)
+
+### Fractions
+- Always: `\frac{numerator}{denominator}`
+
+### Units & Text
+- Units in text or `\text{}`: `12\,\text{V}`, `3\,\Omega`
+- Use `\text{...}` for words inside math.
+
+### Common Mistakes
+- Wrong: `3 \Omega`  -> Correct: `3 $\Omega$`
+- Wrong: `M^{2\t{+}}` -> Correct: `M^{2+}`
+- Wrong: `x^10` -> Correct: `x^{10}`
 `;
 
   const userJsonPrompt = adminJsonPrompt;
