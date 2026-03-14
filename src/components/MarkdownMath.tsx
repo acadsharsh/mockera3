@@ -148,6 +148,9 @@ const normalizeText = (value: string) => {
 const fixLatexMath = (text: string): string => {
   if (!text) return "";
   return text
+    .replace(/\\left(?!\s*[\(\[\{\|\.])/g, "\\left.")
+    .replace(/\\right(?!\s*[\)\]\}\|\.])/g, "\\right.")
+    .replace(/\\x\s*(?=(?:\\rightarrow|→|\\to))/g, "")
     .replace(/(?<!\\)rightleftharpoons/g, "\\rightleftharpoons")
     .replace(/(?<!\\)leftharpoons/g, "\\leftharpoons")
     .replace(/(?<!\\)rightarrow/g, "\\rightarrow")
