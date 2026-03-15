@@ -144,6 +144,7 @@ export default function CreatorStudio() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
+  const [coordsPromptCopied, setCoordsPromptCopied] = useState(false);
   const [autoDetectNotice, setAutoDetectNotice] = useState<string | null>(null);
   const [autoDetectRequested, setAutoDetectRequested] = useState(false);
   const [bulkApplyStatus, setBulkApplyStatus] = useState<string | null>(null);
@@ -1464,6 +1465,37 @@ Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing erro
     } catch {
       setPromptCopied(true);
       setTimeout(() => setPromptCopied(false), 1500);
+    }
+  };
+
+  const coordsPrompt = `# Question Box Detection Prompt (Coordinates JSON)
+
+You will be given a PDF or page images. Return ONLY JSON with bounding boxes for each question.
+
+Output format (recommended):
+{
+  "rects": [
+    { "page": 1, "x": 0.10, "y": 0.12, "w": 0.80, "h": 0.18 },
+    { "page": 1, "x": 0.10, "y": 0.34, "w": 0.80, "h": 0.18 }
+  ]
+}
+
+Rules:
+- Coordinates can be normalized (0 to 1). Use normalized whenever possible.
+- x,y is top-left. w,h is width/height.
+- One box per question (include options if they belong to the question).
+- If a question spans pages, create multiple boxes (one per page).
+- Sort boxes in reading order (top-to-bottom, left-to-right).
+- Return JSON only. No commentary.`;
+
+  const handleCopyCoordsPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(coordsPrompt);
+      setCoordsPromptCopied(true);
+      setTimeout(() => setCoordsPromptCopied(false), 1500);
+    } catch {
+      setCoordsPromptCopied(true);
+      setTimeout(() => setCoordsPromptCopied(false), 1500);
     }
   };
   const parseAnswerKeyText = (text: string) => {
@@ -3052,12 +3084,32 @@ Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing erro
               <br />
               Coordinates can be absolute pixels or normalized (0-1).
             </p>
+            <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-white/70">AI Prompt</div>
+                <button
+                  type="button"
+                  className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/70"
+                  onClick={handleCopyCoordsPrompt}
+                >
+                  Copy Prompt
+                </button>
+              </div>
+              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap text-[11px] leading-5 text-white/75">
+                {coordsPrompt}
+              </pre>
+            </div>
             <textarea
               value={coordsImportText}
               onChange={(event) => setCoordsImportText(event.target.value)}
               className="mt-3 h-40 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white/80 outline-none"
               placeholder='[{"page":1,"x":0.1,"y":0.2,"w":0.8,"h":0.15}]'
             />
+            {coordsPromptCopied && (
+              <div className="mt-3 rounded-lg bg-emerald-500/15 px-3 py-2 text-xs text-emerald-200">
+                Prompt copied.
+              </div>
+            )}
             {coordsImportStatus && (
               <div
                 className={
