@@ -35,6 +35,7 @@ type CropMeta = {
   y: number;
   w: number;
   h: number;
+  scale?: number;
   subject: "Physics" | "Chemistry" | "Maths";
   questionType: "MCQ" | "MSQ" | "NUM";
   correctOption: "" | "A" | "B" | "C" | "D";
@@ -168,6 +169,8 @@ const [isPanning, setIsPanning] = useState(false);
     x: number;
     y: number;
     rect: CropMeta;
+    displayRect: { x: number; y: number; w: number; h: number };
+    scaleFactor: number;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingFocusIdRef = useRef<string | null>(null);
@@ -177,6 +180,7 @@ const [isPanning, setIsPanning] = useState(false);
   const prevActiveIdRef = useRef<string | null>(activeCropId);
   const draftTimerRef = useRef<number | null>(null);
   const panStartRef = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
+  const scaleInitRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -479,32 +483,18 @@ const [isPanning, setIsPanning] = useState(false);
 
   const updateZoom = useCallback((value: number) => {
     if (!Number.isFinite(value)) return;
-    setPageScale((prev) => {
-      const next = Math.max(0.2, value);
-      if (!Number.isFinite(prev) || prev <= 0 || next === prev) return next;
-      const ratio = next / prev;
-      setCropRects((rects) =>
-        rects.map((rect) => ({
-          ...rect,
-          x: rect.x * ratio,
-          y: rect.y * ratio,
-          w: rect.w * ratio,
-          h: rect.h * ratio,
-        }))
-      );
-      setDraftRect((rect) =>
-        rect
-          ? { ...rect, x: rect.x * ratio, y: rect.y * ratio, w: rect.w * ratio, h: rect.h * ratio }
-          : rect
-      );
-      setSelectionRect((rect) =>
-        rect
-          ? { ...rect, x: rect.x * ratio, y: rect.y * ratio, w: rect.w * ratio, h: rect.h * ratio }
-          : rect
-      );
-      return next;
-    });
+    setPageScale(Math.max(0.2, value));
   }, []);
+
+  useEffect(() => {
+    if (scaleInitRef.current) return;
+    if (cropRects.some((rect) => rect.scale == null)) {
+      setCropRects((prev) =>
+        prev.map((rect) => (rect.scale == null ? { ...rect, scale: pageScale } : rect))
+      );
+      scaleInitRef.current = true;
+    }
+  }, [cropRects, pageScale]);
 
   const handleViewerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (cropTool !== "hand") return;
@@ -1008,6 +998,7 @@ const [isPanning, setIsPanning] = useState(false);
         y: rect.y,
         w: rect.w,
         h: rect.h,
+        scale: 1,
         subject: lastSubject,
         questionType: "MCQ",
         correctOption: "",
@@ -1043,7 +1034,9 @@ const [isPanning, setIsPanning] = useState(false);
     const bounds = overlayRef.current.getBoundingClientRect();
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
-    resizeStartRef.current = { x, y, rect: { ...rect } };
+    const displayRect = toDisplayRect(rect);
+    const scaleFactor = getScaleFactor(rect);
+    resizeStartRef.current = { x, y, rect: { ...rect }, displayRect, scaleFactor };
     setResizeHandle(handle);
     setIsDrawing(false);
     setIsSelecting(false);
@@ -1080,30 +1073,40 @@ const [isPanning, setIsPanning] = useState(false);
       const currentX = event.clientX - bounds.left;
       const currentY = event.clientY - bounds.top;
       const start = resizeStartRef.current;
+      const base = start.displayRect;
       const dx = currentX - start.x;
       const dy = currentY - start.y;
       const minSize = 12;
-      let newX = start.rect.x;
-      let newY = start.rect.y;
-      let newW = start.rect.w;
-      let newH = start.rect.h;
+      let newX = base.x;
+      let newY = base.y;
+      let newW = base.w;
+      let newH = base.h;
       if (resizeHandle.includes("e")) {
-        newW = Math.max(minSize, start.rect.w + dx);
+        newW = Math.max(minSize, base.w + dx);
       }
       if (resizeHandle.includes("s")) {
-        newH = Math.max(minSize, start.rect.h + dy);
+        newH = Math.max(minSize, base.h + dy);
       }
       if (resizeHandle.includes("w")) {
-        newW = Math.max(minSize, start.rect.w - dx);
-        newX = start.rect.x + (start.rect.w - newW);
+        newW = Math.max(minSize, base.w - dx);
+        newX = base.x + (base.w - newW);
       }
       if (resizeHandle.includes("n")) {
-        newH = Math.max(minSize, start.rect.h - dy);
-        newY = start.rect.y + (start.rect.h - newH);
+        newH = Math.max(minSize, base.h - dy);
+        newY = base.y + (base.h - newH);
       }
+      const scaleFactor = start.scaleFactor || 1;
       setCropRects((prev) =>
         prev.map((rect) =>
-          rect.id === start.rect.id ? { ...rect, x: newX, y: newY, w: newW, h: newH } : rect
+          rect.id === start.rect.id
+            ? {
+                ...rect,
+                x: newX / scaleFactor,
+                y: newY / scaleFactor,
+                w: newW / scaleFactor,
+                h: newH / scaleFactor,
+              }
+            : rect
         )
       );
       return;
@@ -1152,6 +1155,24 @@ const [isPanning, setIsPanning] = useState(false);
     );
     return tempCanvas.toDataURL("image/png");
   };
+
+  const getScaleFactor = useCallback(
+    (rect: CropMeta) => pageScale / (rect.scale ?? pageScale),
+    [pageScale]
+  );
+
+  const toDisplayRect = useCallback(
+    (rect: CropMeta) => {
+      const factor = getScaleFactor(rect);
+      return {
+        x: rect.x * factor,
+        y: rect.y * factor,
+        w: rect.w * factor,
+        h: rect.h * factor,
+      };
+    },
+    [getScaleFactor]
+  );
 
   const loadImage = (src: string) =>
     new Promise<HTMLImageElement>((resolve, reject) => {
@@ -1229,6 +1250,7 @@ const [isPanning, setIsPanning] = useState(false);
     raw.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
 
   const activeCrop = cropRects.find((rect) => rect.id === activeCropId) || null;
+  const activeDisplayRect = activeCrop ? toDisplayRect(activeCrop) : null;
   const activeAccent = activeCrop ? subjectAccents[activeCrop.subject] : subjectAccents.Physics;
   const activeChapter = activeCrop
     ? resolveChapter(activeCrop.chapter, activeCrop.subject)
@@ -1953,10 +1975,11 @@ Rules:
       const hits = cropRects
         .filter((rect) => rect.pageNumber === currentPage)
         .filter((rect) => {
-          const rx1 = rect.x;
-          const ry1 = rect.y;
-          const rx2 = rect.x + rect.w;
-          const ry2 = rect.y + rect.h;
+          const display = toDisplayRect(rect);
+          const rx1 = display.x;
+          const ry1 = display.y;
+          const rx2 = display.x + display.w;
+          const ry2 = display.y + display.h;
           const overlap =
             Math.max(0, Math.min(ex, rx2) - Math.max(sx, rx1)) *
             Math.max(0, Math.min(ey, ry2) - Math.max(sy, ry1));
@@ -1982,16 +2005,18 @@ Rules:
     const imageDataUrl = createImageDataUrl(draftRect);
 
     if (activeCrop && activeCrop.hasDiagram && !activeCrop.imageDataUrl) {
+      const scaleFactor = getScaleFactor(activeCrop);
       setCropRects((prev) =>
         prev.map((rect) =>
           rect.id === activeCrop.id
             ? {
                 ...rect,
                 pageNumber: currentPage,
-                x: draftRect.x,
-                y: draftRect.y,
-                w: draftRect.w,
-                h: draftRect.h,
+                x: draftRect.x / scaleFactor,
+                y: draftRect.y / scaleFactor,
+                w: draftRect.w / scaleFactor,
+                h: draftRect.h / scaleFactor,
+                scale: rect.scale ?? pageScale,
                 imageDataUrl,
               }
             : rect
@@ -2012,7 +2037,11 @@ Rules:
       id: makeId("crop"),
       pageNumber: currentPage,
       parts: 1,
-      ...draftRect,
+      x: draftRect.x,
+      y: draftRect.y,
+      w: draftRect.w,
+      h: draftRect.h,
+      scale: pageScale,
       subject: lastSubject,
       questionType: "MCQ",
       correctOption: "",
@@ -2156,8 +2185,9 @@ Rules:
       return;
     }
     if (viewerRef.current) {
+      const display = toDisplayRect(rect);
       viewerRef.current.scrollTo({
-        top: Math.max(0, rect.y - 40),
+        top: Math.max(0, display.y - 40),
         behavior: "smooth",
       });
     }
@@ -2444,25 +2474,33 @@ Rules:
                   onPointerUp={cropTool === "rect" ? handlePointerUp : undefined}
                 >
                   <div className="absolute inset-0 h-full w-full" />
-                  {(draftRect || activeCrop) && (
+                  {(draftRect || activeDisplayRect) && (
                     <div
                       className="absolute rounded-md"
                       style={{
-                        left: (draftRect ?? activeCrop)?.x ?? 0,
-                        top: (draftRect ?? activeCrop)?.y ?? 0,
-                        width: (draftRect ?? activeCrop)?.w ?? 0,
-                        height: (draftRect ?? activeCrop)?.h ?? 0,
+                        left: (draftRect ?? activeDisplayRect)?.x ?? 0,
+                        top: (draftRect ?? activeDisplayRect)?.y ?? 0,
+                        width: (draftRect ?? activeDisplayRect)?.w ?? 0,
+                        height: (draftRect ?? activeDisplayRect)?.h ?? 0,
                         boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)",
                         border: `2px solid ${activeAccent.accent}`,
                       }}
                     />
                   )}
-                  {activeCrop && activeCrop.pageNumber === currentPage && activeCrop.w > 0 && activeCrop.h > 0 && (
+                  {activeDisplayRect &&
+                    activeCrop &&
+                    activeCrop.pageNumber === currentPage &&
+                    activeDisplayRect.w > 0 &&
+                    activeDisplayRect.h > 0 && (
                     <>
                       {(["nw","ne","sw","se"] as const).map((handle) => {
                         const size = 10;
-                        const left = handle.includes("w") ? activeCrop.x - size / 2 : activeCrop.x + activeCrop.w - size / 2;
-                        const top = handle.includes("n") ? activeCrop.y - size / 2 : activeCrop.y + activeCrop.h - size / 2;
+                        const left = handle.includes("w")
+                          ? activeDisplayRect.x - size / 2
+                          : activeDisplayRect.x + activeDisplayRect.w - size / 2;
+                        const top = handle.includes("n")
+                          ? activeDisplayRect.y - size / 2
+                          : activeDisplayRect.y + activeDisplayRect.h - size / 2;
                         return (
                           <button
                             key={handle}
@@ -2489,7 +2527,9 @@ Rules:
                   )}
                     {cropRects
                       .filter((rect) => rect.pageNumber === currentPage)
-                      .map((rect) => (
+                      .map((rect) => {
+                        const display = toDisplayRect(rect);
+                        return (
                         <button
                           key={rect.id}
                           className={`absolute rounded-md border-2 ${
@@ -2500,10 +2540,10 @@ Rules:
                               : "border-white/30"
                           }`}
                           style={{
-                            left: rect.x,
-                            top: rect.y,
-                            width: rect.w,
-                            height: rect.h,
+                            left: display.x,
+                            top: display.y,
+                            width: display.w,
+                            height: display.h,
                             background: rect.id === activeCropId ? "rgba(255,255,255,0.12)" : "transparent",
                           }}
                           onClick={(event) => {
@@ -2521,7 +2561,7 @@ Rules:
                             /{markingIncorrect}
                           </span>
                         </button>
-                      ))}
+                      );})}
                 </div>
               </div>
             </div>
