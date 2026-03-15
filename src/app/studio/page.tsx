@@ -2351,7 +2351,7 @@ Rules:
                     Click to select • Delete removes crop
                   </div>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="mt-3 grid grid-cols-1 gap-3">
                   {cropRects.map((crop, index) => (
                     <button
                       key={crop.id}
@@ -2371,10 +2371,10 @@ Rules:
                         <img
                           src={crop.imageDataUrl}
                           alt={`Crop ${index + 1}`}
-                          className="h-24 w-full object-cover"
+                          className="w-full object-contain bg-black/30"
                         />
                       ) : (
-                        <div className="flex h-24 w-full items-center justify-center text-[11px] text-white/50">
+                        <div className="flex h-48 w-full items-center justify-center text-[11px] text-white/50">
                           No image
                         </div>
                       )}
