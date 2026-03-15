@@ -138,6 +138,8 @@ export default function CreatorStudio() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
+  const [autoDetectNotice, setAutoDetectNotice] = useState<string | null>(null);
+  const [autoDetectRequested, setAutoDetectRequested] = useState(false);
   const [bulkApplyStatus, setBulkApplyStatus] = useState<string | null>(null);
   const [promptCopied, setPromptCopied] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
@@ -870,6 +872,13 @@ const [isPanning, setIsPanning] = useState(false);
     setCurrentPage(1);
     setCropRects([]);
     setActiveCropId(null);
+    if (autoDetectRequested) {
+      setAutoDetectRequested(false);
+      setAutoDetectNotice(
+        "PDF uploaded. Auto-detect is coming soon — for now, crop questions manually."
+      );
+      window.setTimeout(() => setAutoDetectNotice(null), 4000);
+    }
     void uploadPdfToCloudinary(file);
   };
 
@@ -2032,6 +2041,17 @@ Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing erro
             <button
               type="button"
               onClick={() => {
+                setAutoDetectRequested(true);
+                setAutoDetectNotice(null);
+                fileInputRef.current?.click();
+              }}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
+            >
+              Upload PDF → Auto-detect Questions
+            </button>
+            <button
+              type="button"
+              onClick={() => {
                 setJsonImportStatus(null);
                 setShowJsonImport(true);
               }}
@@ -2053,6 +2073,11 @@ Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing erro
             >
               {uploadingPdf ? "Uploading PDF..." : saving ? "Saving..." : "Publish Test"}
             </button>
+            {autoDetectNotice && (
+              <div className="basis-full rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] text-amber-100">
+                {autoDetectNotice}
+              </div>
+            )}
           </div>
         </header>
 
