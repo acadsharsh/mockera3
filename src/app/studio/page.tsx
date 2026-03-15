@@ -2341,6 +2341,65 @@ Rules:
               </div>
             </div>
 
+            {cropRects.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs uppercase tracking-[0.2em] text-white/50">
+                    Crops Preview
+                  </div>
+                  <div className="text-[11px] text-white/50">
+                    Click to select • Delete removes crop
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {cropRects.map((crop, index) => (
+                    <button
+                      key={crop.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveCropId(crop.id);
+                        setCurrentPage(crop.pageNumber);
+                        setPendingFocusId(crop.id);
+                      }}
+                      className={`group relative overflow-hidden rounded-xl border ${
+                        activeCropId === crop.id
+                          ? "border-emerald-400/60"
+                          : "border-white/10 hover:border-white/30"
+                      }`}
+                    >
+                      {crop.imageDataUrl ? (
+                        <img
+                          src={crop.imageDataUrl}
+                          alt={`Crop ${index + 1}`}
+                          className="h-24 w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-24 w-full items-center justify-center text-[11px] text-white/50">
+                          No image
+                        </div>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/60 px-2 py-1 text-[10px] text-white/80">
+                        <span>Q {index + 1}</span>
+                        <button
+                          type="button"
+                          className="rounded-full border border-white/20 px-2 py-0.5 text-[10px] text-white/80 hover:border-white/50"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setCropRects((prev) => prev.filter((item) => item.id !== crop.id));
+                            if (activeCropId === crop.id) {
+                              setActiveCropId(null);
+                            }
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div
               ref={viewerRef}
               className={`relative mt-4 flex max-h-[96vh] justify-center overflow-auto rounded-2xl bg-[#0c0c0e] p-1 ${
