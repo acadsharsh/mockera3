@@ -2415,7 +2415,7 @@ Rules:
                         setCurrentPage(crop.pageNumber);
                         pendingFocusIdRef.current = crop.id;
                       }}
-                      className={`group relative overflow-hidden rounded-xl border ${
+                      className={`group relative rounded-xl border ${
                         activeCropId === crop.id
                           ? "border-emerald-400/60"
                           : "border-white/10 hover:border-white/30"
@@ -2425,7 +2425,7 @@ Rules:
                         <img
                           src={crop.imageDataUrl}
                           alt={`Crop ${index + 1}`}
-                          className="w-full object-contain bg-black/30"
+                          className="w-full h-auto object-contain bg-black/30"
                         />
                       ) : (
                         <div className="flex h-48 w-full items-center justify-center text-[11px] text-white/50">
