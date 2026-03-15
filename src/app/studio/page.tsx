@@ -138,6 +138,12 @@ export default function CreatorStudio() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
+  const [showCoordsImport, setShowCoordsImport] = useState(false);
+  const [coordsImportText, setCoordsImportText] = useState("");
+  const [coordsImportStatus, setCoordsImportStatus] = useState<{
+    message: string;
+    tone: "success" | "error" | "info";
+  } | null>(null);
   const [autoDetectNotice, setAutoDetectNotice] = useState<string | null>(null);
   const [autoDetectRequested, setAutoDetectRequested] = useState(false);
   const [bulkApplyStatus, setBulkApplyStatus] = useState<string | null>(null);
@@ -850,6 +856,35 @@ const [isPanning, setIsPanning] = useState(false);
       return null;
     }
   }, []);
+
+  const renderPageToCanvas = useCallback(
+    async (pageNumber: number) => {
+      if (!pdfDoc) return null;
+      const page = await pdfDoc.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 1 });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      return { canvas, width: viewport.width, height: viewport.height };
+    },
+    [pdfDoc]
+  );
+
+  const createImageDataUrlFromCanvas = (
+    source: HTMLCanvasElement,
+    rect: { x: number; y: number; w: number; h: number }
+  ) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.floor(rect.w));
+    canvas.height = Math.max(1, Math.floor(rect.h));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+    ctx.drawImage(source, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+    return canvas.toDataURL("image/png");
+  };
   useEffect(() => {
     if (pdfApi && pdfUrl && !pdfDoc) {
       loadPdfFromUrl(pdfUrl);
@@ -880,6 +915,97 @@ const [isPanning, setIsPanning] = useState(false);
       window.setTimeout(() => setAutoDetectNotice(null), 4000);
     }
     void uploadPdfToCloudinary(file);
+  };
+
+  const handleCoordsImport = async () => {
+    if (!pdfDoc) {
+      setCoordsImportStatus({ tone: "error", message: "Upload a PDF first." });
+      return;
+    }
+    let parsed: any;
+    try {
+      parsed = JSON.parse(coordsImportText);
+    } catch {
+      setCoordsImportStatus({ tone: "error", message: "Invalid JSON. Please check the format." });
+      return;
+    }
+    const rects = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.rects)
+      ? parsed.rects
+      : Array.isArray(parsed?.questions)
+      ? parsed.questions
+      : [];
+    if (!rects.length) {
+      setCoordsImportStatus({ tone: "error", message: "No coordinates found in JSON." });
+      return;
+    }
+
+    setCoordsImportStatus({ tone: "info", message: "Processing coordinates..." });
+
+    const pageCache = new Map<number, { canvas: HTMLCanvasElement; width: number; height: number }>();
+    const newRects: CropMeta[] = [];
+
+    for (const item of rects) {
+      const pageNumber = Number(item.page ?? item.pageNumber ?? item.p ?? 1);
+      if (!Number.isFinite(pageNumber) || pageNumber < 1) continue;
+      let cached = pageCache.get(pageNumber);
+      if (!cached) {
+        const rendered = await renderPageToCanvas(pageNumber);
+        if (!rendered) continue;
+        cached = rendered;
+        pageCache.set(pageNumber, cached);
+      }
+      const width = cached.width;
+      const height = cached.height;
+      const rawX = Number(item.x);
+      const rawY = Number(item.y);
+      const rawW = Number(item.w ?? item.width);
+      const rawH = Number(item.h ?? item.height);
+      if (![rawX, rawY, rawW, rawH].every(Number.isFinite)) continue;
+
+      const isNormalized = rawX <= 1 && rawY <= 1 && rawW <= 1 && rawH <= 1;
+      const rect = {
+        x: isNormalized ? rawX * width : rawX,
+        y: isNormalized ? rawY * height : rawY,
+        w: isNormalized ? rawW * width : rawW,
+        h: isNormalized ? rawH * height : rawH,
+      };
+
+      const imageDataUrl = createImageDataUrlFromCanvas(cached.canvas, rect);
+      if (!imageDataUrl) continue;
+
+      newRects.push({
+        id: makeId("crop"),
+        pageNumber,
+        parts: 1,
+        x: rect.x,
+        y: rect.y,
+        w: rect.w,
+        h: rect.h,
+        subject: lastSubject,
+        questionType: "MCQ",
+        correctOption: "",
+        correctOptions: [],
+        correctNumeric: "",
+        marks: "+4/-1",
+        difficulty: lastDifficulty,
+        imageDataUrl,
+        questionText: item.text ?? "",
+        options: ["Option A", "Option B", "Option C", "Option D"],
+      });
+    }
+
+    if (!newRects.length) {
+      setCoordsImportStatus({ tone: "error", message: "No valid coordinates were imported." });
+      return;
+    }
+
+    setCropRects((prev) => [...prev, ...newRects]);
+    setActiveCropId(newRects[0].id);
+    setCurrentPage(newRects[0].pageNumber);
+    setCoordsImportStatus({ tone: "success", message: `Imported ${newRects.length} crops.` });
+    setTimeout(() => setCoordsImportStatus(null), 2000);
   };
 
   const startResize = (
@@ -2061,6 +2187,16 @@ Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing erro
             </button>
             <button
               type="button"
+              onClick={() => {
+                setCoordsImportStatus(null);
+                setShowCoordsImport(true);
+              }}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
+            >
+              Paste Coordinates
+            </button>
+            <button
+              type="button"
               onClick={() => setShowSettings(true)}
               className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
             >
@@ -2888,6 +3024,68 @@ Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing erro
                 onClick={handleJsonImport}
               >
                 Import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCoordsImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#0f0f10] p-6 text-white shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Paste Coordinates</h2>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                onClick={() => setShowCoordsImport(false)}
+              >
+                Close
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-white/70">
+              Paste JSON coordinates. Supported shapes:
+              <br />
+              1) Array of rects: [{"{ \"page\": 1, \"x\": 120, \"y\": 80, \"w\": 400, \"h\": 220 }"}]
+              <br />
+              2) Object with rects/questions: {"{ \"rects\": [ ... ] }"} or {"{ \"questions\": [ ... ] }"}
+              <br />
+              Coordinates can be absolute pixels or normalized (0-1).
+            </p>
+            <textarea
+              value={coordsImportText}
+              onChange={(event) => setCoordsImportText(event.target.value)}
+              className="mt-3 h-40 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white/80 outline-none"
+              placeholder='[{"page":1,"x":0.1,"y":0.2,"w":0.8,"h":0.15}]'
+            />
+            {coordsImportStatus && (
+              <div
+                className={
+                  "mt-3 rounded-lg px-3 py-2 text-xs " +
+                  (coordsImportStatus.tone === "success"
+                    ? "bg-emerald-500/15 text-emerald-200"
+                    : coordsImportStatus.tone === "error"
+                    ? "bg-rose-500/15 text-rose-200"
+                    : "bg-slate-500/15 text-slate-200")
+                }
+              >
+                {coordsImportStatus.message}
+              </div>
+            )}
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/70"
+                onClick={() => setShowCoordsImport(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-emerald-400/20 px-4 py-2 text-xs font-semibold text-emerald-100"
+                onClick={handleCoordsImport}
+              >
+                Import Coordinates
               </button>
             </div>
           </div>
