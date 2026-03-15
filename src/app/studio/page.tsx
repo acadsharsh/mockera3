@@ -2359,7 +2359,7 @@ Rules:
                       onClick={() => {
                         setActiveCropId(crop.id);
                         setCurrentPage(crop.pageNumber);
-                        setPendingFocusId(crop.id);
+                        pendingFocusIdRef.current = crop.id;
                       }}
                       className={`group relative overflow-hidden rounded-xl border ${
                         activeCropId === crop.id
