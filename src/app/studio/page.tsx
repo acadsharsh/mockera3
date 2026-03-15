@@ -479,7 +479,31 @@ const [isPanning, setIsPanning] = useState(false);
 
   const updateZoom = useCallback((value: number) => {
     if (!Number.isFinite(value)) return;
-    setPageScale(Math.max(0.2, value));
+    setPageScale((prev) => {
+      const next = Math.max(0.2, value);
+      if (!Number.isFinite(prev) || prev <= 0 || next === prev) return next;
+      const ratio = next / prev;
+      setCropRects((rects) =>
+        rects.map((rect) => ({
+          ...rect,
+          x: rect.x * ratio,
+          y: rect.y * ratio,
+          w: rect.w * ratio,
+          h: rect.h * ratio,
+        }))
+      );
+      setDraftRect((rect) =>
+        rect
+          ? { ...rect, x: rect.x * ratio, y: rect.y * ratio, w: rect.w * ratio, h: rect.h * ratio }
+          : rect
+      );
+      setSelectionRect((rect) =>
+        rect
+          ? { ...rect, x: rect.x * ratio, y: rect.y * ratio, w: rect.w * ratio, h: rect.h * ratio }
+          : rect
+      );
+      return next;
+    });
   }, []);
 
   const handleViewerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
