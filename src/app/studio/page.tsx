@@ -2249,18 +2249,6 @@ Rules:
                 </button>
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setAutoDetectRequested(true);
-                setAutoDetectNotice(null);
-                fileInputRef.current?.click();
-              }}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200 transition hover:border-white/30 hover:text-white"
-            >
-              Upload PDF → Auto-detect Questions
-            </button>
             <button
               type="button"
               onClick={() => {
