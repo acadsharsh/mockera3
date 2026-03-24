@@ -1532,6 +1532,7 @@ Rules:
 - One box per question (include options if they belong to the question).
 - If a question spans pages, create multiple boxes (one per page).
 - Sort boxes in reading order (top-to-bottom, left-to-right).
+- Double-check every box by re-reading its text. If any part of the question or options is cut off, expand the box until the full question is captured.
 - Return JSON only. No commentary.`;
 
   const handleCopyCoordsPrompt = async () => {
