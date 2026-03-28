@@ -12,6 +12,30 @@ type TextBlock =
   | { type: "text"; lines: string[] }
   | { type: "table"; headers: string[]; rows: string[][] };
 
+const LATEX_T_SUFFIXES = new Set([
+  "imes",
+  "heta",
+  "au",
+  "o",
+  "ilde",
+  "riangle",
+  "riangleleft",
+  "riangleright",
+  "riangleq",
+  "an",
+  "anh",
+  "ag",
+  "herefore",
+  "op",
+  "iny",
+  "frac",
+]);
+
+const safeTextReplace = (match: string, word: string): string => {
+  if (LATEX_T_SUFFIXES.has(word) || word.startsWith("ext")) return match;
+  return `\\text{${word}}`;
+};
+
 const deUnicodeText = (value: string): string => {
   return value
     // Unicode invisible times (U+2062) — main culprit in garbled PDF extraction
@@ -137,9 +161,9 @@ const normalizeText = (value: string) => {
 
   // Strip Unicode math corruption (invisible chars, Unicode operators, italic letters)
   const deUnicode = deUnicodeText(unescaped);
-  const cleanedLatex = deUnicode.replace(/(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
+  const cleanedLatex = deUnicode.replace(/(?<!\\t)(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
 
-  const withTextFix = cleanedLatex.replace(/\\t([A-Za-z]+)/g, "\\text{$1}");
+  const withTextFix = cleanedLatex.replace(/\\t([A-Za-z]+)/g, safeTextReplace);
   const withExtTimesFix = withTextFix.replace(/extimes/g, "\\times");
   const withTimesFix = withExtTimesFix.replace(/([A-Za-z0-9])imes(?=\s*\d)/g, "$1\\times ");
 
@@ -193,7 +217,7 @@ const fixLatexMath = (text: string): string => {
   if (!text) return "";
   return text
     .replace(/\\t\{([+-])\}/g, "$1")
-    .replace(/\\t([A-Za-z]+)/g, "\\text{$1}")
+    .replace(/\\t([A-Za-z]+)/g, safeTextReplace)
     .replace(/\\left(?!\s*[\(\[\{\|\.])/g, "\\left.")
     .replace(/\\right(?!\s*[\)\]\}\|\.])/g, "\\right.")
     .replace(/\\x\s*(?=(?:\\rightarrow|→|\\to))/g, "")
