@@ -153,7 +153,8 @@ const normalizeText = (value: string) => {
   };
 
   const withMathML = value.includes("<mjx-container") ? convertMathMLToTex(value) : value;
-  const unescaped = withMathML
+  const preFixed = withMathML.replace(/\\t\s*×/g, "\\times");
+  const unescaped = preFixed
     .replace(/\\n(?![A-Za-z])/g, "\n")
     .replace(/\\t(?![A-Za-z])/g, "\t")
     .replace(/\\r(?![A-Za-z])/g, "\r")
@@ -161,7 +162,11 @@ const normalizeText = (value: string) => {
 
   // Strip Unicode math corruption (invisible chars, Unicode operators, italic letters)
   const deUnicode = deUnicodeText(unescaped);
-  const cleanedLatex = deUnicode.replace(/(?<!\\t)(?<!\\)ext(?=\{|\s|-|\^|$)/g, "");
+  const cleanedLatex = deUnicode.replace(/ext(?=[\{\s\-\^]|$)/g, (match, offset, str) => {
+    if (offset >= 2 && str[offset - 2] === "\\" && str[offset - 1] === "t") return match;
+    if (offset >= 1 && str[offset - 1] === "\\") return match;
+    return "";
+  });
 
   const withTextFix = cleanedLatex.replace(/\\t([A-Za-z]+)/g, safeTextReplace);
   const withExtTimesFix = withTextFix.replace(/extimes/g, "\\times");
