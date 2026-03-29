@@ -4,6 +4,7 @@ import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
 import { safeJson } from "@/lib/safe-json";
+import jeePrompt from "@/prompts/jee-extraction.md?raw";
 
 type ExamItem = {
   id: string;
