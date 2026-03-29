@@ -43,36 +43,36 @@ describe("ext cleanup - function-based, no lookbehinds", () => {
   });
 
   it("does not crash on complex input", () => {
-    const input = "?? = ??0[\\sin(3.14 × 107)ct]";
+    const input = "\uD835\uDC35 = \uD835\uDC35\u2080[\\sin(3.14 \u00D7 10\u2077)ct]";
     expect(() => normalizeText(input)).not.toThrow();
   });
 });
 
 describe("preFixed - reassembles broken \\times", () => {
-  it("fixes literal \\t×", () => {
-    const r = normalizeText("3 \\t× 10^8");
+  it("fixes literal \\tÃ—", () => {
+    const r = normalizeText("3 \\t\u00D7 10^8");
     expect(r).toContain("\\times");
-    expect(r).not.toContain("\\t×");
+    expect(r).not.toContain("\\t\u00D7");
   });
 
-  it("fixes literal \\t × (with space)", () => {
-    const r = normalizeText("6.6 \\t × 10^{-34}");
+  it("fixes literal \\t Ã— (with space)", () => {
+    const r = normalizeText("6.6 \\t \u00D7 10^{-34}");
     expect(r).toContain("\\times");
   });
 
-  it("fixes actual TAB char + ×", () => {
-    const r = normalizeText("3\t× 10^8");
+  it("fixes actual TAB char + Ã—", () => {
+    const r = normalizeText("3\t\u00D7 10^8");
     expect(r).toContain("\\times");
     expect(r).not.toContain("\t");
   });
 
-  it("fixes actual NEWLINE + ×", () => {
-    const r = normalizeText("3\n× 10^8");
+  it("fixes actual NEWLINE + Ã—", () => {
+    const r = normalizeText("3\n\u00D7 10^8");
     expect(r).toContain("\\times");
   });
 
-  it("fixes actual CR + ×", () => {
-    const r = normalizeText("3\r× 10^8");
+  it("fixes actual CR + Ã—", () => {
+    const r = normalizeText("3\r\u00D7 10^8");
     expect(r).toContain("\\times");
   });
 });
@@ -102,13 +102,6 @@ describe("fixedCommands - repairs PDF-corrupted LaTeX names", () => {
 
 describe("deUnicodeText", () => {
   it("strips invisible times U+2062", () => {
-  it("converts ??? (U+210E Planck constant) to h", () => {
-    expect(deUnicodeText("\u210E")).toBe("h");
-  });
-
-  it("converts ??? to \hbar", () => {
-    expect(deUnicodeText("\u210F")).toBe("\\hbar ");
-  });
     expect(deUnicodeText("5\u2062x")).toBe("5x");
   });
 
@@ -120,57 +113,49 @@ describe("deUnicodeText", () => {
     expect(deUnicodeText("\uD835\uDC43\uD835\uDC49")).toBe("PV");
   });
 
-  it("converts × ? \\times", () => {
-    expect(deUnicodeText("3×10")).toBe("3\\times 10");
+  it("converts Ã— ? \\times", () => {
+    expect(deUnicodeText("3\u00D710")).toBe("3\\times 10");
   });
 
   it("converts a ? \\alpha", () => {
-    expect(deUnicodeText("a")).toBe("\\alpha");
+    expect(deUnicodeText("\u03B1")).toBe("\\alpha");
   });
 
-  it("converts superscript ² ? ^{2}", () => {
+  it("converts superscript Â² ? ^{2}", () => {
     expect(deUnicodeText("x\u00B2")).toBe("x^{2}");
   });
 
   it("converts subscript 2 ? _{2}", () => {
     expect(deUnicodeText("x\u2082")).toBe("x_{2}");
   });
+
+  it("converts h (U+210E Planck constant) to h", () => {
+    expect(deUnicodeText("\u210E")).toBe("h");
+  });
+
+  it("converts ? to \\hbar", () => {
+    expect(deUnicodeText("\u210F")).toBe("\\hbar ");
+  });
 });
 
 describe("integration - real failing inputs from bugs", () => {
-  it("screenshot bug: B0[sin(3.14 \\t× 10^7)ct]", () => {
+  it("screenshot bug: B0[sin(3.14 \\tÃ— 10^7)ct]", () => {
     const input =
-      "B = B_0[\\sin(3.14 \\t× 10^7)ct + \\sin(6.28 \\t× 10^7)ct]";
+      "B = B_0[\\sin(3.14 \\t\u00D7 10^7)ct + \\sin(6.28 \\t\u00D7 10^7)ct]";
     const r = normalizeText(input);
     expect(r).toContain("\\times");
-    expect(r).not.toContain("\\t×");
+    expect(r).not.toContain("\\t\u00D7");
     expect(r).not.toContain("extimes");
-
-  it("fixes theta with Planck constant h", () => {
-    const input = "\uD835\uDC61\u2062\u210E\u2061\uD835\uDC52\u2062\uD835\uDC61\u2062\uD835\uDC4E";
-    const r = normalizeText(input);
-    expect(r).toContain("\\theta");
   });
 
-  it("fixes arrowP,T (no word boundary)", () => {
-    const r = normalizeText("arrowP,T");
-    expect(r).toContain("\\rightarrow");
-  });
-
-  it("fixes TAB + imes from JSON corruption", () => {
-    const r = normalizeText("3\times 5");
-    expect(r).toContain("\\times");
-  });
-  });
-
-  it("screenshot bug: c = 3 \\t× 10^8 \\text{ ms}^{-1}", () => {
-    const input = "$(c = 3 \\t× 10^8 \\text{ ms}^{-1})$";
+  it("screenshot bug: c = 3 \\tÃ— 10^8 \\text{ ms}^{-1}", () => {
+    const input = "$(c = 3 \\t\u00D7 10^8 \\text{ ms}^{-1})$";
     const r = normalizeText(input);
     expect(r).toContain("\\times");
     expect(r).toContain("\\text{ ms}");
   });
 
-  it("match-the-column: 5/18 ?\\t ×10-4", () => {
+  it("match-the-column: 5/18 ?\\t Ã—10-4", () => {
     const input = "5/18 \u2062\\t \u00D710\u207B\u2074 SI unit";
     const r = normalizeText(input);
     expect(r).toContain("\\times");
@@ -186,12 +171,28 @@ describe("integration - real failing inputs from bugs", () => {
     expect(r).not.toContain("\u2062");
   });
 
-  it("Unicode-heavy: 1.5?× 10³ N/m²", () => {
+  it("Unicode-heavy: 1.5?Ã— 10Â³ N/mÂ²", () => {
     const input = "1.5\u2062\u00D7 10\u00B3 N/m\u00B2";
     const r = normalizeText(input);
     expect(r).toContain("\\times");
     expect(r).toContain("^{3}");
     expect(r).toContain("^{2}");
     expect(r).not.toContain("\u2062");
+  });
+
+  it("fixes theta with Planck constant h", () => {
+    const input = "\uD835\uDC61\u2062\u210E\u2061\uD835\uDC52\u2062\uD835\uDC61\u2062\uD835\uDC4E";
+    const r = normalizeText(input);
+    expect(r).toContain("\\theta");
+  });
+
+  it("fixes arrowP,T (no word boundary)", () => {
+    const r = normalizeText("arrowP,T");
+    expect(r).toContain("\\rightarrow");
+  });
+
+  it("fixes TAB + imes from JSON corruption", () => {
+    const r = normalizeText("3	imes 5");
+    expect(r).toContain("\\times");
   });
 });
