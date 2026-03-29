@@ -1466,7 +1466,6 @@ Writing `\nu` in JSON creates NEWLINE + "u" (broken).
 | `\sin`              | `\\sin`                  | Always double-escape       |
 | `\cos`              | `\\cos`                  | Always double-escape       |
 | `\left`             | `\\left`                 | Always double-escape       |
-| `\right`            | `\\right`                | Always double-escape       |
 | `\infty`            | `\\infty`                | Always double-escape       |
 | `\sum`              | `\\sum`                  | Always double-escape       |
 | `\int`              | `\\int`                  | Always double-escape       |
@@ -1478,83 +1477,76 @@ Writing `\nu` in JSON creates NEWLINE + "u" (broken).
 | `\geq`              | `\\geq`                  | Always double-escape       |
 | `\approx`           | `\\approx`               | Always double-escape       |
 
-**Simple rule: If you write a backslash in LaTeX, write TWO backslashes in JSON.**
+**Simple rule: Every backslash in LaTeX = two backslashes in JSON.**
 
 ### CORRECT example:
-```json
-{
-  "text": "If $\\theta = \\frac{\\pi}{2}$ and $F = 3 \\times 10^{-5} \\text{ N}$"
-}
-```
 
-### WRONG example (will break rendering):
-```json
-{
-  "text": "If $\theta = \frac{\pi}{2}$ and $F = 3 \times 10^{-5} \text{ N}$"
-}
-```
+{"text": "If $\\theta = \\frac{\\pi}{2}$ and $F = 3 \\times 10^{-5} \\text{ N}$"}
+
+### WRONG example (breaks rendering):
+
+{"text": "If $\theta = \frac{\pi}{2}$ and $F = 3 \times 10^{-5} \text{ N}$"}
 
 ---
 
 ## 2. FORBIDDEN: UNICODE CHARACTERS
 
-Never output any of these. Always use their double-escaped LaTeX equivalents.
+Never output these. Always use double-escaped LaTeX.
 
-| Unicode | Char | Write instead        |
-|---------|------|----------------------|
-| U+00D7  | ?    | `\\times`            |
-| U+00B7  | ?    | `\\cdot`             |
-| U+00F7  | ?    | `\\div`              |
-| U+00B1  | ?    | `\\pm`               |
-| U+2248  | ?    | `\\approx`           |
-| U+2260  | ?    | `\\neq`              |
-| U+2264  | ?    | `\\leq`              |
-| U+2265  | ?    | `\\geq`              |
-| U+2192  | ?    | `\\rightarrow`       |
-| U+2190  | ?    | `\\leftarrow`        |
-| U+21CC  | ?    | `\\rightleftharpoons`|
-| U+221E  | ?    | `\\infty`            |
-| U+2212  | ?    | `-` (ASCII minus)    |
-| U+03B1  | ?    | `\\alpha`            |
-| U+03B2  | ?    | `\\beta`             |
-| U+03B3  | ?    | `\\gamma`            |
-| U+03B4  | ?    | `\\delta`            |
-| U+03B5  | ?    | `\\varepsilon`       |
-| U+03B6  | ?    | `\\zeta`             |
-| U+03B7  | ?    | `\\eta`              |
-| U+03B8  | ?    | `\\theta`            |
-| U+03BB  | ?    | `\\lambda`           |
-| U+03BC  | ?    | `\\mu`               |
-| U+03BD  | ?    | `\\nu`               |
-| U+03BE  | ?    | `\\xi`               |
-| U+03C0  | ?    | `\\pi`               |
-| U+03C1  | ?    | `\\rho`              |
-| U+03C3  | ?    | `\\sigma`            |
-| U+03C4  | ?    | `\\tau`              |
-| U+03C6  | ?    | `\\phi`              |
-| U+03C7  | ?    | `\\chi`              |
-| U+03C8  | ?    | `\\psi`              |
-| U+03C9  | ?    | `\\omega`            |
-| U+03A9  | ?    | `\\Omega`            |
-| U+0394  | ?    | `\\Delta`            |
-| U+03A3  | ?    | `\\Sigma`            |
-| U+0393  | ?    | `\\Gamma`            |
-| U+039B  | ?    | `\\Lambda`           |
-| U+03A0  | ?    | `\\Pi`               |
-| U+03A6  | ?    | `\\Phi`              |
-| U+03A8  | ?    | `\\Psi`              |
+| Unicode | Char | Write instead         |
+|---------|------|-----------------------|
+| U+00D7  | ?    | `\\times`             |
+| U+00B7  | ?    | `\\cdot`              |
+| U+00F7  | ?    | `\\div`               |
+| U+00B1  | ?    | `\\pm`                |
+| U+2248  | ?    | `\\approx`            |
+| U+2260  | ?    | `\\neq`               |
+| U+2264  | ?    | `\\leq`               |
+| U+2265  | ?    | `\\geq`               |
+| U+2192  | ?    | `\\rightarrow`        |
+| U+2190  | ?    | `\\leftarrow`         |
+| U+21CC  | ?    | `\\rightleftharpoons` |
+| U+221E  | ?    | `\\infty`             |
+| U+2212  | ?    | `-` (ASCII minus)     |
+| U+03B1  | ?    | `\\alpha`             |
+| U+03B2  | ?    | `\\beta`              |
+| U+03B3  | ?    | `\\gamma`             |
+| U+03B4  | ?    | `\\delta`             |
+| U+03B5  | ?    | `\\varepsilon`        |
+| U+03B6  | ?    | `\\zeta`              |
+| U+03B7  | ?    | `\\eta`               |
+| U+03B8  | ?    | `\\theta`             |
+| U+03BB  | ?    | `\\lambda`            |
+| U+03BC  | ?    | `\\mu`                |
+| U+03BD  | ?    | `\\nu`                |
+| U+03BE  | ?    | `\\xi`                |
+| U+03C0  | ?    | `\\pi`                |
+| U+03C1  | ?    | `\\rho`               |
+| U+03C3  | ?    | `\\sigma`             |
+| U+03C4  | ?    | `\\tau`               |
+| U+03C6  | ?    | `\\phi`               |
+| U+03C7  | ?    | `\\chi`               |
+| U+03C8  | ?    | `\\psi`               |
+| U+03C9  | ?    | `\\omega`             |
+| U+03A9  | ?    | `\\Omega`             |
+| U+0394  | ?    | `\\Delta`             |
+| U+03A3  | ?    | `\\Sigma`             |
+| U+0393  | ?    | `\\Gamma`             |
+| U+039B  | ?    | `\\Lambda`            |
+| U+03A0  | ?    | `\\Pi`                |
+| U+03A6  | ?    | `\\Phi`               |
+| U+03A8  | ?    | `\\Psi`               |
 
 Also NEVER output:
-- Math italic Unicode (??, ??, ??, ??, ?? etc.) ? use plain ASCII letters: B, P, V
-- Invisible Unicode (U+2062 invisible times, U+2061 function application, U+2063 invisible separator) ? delete them entirely
-- Superscript digits (??????????) ? use `^{n}` instead
-- Subscript digits (??????????) ? use `_{n}` instead
+- Math italic Unicode (?? ?? ?? ?? ??) ? use plain ASCII: B P V
+- Invisible Unicode (U+2062 invisible times, U+2061 function application, U+2063 invisible separator) ? delete entirely
+- Superscript digits (??????????) ? use `^{n}`
+- Subscript digits (??????????) ? use `_{n}`
 
 ---
 
 ## 3. JSON Schema
 
-```json
 {
   "questions": [
     {
@@ -1579,73 +1571,73 @@ Also NEVER output:
 
 Field rules:
 - "questionType": one of "MCQ", "MSQ", "NUM"
-- MCQ: fill "answer" with single letter (A/B/C/D)
+- MCQ: fill "answer" with single letter A/B/C/D
 - MSQ: fill "correctOptions" with array of letters
 - NUM: fill "correctNumeric" with numeric string
-- "options": include for MCQ/MSQ, empty array [] for NUM
-- "hasDiagram": true if the question references a figure/diagram you cannot reproduce
+- "options": include for MCQ/MSQ, use empty array [] for NUM
+- "hasDiagram": true if question references a figure you cannot reproduce
 
 ---
 
 ## 4. Math Formatting Rules
 
-- Wrap ALL math expressions, variables, numbers with units in `$ ... $`
-- Always use braces for multi-character subscripts/superscripts: `$10^{-3}$` not `$10^-3$`
+- Wrap ALL math expressions and variables in `$ ... $`
+- Always use braces for multi-char sub/superscripts: `$10^{-3}$` not `$10^-3$`
 - Ion charges: `$\\text{Fe}^{2+}$`, `$\\text{Cl}^{-}$`, `$\\text{SO}_4^{2-}$`
 - Fractions: always `\\frac{a}{b}`, never `a/b` inside math mode
-- Units: always inside `\\text{}` with a leading space: `$5 \\text{ kg}$`, `$3 \\times 10^8 \\text{ m/s}$`
-- Vectors: use `\\vec{F}` or `\\hat{i}`
-- Chemical equations: `$\\text{H}_2\\text{O}$`, `$\\text{NaCl}$`
+- Units: inside `\\text{}` with leading space: `$5 \\text{ kg}$`, `$3 \\times 10^8 \\text{ m/s}$`
+- Ratios: always `\\frac{C_p}{C_v}`, never `C_p/C_v`
+- Vectors: `\\vec{F}` or `\\hat{i}`
+- Chemical formulas: `$\\text{H}_2\\text{O}$`, `$\\text{NaCl}$`
 
 ### Fix these common OCR errors:
 
-| OCR garbage      | Correct output              |
-|------------------|-----------------------------|
-| `imes`           | `\\times`                   |
-| `ext`            | delete it or `\\text{}`     |
-| `extimes`        | `\\times`                   |
-| `xo0` or `x?0`  | `x \\to 0`                  |
-| `fracpi2`        | `\\frac{\\pi}{2}`           |
-| `sqrtx`          | `\\sqrt{x}`                 |
-| `rightarrow`     | `\\rightarrow`              |
-| `leftarrow`      | `\\leftarrow`               |
-| `infty`          | `\\infty`                   |
+| OCR garbage      | Correct output          |
+|------------------|-------------------------|
+| `imes`           | `\\times`               |
+| `ext`            | delete or `\\text{}`    |
+| `extimes`        | `\\times`               |
+| `xo0` or `x?0`  | `x \\to 0`              |
+| `fracpi2`        | `\\frac{\\pi}{2}`       |
+| `sqrtx`          | `\\sqrt{x}`             |
+| `rightarrow`     | `\\rightarrow`          |
+| `infty`          | `\\infty`               |
 
 ---
 
 ## 5. Structure & Cleaning
 
-- Statement questions: format as `**Statement I:** text\\n**Statement II:** text`
+- Statement questions: format as **Statement I:** text followed by **Statement II:** text
 - Match-the-column: use a markdown table inside the "text" field
-- Remove section labels: `[Section A]`, `Part-I`, `Question 1-20`, page numbers ? delete all of these
-- Paragraph/comprehension questions: put the shared paragraph in the first question's text, subsequent questions can reference it
-- If a question has sub-parts (a), (b), (c), (d) that are NOT options but sub-questions, keep them as part of the text
+- Remove: section labels like [Section A], Part-I, page numbers
+- Paragraph questions: put shared paragraph in first question text
+- Sub-parts that are NOT options: keep as part of text
 
 ---
 
 ## 6. SELF-CHECK BEFORE OUTPUTTING
 
-Before you output the final JSON, scan it for these bugs. If ANY exist, fix them:
+Scan your entire JSON output. If ANY of these exist, fix them before outputting:
 
-| If you find this in your output | It is a bug ? fix it                     |
-|---------------------------------|------------------------------------------|
-| `\t` that is not `\\t`         | Will become TAB ? add extra backslash    |
-| `\n` that is not `\\n`         | Will become NEWLINE ? add extra backslash|
-| `\r` that is not `\\r`         | Will become CARRIAGE RETURN ? fix it     |
-| `\b` that is not `\\b`         | Will become BACKSPACE ? fix it           |
-| `\f` that is not `\\f`         | Will become FORM FEED ? fix it           |
-| Any Unicode math symbol (????) | Replace with double-escaped LaTeX        |
-| Any math italic Unicode (??????)  | Replace with plain ASCII letter          |
-| `extimes` or bare `imes`       | Should be `\\times`                      |
-| `\text` with single backslash  | Should be `\\text`                       |
-| Unmatched `$` signs            | Every `$` must have a closing `$`        |
-| `^` or `_` without braces for multi-char | Add `{}` braces              |
+| Pattern found in your output  | Bug                                    |
+|-------------------------------|----------------------------------------|
+| `\t` that is not `\\t`       | Will become TAB ? add extra backslash  |
+| `\n` that is not `\\n`       | Will become NEWLINE ? add backslash    |
+| `\r` that is not `\\r`       | Will become CARRIAGE RETURN ? fix it   |
+| `\b` that is not `\\b`       | Will become BACKSPACE ? fix it         |
+| `\f` that is not `\\f`       | Will become FORM FEED ? fix it         |
+| Any Unicode math symbol (????)| Replace with double-escaped LaTeX     |
+| Any math italic Unicode (??????) | Replace with plain ASCII letter       |
+| `extimes` or bare `imes`     | Should be `\\times`                    |
+| `\text` with single backslash| Should be `\\text`                     |
+| Unmatched `$` signs          | Every `$` needs a closing `$`          |
+| `^` or `_` without braces    | Add `{}` for multi-character content   |
 
 ---
 
 ## 7. OUTPUT FORMAT
 
-Output ONLY the JSON object. No commentary. No explanation. No markdown code fences around the JSON. Just the raw JSON starting with `{` and ending with `}`.
+Output ONLY the raw JSON object. No commentary. No explanation. No markdown code fences. Start with `{` and end with `}`.
 `;
 
   const userJsonPrompt = adminJsonPrompt;
