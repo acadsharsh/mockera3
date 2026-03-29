@@ -1426,65 +1426,76 @@ Extract all questions from the provided document into a strict JSON format.
 
 ## 1. THE CRITICAL RULE: BACKSLASH ESCAPING IN JSON
 
-In JSON strings, a single backslash `\` is an escape character.
-Writing `\times` in JSON creates TAB + "imes" (broken).
-Writing `\nu` in JSON creates NEWLINE + "u" (broken).
+In JSON strings, a single backslash \`\\\` is an escape character.
+Writing \`	imes\` in JSON creates TAB + "imes" (broken).
+Writing \`
+u\` in JSON creates NEWLINE + "u" (broken).
 
-**Every LaTeX command MUST use double-backslash `\\` inside the JSON string.**
+**Every LaTeX command MUST use double-backslash \`\\\` inside the JSON string.**
 
 ### Dangerous commands that WILL break if single-escaped:
 
 | WRONG (breaks JSON) | CORRECT (in JSON string) | What goes wrong            |
 |---------------------|--------------------------|----------------------------|
-| `\times`            | `\\times`                | `\t` becomes TAB           |
-| `\text{kg}`         | `\\text{kg}`             | `\t` becomes TAB           |
-| `\theta`            | `\\theta`                | `\t` becomes TAB           |
-| `\tau`              | `\\tau`                  | `\t` becomes TAB           |
-| `\tan`              | `\\tan`                  | `\t` becomes TAB           |
-| `\to`               | `\\to`                   | `\t` becomes TAB           |
-| `\nu`               | `\\nu`                   | `\n` becomes NEWLINE       |
-| `\neq`              | `\\neq`                  | `\n` becomes NEWLINE       |
-| `\nabla`            | `\\nabla`                | `\n` becomes NEWLINE       |
-| `\nCr`              | `\\nCr`                  | `\n` becomes NEWLINE       |
-| `\right`            | `\\right`                | `\r` becomes CARRIAGE RET  |
-| `\rho`              | `\\rho`                  | `\r` becomes CARRIAGE RET  |
-| `\frac`             | `\\frac`                 | `\f` becomes FORM FEED     |
-| `\beta`             | `\\beta`                 | `\b` becomes BACKSPACE     |
-| `\bar`              | `\\bar`                  | `\b` becomes BACKSPACE     |
-| `\alpha`            | `\\alpha`                | Always double-escape       |
-| `\omega`            | `\\omega`                | Always double-escape       |
-| `\Omega`            | `\\Omega`                | Always double-escape       |
-| `\Delta`            | `\\Delta`                | Always double-escape       |
-| `\pi`               | `\\pi`                   | Always double-escape       |
-| `\sigma`            | `\\sigma`                | Always double-escape       |
-| `\lambda`           | `\\lambda`               | Always double-escape       |
-| `\mu`               | `\\mu`                   | Always double-escape       |
-| `\phi`              | `\\phi`                  | Always double-escape       |
-| `\sqrt`             | `\\sqrt`                 | Always double-escape       |
-| `\vec`              | `\\vec`                  | Always double-escape       |
-| `\hat`              | `\\hat`                  | Always double-escape       |
-| `\log`              | `\\log`                  | Always double-escape       |
-| `\sin`              | `\\sin`                  | Always double-escape       |
-| `\cos`              | `\\cos`                  | Always double-escape       |
-| `\left`             | `\\left`                 | Always double-escape       |
-| `\infty`            | `\\infty`                | Always double-escape       |
-| `\sum`              | `\\sum`                  | Always double-escape       |
-| `\int`              | `\\int`                  | Always double-escape       |
-| `\lim`              | `\\lim`                  | Always double-escape       |
-| `\cdot`             | `\\cdot`                 | Always double-escape       |
-| `\div`              | `\\div`                  | Always double-escape       |
-| `\pm`               | `\\pm`                   | Always double-escape       |
-| `\leq`              | `\\leq`                  | Always double-escape       |
-| `\geq`              | `\\geq`                  | Always double-escape       |
-| `\approx`           | `\\approx`               | Always double-escape       |
+| \`	imes\`            | \`\\times\`                | \`	\` becomes TAB           |
+| \`	ext{kg}\`         | \`\\text{kg}\`             | \`	\` becomes TAB           |
+| \`	heta\`            | \`\\theta\`                | \`	\` becomes TAB           |
+| \`	au\`              | \`\\tau\`                  | \`	\` becomes TAB           |
+| \`	an\`              | \`\\tan\`                  | \`	\` becomes TAB           |
+| \`	o\`               | \`\\to\`                   | \`	\` becomes TAB           |
+| \`
+u\`               | \`\\nu\`                   | \`
+\` becomes NEWLINE       |
+| \`
+eq\`              | \`\\neq\`                  | \`
+\` becomes NEWLINE       |
+| \`
+abla\`            | \`\\nabla\`                | \`
+\` becomes NEWLINE       |
+| \`
+Cr\`              | \`\\nCr\`                  | \`
+\` becomes NEWLINE       |
+| \`ight\`            | \`\\right\`                | \`\` becomes CARRIAGE RET  |
+| \`ho\`              | \`\\rho\`                  | \`\` becomes CARRIAGE RET  |
+| \`rac\`             | \`\\frac\`                 | \`\` becomes FORM FEED     |
+| \`eta\`             | \`\\beta\`                 | \`\` becomes BACKSPACE     |
+| \`ar\`              | \`\\bar\`                  | \`\` becomes BACKSPACE     |
+| \`lpha\`            | \`\\alpha\`                | Always double-escape       |
+| \`\\omega\`            | \`\\omega\`                | Always double-escape       |
+| \`\\Omega\`            | \`\\Omega\`                | Always double-escape       |
+| \`\\Delta\`            | \`\\Delta\`                | Always double-escape       |
+| \`\\pi\`               | \`\\pi\`                   | Always double-escape       |
+| \`\\sigma\`            | \`\\sigma\`                | Always double-escape       |
+| \`\\lambda\`           | \`\\lambda\`               | Always double-escape       |
+| \`\\mu\`               | \`\\mu\`                   | Always double-escape       |
+| \`\\phi\`              | \`\\phi\`                  | Always double-escape       |
+| \`\\sqrt\`             | \`\\sqrt\`                 | Always double-escape       |
+| \`ec\`              | \`\\vec\`                  | Always double-escape       |
+| \`\\hat\`              | \`\\hat\`                  | Always double-escape       |
+| \`\\log\`              | \`\\log\`                  | Always double-escape       |
+| \`\\sin\`              | \`\\sin\`                  | Always double-escape       |
+| \`\\cos\`              | \`\\cos\`                  | Always double-escape       |
+| \`\\left\`             | \`\\left\`                 | Always double-escape       |
+| \`\\infty\`            | \`\\infty\`                | Always double-escape       |
+| \`\\sum\`              | \`\\sum\`                  | Always double-escape       |
+| \`\\int\`              | \`\\int\`                  | Always double-escape       |
+| \`\\lim\`              | \`\\lim\`                  | Always double-escape       |
+| \`\\cdot\`             | \`\\cdot\`                 | Always double-escape       |
+| \`\\div\`              | \`\\div\`                  | Always double-escape       |
+| \`\\pm\`               | \`\\pm\`                   | Always double-escape       |
+| \`\\leq\`              | \`\\leq\`                  | Always double-escape       |
+| \`\\geq\`              | \`\\geq\`                  | Always double-escape       |
+| \`pprox\`           | \`\\approx\`               | Always double-escape       |
 
 **Simple rule: Every backslash in LaTeX = two backslashes in JSON.**
 
 ### CORRECT example:
+
 {"text": "If $\\theta = \\frac{\\pi}{2}$ and $F = 3 \\times 10^{-5} \\text{ N}$"}
 
 ### WRONG example (breaks rendering):
-{"text": "If $\theta = \frac{\pi}{2}$ and $F = 3 \times 10^{-5} \text{ N}$"}
+
+{"text": "If $	heta = rac{\\pi}{2}$ and $F = 3 	imes 10^{-5} 	ext{ N}$"}
 
 ---
 
@@ -1494,53 +1505,53 @@ Never output these. Always use double-escaped LaTeX.
 
 | Unicode | Char | Write instead         |
 |---------|------|-----------------------|
-| U+00D7  | ?    | `\\times`             |
-| U+00B7  | ?    | `\\cdot`              |
-| U+00F7  | ?    | `\\div`               |
-| U+00B1  | ?    | `\\pm`                |
-| U+2248  | ?    | `\\approx`            |
-| U+2260  | ?    | `\\neq`               |
-| U+2264  | ?    | `\\leq`               |
-| U+2265  | ?    | `\\geq`               |
-| U+2192  | ?    | `\\rightarrow`        |
-| U+2190  | ?    | `\\leftarrow`         |
-| U+21CC  | ?    | `\\rightleftharpoons` |
-| U+221E  | ?    | `\\infty`             |
-| U+2212  | ?    | `-` (ASCII minus)     |
-| U+03B1  | ?    | `\\alpha`             |
-| U+03B2  | ?    | `\\beta`              |
-| U+03B3  | ?    | `\\gamma`             |
-| U+03B4  | ?    | `\\delta`             |
-| U+03B5  | ?    | `\\varepsilon`        |
-| U+03B6  | ?    | `\\zeta`              |
-| U+03B7  | ?    | `\\eta`               |
-| U+03B8  | ?    | `\\theta`             |
-| U+03BB  | ?    | `\\lambda`            |
-| U+03BC  | ?    | `\\mu`                |
-| U+03BD  | ?    | `\\nu`                |
-| U+03BE  | ?    | `\\xi`                |
-| U+03C0  | ?    | `\\pi`                |
-| U+03C1  | ?    | `\\rho`               |
-| U+03C3  | ?    | `\\sigma`             |
-| U+03C4  | ?    | `\\tau`               |
-| U+03C6  | ?    | `\\phi`               |
-| U+03C7  | ?    | `\\chi`               |
-| U+03C8  | ?    | `\\psi`               |
-| U+03C9  | ?    | `\\omega`             |
-| U+03A9  | ?    | `\\Omega`             |
-| U+0394  | ?    | `\\Delta`             |
-| U+03A3  | ?    | `\\Sigma`             |
-| U+0393  | ?    | `\\Gamma`             |
-| U+039B  | ?    | `\\Lambda`            |
-| U+03A0  | ?    | `\\Pi`                |
-| U+03A6  | ?    | `\\Phi`               |
-| U+03A8  | ?    | `\\Psi`               |
+| U+00D7  | ?    | \`\\times\`             |
+| U+00B7  | ?    | \`\\cdot\`              |
+| U+00F7  | ?    | \`\\div\`               |
+| U+00B1  | ?    | \`\\pm\`                |
+| U+2248  | ?    | \`\\approx\`            |
+| U+2260  | ?    | \`\\neq\`               |
+| U+2264  | ?    | \`\\leq\`               |
+| U+2265  | ?    | \`\\geq\`               |
+| U+2192  | ?    | \`\\rightarrow\`        |
+| U+2190  | ?    | \`\\leftarrow\`         |
+| U+21CC  | ?    | \`\\rightleftharpoons\` |
+| U+221E  | ?    | \`\\infty\`             |
+| U+2212  | ?    | \`-\` (ASCII minus)     |
+| U+03B1  | ?    | \`\\alpha\`             |
+| U+03B2  | ?    | \`\\beta\`              |
+| U+03B3  | ?    | \`\\gamma\`             |
+| U+03B4  | ?    | \`\\delta\`             |
+| U+03B5  | ?    | \`\\varepsilon\`        |
+| U+03B6  | ?    | \`\\zeta\`              |
+| U+03B7  | ?    | \`\\eta\`               |
+| U+03B8  | ?    | \`\\theta\`             |
+| U+03BB  | ?    | \`\\lambda\`            |
+| U+03BC  | ?    | \`\\mu\`                |
+| U+03BD  | ?    | \`\\nu\`                |
+| U+03BE  | ?    | \`\\xi\`                |
+| U+03C0  | ?    | \`\\pi\`                |
+| U+03C1  | ?    | \`\\rho\`               |
+| U+03C3  | ?    | \`\\sigma\`             |
+| U+03C4  | ?    | \`\\tau\`               |
+| U+03C6  | ?    | \`\\phi\`               |
+| U+03C7  | ?    | \`\\chi\`               |
+| U+03C8  | ?    | \`\\psi\`               |
+| U+03C9  | ?    | \`\\omega\`             |
+| U+03A9  | ?    | \`\\Omega\`             |
+| U+0394  | ?    | \`\\Delta\`             |
+| U+03A3  | ?    | \`\\Sigma\`             |
+| U+0393  | ?    | \`\\Gamma\`             |
+| U+039B  | ?    | \`\\Lambda\`            |
+| U+03A0  | ?    | \`\\Pi\`                |
+| U+03A6  | ?    | \`\\Phi\`               |
+| U+03A8  | ?    | \`\\Psi\`               |
 
 Also NEVER output:
 - Math italic Unicode (?? ?? ?? ?? ??) ? use plain ASCII: B P V
 - Invisible Unicode (U+2062 invisible times, U+2061 function application, U+2063 invisible separator) ? delete entirely
-- Superscript digits (??????????) ? use `^{n}`
-- Subscript digits (??????????) ? use `_{n}`
+- Superscript digits (??????????) ? use \`^{n}\`
+- Subscript digits (??????????) ? use \`_{n}\`
 
 ---
 
@@ -1552,29 +1563,36 @@ The PDF text extractor produces CORRUPTED text. NEVER copy-paste from the PDF. A
 
 | Corrupted input              | What it actually means  | Write in JSON            |
 |------------------------------|------------------------|--------------------------|
-| `??????????????` or `?`           | right arrow            | `\\rightarrow`           |
-| `????????????????????????????`        | right arrow            | `\\rightarrow`           |
-| `??????????????` or `?`            | multiplication         | `\\times`                |
-| `???????????`                     | fraction               | `\\frac{}{}`             |
-| `???????????`                     | square root            | `\\sqrt{}`               |
-| `?????????????`                   | alpha                  | `\\alpha`                |
-| `????????`                       | PV^alpha               | `$PV^{\\alpha}$`         |
-| `?` (invisible character)    | nothing ? delete it    | (remove)                 |
-| `??` `??` `??` `??` (italic)     | regular letters        | `B` `P` `V` `n`         |
-| `5?\t ?10?4`                  | 5 ? 10^{-4}           | `$5 \\times 10^{-4}$`   |
-| `10?4` or `10??`              | 10 to the minus 4     | `$10^{-4}$`              |
+| \`??????????????\` or \`?\`           | right arrow            | \`\\rightarrow\`           |
+| \`????????????????????????????\`        | right arrow            | \`\\rightarrow\`           |
+| \`??????????????\` or \`?\`            | multiplication         | \`\\times\`                |
+| \`???????????\`                     | fraction               | \`\\frac{}{}\`             |
+| \`???????????\`                     | square root            | \`\\sqrt{}\`               |
+| \`?????????????\`                   | alpha                  | \`\\alpha\`                |
+| \`????????\`                       | PV^alpha               | \`$PV^{\\alpha}$\`         |
+| \`?\` (invisible character)    | nothing ? delete it    | (remove)                 |
+| \`??\` \`??\` \`??\` \`??\` (italic)     | regular letters        | \`B\` \`P\` \`V\` \`n\`         |
+| \`5?	 ?10?4\`                  | 5 ? 10^{-4}           | \`$5 \\times 10^{-4}$\`   |
+| \`10?4\` or \`10??\`              | 10 to the minus 4     | \`$10^{-4}$\`              |
 
 ### Match-the-column formatting:
 
 When you see a match-the-column question, format it as a markdown table. Example:
-{"text": "Match List I with List II:\n\n| List I | List II |\n|---|---|\n| (a) One unit of force in TK system | (P) $\\frac{5}{18} \\times 10^{-4}$ SI unit |\n| (b) One unit of kinetic energy in TK system | (Q) $\\frac{5}{18} \\times 10^{-3}$ MKS unit |\n| (c) One unit of pressure in TK system | (R) $\\frac{5}{18} \\times 10^{0}$ MKS unit |\n| (d) One unit of work in TK system | (S) $\\frac{5}{18} \\times 10^{4}$ MKS unit |"}
+{"text": "Match List I with List II:
+
+| List I | List II |
+|---|---|
+| (a) One unit of force in TK system | (P) $\\frac{5}{18} \\times 10^{-4}$ SI unit |
+| (b) One unit of kinetic energy in TK system | (Q) $\\frac{5}{18} \\times 10^{-3}$ MKS unit |
+| (c) One unit of pressure in TK system | (R) $\\frac{5}{18} \\times 10^{0}$ MKS unit |
+| (d) One unit of work in TK system | (S) $\\frac{5}{18} \\times 10^{4}$ MKS unit |"}
 
 ### Key rules:
 1. NEVER output math italic Unicode characters (?? ?? ?? ?? ?? ?? ??) ? use plain ASCII
 2. NEVER output invisible times (? U+2062) ? delete it
-3. Fractions must use `\\frac{numerator}{denominator}`
-4. All numbers with powers of 10 must be: `$N \\times 10^{power}$`
-5. Arrows between match items: use `\\rightarrow` not Unicode arrows
+3. Fractions must use \`\\frac{numerator}{denominator}\`
+4. All numbers with powers of 10 must be: \`$N \\times 10^{power}$\`
+5. Arrows between match items: use \`\\rightarrow\` not Unicode arrows
 
 ---
 
@@ -1614,27 +1632,27 @@ Field rules:
 
 ## 4. Math Formatting Rules
 
-- Wrap ALL math expressions and variables in `$ ... $`
-- Always use braces for multi-char sub/superscripts: `$10^{-3}$` not `$10^-3$`
-- Ion charges: `$\\text{Fe}^{2+}$`, `$\\text{Cl}^{-}$`, `$\\text{SO}_4^{2-}$`
-- Fractions: always `\\frac{a}{b}`, never `a/b` inside math mode
-- Units: inside `\\text{}` with leading space: `$5 \\text{ kg}$`, `$3 \\times 10^8 \\text{ m/s}$`
-- Ratios: always `\\frac{C_p}{C_v}`, never `C_p/C_v`
-- Vectors: `\\vec{F}` or `\\hat{i}`
-- Chemical formulas: `$\\text{H}_2\\text{O}$`, `$\\text{NaCl}$`
+- Wrap ALL math expressions and variables in \`$ ... $\`
+- Always use braces for multi-char sub/superscripts: \`$10^{-3}$\` not \`$10^-3$\`
+- Ion charges: \`$\\text{Fe}^{2+}$\`, \`$\\text{Cl}^{-}$\`, \`$\\text{SO}_4^{2-}$\`
+- Fractions: always \`\\frac{a}{b}\`, never \`a/b\` inside math mode
+- Units: inside \`\\text{}\` with leading space: \`$5 \\text{ kg}$\`, \`$3 \\times 10^8 \\text{ m/s}$\`
+- Ratios: always \`\\frac{C_p}{C_v}\`, never \`C_p/C_v\`
+- Vectors: \`\\vec{F}\` or \`\\hat{i}\`
+- Chemical formulas: \`$\\text{H}_2\\text{O}$\`, \`$\\text{NaCl}$\`
 
 ### Fix these common OCR errors:
 
 | OCR garbage      | Correct output          |
 |------------------|-------------------------|
-| `imes`           | `\\times`               |
-| `ext`            | delete or `\\text{}`    |
-| `extimes`        | `\\times`               |
-| `xo0` or `x?0`  | `x \\to 0`              |
-| `fracpi2`        | `\\frac{\\pi}{2}`       |
-| `sqrtx`          | `\\sqrt{x}`             |
-| `rightarrow`     | `\\rightarrow`          |
-| `infty`          | `\\infty`               |
+| \`imes\`           | \`\\times\`               |
+| \`ext\`            | delete or \`\\text{}\`    |
+| \`extimes\`        | \`\\times\`               |
+| \`xo0\` or \`x?0\`  | \`x \\to 0\`              |
+| \`fracpi2\`        | \`\\frac{\\pi}{2}\`       |
+| \`sqrtx\`          | \`\\sqrt{x}\`             |
+| \`rightarrow\`     | \`\\rightarrow\`          |
+| \`infty\`          | \`\\infty\`               |
 
 ---
 
@@ -1654,27 +1672,28 @@ Scan your ENTIRE JSON output for these patterns. If ANY exist, you have a bug ? 
 
 | Pattern found in your output     | Bug                                        |
 |----------------------------------|--------------------------------------------|
-| `\t` that is not `\\t`          | Will become TAB ? add extra backslash      |
-| `\n` that is not `\\n`          | Will become NEWLINE ? add extra backslash  |
-| `\r` that is not `\\r`          | Will become CARRIAGE RETURN ? fix it       |
-| `\b` that is not `\\b`          | Will become BACKSPACE ? fix it             |
-| `\f` that is not `\\f`          | Will become FORM FEED ? fix it             |
-| Any `?` (Unicode multiply)       | Use `\\times` instead                      |
-| Any `? ? ? ? ? ? ? ? ? ? ?`     | Use `\\alpha` `\\beta` etc.               |
-| Any `?? ?? ?? ?? ?? ??` (math italic)| Use plain ASCII `B P V n a r`             |
-| Any `?` (invisible times)        | Delete it entirely                         |
-| `extimes` or bare `imes`         | Should be `\\times`                        |
-| `arrow` as text                  | Should be `\\rightarrow`                   |
-| `10-4` or `10?4` (no caret)     | Should be `$10^{-4}$`                      |
-| `5/18` inline (not fraction)    | Should be `$\\frac{5}{18}$`                |
-| Unmatched `$` signs              | Every `$` needs a closing `$`              |
-| `^` or `_` without braces        | Add `{}` for multi-character content       |
+| \`	\` that is not \`\\t\`          | Will become TAB ? add extra backslash      |
+| \`
+\` that is not \`\\n\`          | Will become NEWLINE ? add extra backslash  |
+| \`\` that is not \`\\r\`          | Will become CARRIAGE RETURN ? fix it       |
+| \`\` that is not \`\\b\`          | Will become BACKSPACE ? fix it             |
+| \`\` that is not \`\\f\`          | Will become FORM FEED ? fix it             |
+| Any \`?\` (Unicode multiply)       | Use \`\\times\` instead                      |
+| Any \`? ? ? ? ? ? ? ? ? ? ?\`     | Use \`\\alpha\` \`\\beta\` etc.               |
+| Any \`?? ?? ?? ?? ?? ??\` (math italic)| Use plain ASCII \`B P V n a r\`             |
+| Any \`?\` (invisible times)        | Delete it entirely                         |
+| \`extimes\` or bare \`imes\`         | Should be \`\\times\`                        |
+| \`arrow\` as text                  | Should be \`\\rightarrow\`                   |
+| \`10-4\` or \`10?4\` (no caret)     | Should be \`$10^{-4}$\`                      |
+| \`5/18\` inline (not fraction)    | Should be \`$\\frac{5}{18}$\`                |
+| Unmatched \`$\` signs              | Every \`$\` needs a closing \`$\`              |
+| \`^\` or \`_\` without braces        | Add \`{}\` for multi-character content       |
 
 ---
 
 ## 7. OUTPUT FORMAT
 
-Output ONLY the raw JSON object. No commentary. No explanation. No markdown code fences. Start with `{` and end with `}`.
+Output ONLY the raw JSON object. No commentary. No explanation. No markdown code fences. Start with \`{\` and end with \`}\`.
 `;
 
   const userJsonPrompt = adminJsonPrompt;
