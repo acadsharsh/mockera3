@@ -1417,30 +1417,158 @@ const [isPanning, setIsPanning] = useState(false);
     }
   };
 
-  const adminJsonPrompt = `# JEE Question Extraction Prompt (v3.0 - JSON & MathJax Optimized)
+  const adminJsonPrompt = `# JEE Question Extraction Prompt (v3.1)
 
 Extract all questions from the provided document into a strict JSON format.
 
-### 1. THE GOLDEN RULE: JSON ESCAPING
-Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing errors.
-- Correct: "\\\\\\\\frac", "\\\\\\\\times", "\\\\\\\\Omega", "\\\\\\\\text{+}"
-- Incorrect: "\\\\frac", "\\\\times", "\\\\t", "\\\\n" (These will break the JSON parser)
+---
 
-### 2. JSON Schema
+## 1. THE CRITICAL RULE: BACKSLASH ESCAPING IN JSON
+
+In JSON strings, a single backslash `\` is an escape character.
+Writing `\times` in JSON creates TAB + "imes" (broken).
+Writing `\nu` in JSON creates NEWLINE + "u" (broken).
+
+**Every LaTeX command MUST use double-backslash `\\` inside the JSON string.**
+
+### Dangerous commands that WILL break if single-escaped:
+
+| WRONG (breaks JSON) | CORRECT (in JSON string) | What goes wrong            |
+|---------------------|--------------------------|----------------------------|
+| `\times`            | `\\times`                | `\t` becomes TAB           |
+| `\text{kg}`         | `\\text{kg}`             | `\t` becomes TAB           |
+| `\theta`            | `\\theta`                | `\t` becomes TAB           |
+| `\tau`              | `\\tau`                  | `\t` becomes TAB           |
+| `\tan`              | `\\tan`                  | `\t` becomes TAB           |
+| `\to`               | `\\to`                   | `\t` becomes TAB           |
+| `\nu`               | `\\nu`                   | `\n` becomes NEWLINE       |
+| `\neq`              | `\\neq`                  | `\n` becomes NEWLINE       |
+| `\nabla`            | `\\nabla`                | `\n` becomes NEWLINE       |
+| `\nCr`              | `\\nCr`                  | `\n` becomes NEWLINE       |
+| `\right`            | `\\right`                | `\r` becomes CARRIAGE RET  |
+| `\rho`              | `\\rho`                  | `\r` becomes CARRIAGE RET  |
+| `\frac`             | `\\frac`                 | `\f` becomes FORM FEED     |
+| `\beta`             | `\\beta`                 | `\b` becomes BACKSPACE     |
+| `\bar`              | `\\bar`                  | `\b` becomes BACKSPACE     |
+| `\alpha`            | `\\alpha`                | Always double-escape       |
+| `\omega`            | `\\omega`                | Always double-escape       |
+| `\Omega`            | `\\Omega`                | Always double-escape       |
+| `\Delta`            | `\\Delta`                | Always double-escape       |
+| `\pi`               | `\\pi`                   | Always double-escape       |
+| `\sigma`            | `\\sigma`                | Always double-escape       |
+| `\lambda`           | `\\lambda`               | Always double-escape       |
+| `\mu`               | `\\mu`                   | Always double-escape       |
+| `\phi`              | `\\phi`                  | Always double-escape       |
+| `\sqrt`             | `\\sqrt`                 | Always double-escape       |
+| `\vec`              | `\\vec`                  | Always double-escape       |
+| `\hat`              | `\\hat`                  | Always double-escape       |
+| `\log`              | `\\log`                  | Always double-escape       |
+| `\sin`              | `\\sin`                  | Always double-escape       |
+| `\cos`              | `\\cos`                  | Always double-escape       |
+| `\left`             | `\\left`                 | Always double-escape       |
+| `\right`            | `\\right`                | Always double-escape       |
+| `\infty`            | `\\infty`                | Always double-escape       |
+| `\sum`              | `\\sum`                  | Always double-escape       |
+| `\int`              | `\\int`                  | Always double-escape       |
+| `\lim`              | `\\lim`                  | Always double-escape       |
+| `\cdot`             | `\\cdot`                 | Always double-escape       |
+| `\div`              | `\\div`                  | Always double-escape       |
+| `\pm`               | `\\pm`                   | Always double-escape       |
+| `\leq`              | `\\leq`                  | Always double-escape       |
+| `\geq`              | `\\geq`                  | Always double-escape       |
+| `\approx`           | `\\approx`               | Always double-escape       |
+
+**Simple rule: If you write a backslash in LaTeX, write TWO backslashes in JSON.**
+
+### CORRECT example:
+```json
+{
+  "text": "If $\\theta = \\frac{\\pi}{2}$ and $F = 3 \\times 10^{-5} \\text{ N}$"
+}
+```
+
+### WRONG example (will break rendering):
+```json
+{
+  "text": "If $\theta = \frac{\pi}{2}$ and $F = 3 \times 10^{-5} \text{ N}$"
+}
+```
+
+---
+
+## 2. FORBIDDEN: UNICODE CHARACTERS
+
+Never output any of these. Always use their double-escaped LaTeX equivalents.
+
+| Unicode | Char | Write instead        |
+|---------|------|----------------------|
+| U+00D7  | ?    | `\\times`            |
+| U+00B7  | ?    | `\\cdot`             |
+| U+00F7  | ?    | `\\div`              |
+| U+00B1  | ?    | `\\pm`               |
+| U+2248  | ?    | `\\approx`           |
+| U+2260  | ?    | `\\neq`              |
+| U+2264  | ?    | `\\leq`              |
+| U+2265  | ?    | `\\geq`              |
+| U+2192  | ?    | `\\rightarrow`       |
+| U+2190  | ?    | `\\leftarrow`        |
+| U+21CC  | ?    | `\\rightleftharpoons`|
+| U+221E  | ?    | `\\infty`            |
+| U+2212  | ?    | `-` (ASCII minus)    |
+| U+03B1  | ?    | `\\alpha`            |
+| U+03B2  | ?    | `\\beta`             |
+| U+03B3  | ?    | `\\gamma`            |
+| U+03B4  | ?    | `\\delta`            |
+| U+03B5  | ?    | `\\varepsilon`       |
+| U+03B6  | ?    | `\\zeta`             |
+| U+03B7  | ?    | `\\eta`              |
+| U+03B8  | ?    | `\\theta`            |
+| U+03BB  | ?    | `\\lambda`           |
+| U+03BC  | ?    | `\\mu`               |
+| U+03BD  | ?    | `\\nu`               |
+| U+03BE  | ?    | `\\xi`               |
+| U+03C0  | ?    | `\\pi`               |
+| U+03C1  | ?    | `\\rho`              |
+| U+03C3  | ?    | `\\sigma`            |
+| U+03C4  | ?    | `\\tau`              |
+| U+03C6  | ?    | `\\phi`              |
+| U+03C7  | ?    | `\\chi`              |
+| U+03C8  | ?    | `\\psi`              |
+| U+03C9  | ?    | `\\omega`            |
+| U+03A9  | ?    | `\\Omega`            |
+| U+0394  | ?    | `\\Delta`            |
+| U+03A3  | ?    | `\\Sigma`            |
+| U+0393  | ?    | `\\Gamma`            |
+| U+039B  | ?    | `\\Lambda`           |
+| U+03A0  | ?    | `\\Pi`               |
+| U+03A6  | ?    | `\\Phi`              |
+| U+03A8  | ?    | `\\Psi`              |
+
+Also NEVER output:
+- Math italic Unicode (??, ??, ??, ??, ?? etc.) ? use plain ASCII letters: B, P, V
+- Invisible Unicode (U+2062 invisible times, U+2061 function application, U+2063 invisible separator) ? delete them entirely
+- Superscript digits (??????????) ? use `^{n}` instead
+- Subscript digits (??????????) ? use `_{n}` instead
+
+---
+
+## 3. JSON Schema
+
+```json
 {
   "questions": [
     {
       "number": 1,
-      "text": "Question text with double-escaped LaTeX (e.g., $1.8 \\\\\\\\times 10^{-5}$)",
-      "questionType": "MCQ|MSQ|NUM",
-      "options": ["A", "B", "C", "D"],
+      "text": "Question text with $\\LaTeX$ in dollar signs",
+      "questionType": "MCQ",
+      "options": ["(a) first option", "(b) second option", "(c) third option", "(d) fourth option"],
       "answer": "A",
-      "correctOptions": ["A","C"],
+      "correctOptions": ["A", "C"],
       "correctNumeric": "42.5",
       "exam": "JEE Main",
       "year": 2024,
       "shift": "Jan 27 S1",
-      "subject": "Physics|Chemistry|Maths",
+      "subject": "Physics",
       "difficulty": "Moderate",
       "marksCorrect": 4,
       "marksIncorrect": -1,
@@ -1449,26 +1577,75 @@ Every LaTeX backslash MUST be double-escaped (\\\\) to prevent JSON parsing erro
   ]
 }
 
+Field rules:
+- "questionType": one of "MCQ", "MSQ", "NUM"
+- MCQ: fill "answer" with single letter (A/B/C/D)
+- MSQ: fill "correctOptions" with array of letters
+- NUM: fill "correctNumeric" with numeric string
+- "options": include for MCQ/MSQ, empty array [] for NUM
+- "hasDiagram": true if the question references a figure/diagram you cannot reproduce
+
 ---
 
-### 3. MathJax & Rendering Rules
-- Encapsulation: Wrap ALL math/variables in $ ... $.
-- Braces: Always use braces {} for subscripts/superscripts with 2+ characters (e.g., $10^{-3}$).
-- Ion Charges: MathJax requires signs to be in text. Use ^{2 \\\\text{+}} or ^{ \\\\text{-}}.
-- Broken Symbols: Fix OCR errors manually:
-    - 'imes' -> \\\\\\\\times
-    - 'xo0' -> x \\\\\\\\to 0
-    - 'fracpi2' -> \\\\\\\\frac{\\\\\\\\pi}{2}
-- Unicode: Never use plain Unicode (?, ?, ?, ?, ?). Convert them to LaTeX.
-- Ratios: Never use C_p/C_v in math mode; always use \\\\\\\\frac{C_p}{C_v}.
+## 4. Math Formatting Rules
 
-### 4. Structure & Cleaning
-- Statement Questions: Format as:
-    **Statement I:** [Text]
-    **Statement II:** [Text]
-- Match Lists: Use a Markdown table inside the "text" field.
-- Cleanup: Remove labels like "[Section A]" or "Part-I".
-- Finality: No self-talk or reasoning. Output ONLY the JSON object.
+- Wrap ALL math expressions, variables, numbers with units in `$ ... $`
+- Always use braces for multi-character subscripts/superscripts: `$10^{-3}$` not `$10^-3$`
+- Ion charges: `$\\text{Fe}^{2+}$`, `$\\text{Cl}^{-}$`, `$\\text{SO}_4^{2-}$`
+- Fractions: always `\\frac{a}{b}`, never `a/b` inside math mode
+- Units: always inside `\\text{}` with a leading space: `$5 \\text{ kg}$`, `$3 \\times 10^8 \\text{ m/s}$`
+- Vectors: use `\\vec{F}` or `\\hat{i}`
+- Chemical equations: `$\\text{H}_2\\text{O}$`, `$\\text{NaCl}$`
+
+### Fix these common OCR errors:
+
+| OCR garbage      | Correct output              |
+|------------------|-----------------------------|
+| `imes`           | `\\times`                   |
+| `ext`            | delete it or `\\text{}`     |
+| `extimes`        | `\\times`                   |
+| `xo0` or `x?0`  | `x \\to 0`                  |
+| `fracpi2`        | `\\frac{\\pi}{2}`           |
+| `sqrtx`          | `\\sqrt{x}`                 |
+| `rightarrow`     | `\\rightarrow`              |
+| `leftarrow`      | `\\leftarrow`               |
+| `infty`          | `\\infty`                   |
+
+---
+
+## 5. Structure & Cleaning
+
+- Statement questions: format as `**Statement I:** text\\n**Statement II:** text`
+- Match-the-column: use a markdown table inside the "text" field
+- Remove section labels: `[Section A]`, `Part-I`, `Question 1-20`, page numbers ? delete all of these
+- Paragraph/comprehension questions: put the shared paragraph in the first question's text, subsequent questions can reference it
+- If a question has sub-parts (a), (b), (c), (d) that are NOT options but sub-questions, keep them as part of the text
+
+---
+
+## 6. SELF-CHECK BEFORE OUTPUTTING
+
+Before you output the final JSON, scan it for these bugs. If ANY exist, fix them:
+
+| If you find this in your output | It is a bug ? fix it                     |
+|---------------------------------|------------------------------------------|
+| `\t` that is not `\\t`         | Will become TAB ? add extra backslash    |
+| `\n` that is not `\\n`         | Will become NEWLINE ? add extra backslash|
+| `\r` that is not `\\r`         | Will become CARRIAGE RETURN ? fix it     |
+| `\b` that is not `\\b`         | Will become BACKSPACE ? fix it           |
+| `\f` that is not `\\f`         | Will become FORM FEED ? fix it           |
+| Any Unicode math symbol (????) | Replace with double-escaped LaTeX        |
+| Any math italic Unicode (??????)  | Replace with plain ASCII letter          |
+| `extimes` or bare `imes`       | Should be `\\times`                      |
+| `\text` with single backslash  | Should be `\\text`                       |
+| Unmatched `$` signs            | Every `$` must have a closing `$`        |
+| `^` or `_` without braces for multi-char | Add `{}` braces              |
+
+---
+
+## 7. OUTPUT FORMAT
+
+Output ONLY the JSON object. No commentary. No explanation. No markdown code fences around the JSON. Just the raw JSON starting with `{` and ending with `}`.
 `;
 
   const userJsonPrompt = adminJsonPrompt;
