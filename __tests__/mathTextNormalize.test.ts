@@ -102,6 +102,13 @@ describe("fixedCommands - repairs PDF-corrupted LaTeX names", () => {
 
 describe("deUnicodeText", () => {
   it("strips invisible times U+2062", () => {
+  it("converts ??? (U+210E Planck constant) to h", () => {
+    expect(deUnicodeText("\u210E")).toBe("h");
+  });
+
+  it("converts ??? to \hbar", () => {
+    expect(deUnicodeText("\u210F")).toBe("\\hbar ");
+  });
     expect(deUnicodeText("5\u2062x")).toBe("5x");
   });
 
@@ -138,6 +145,22 @@ describe("integration - real failing inputs from bugs", () => {
     expect(r).toContain("\\times");
     expect(r).not.toContain("\\t×");
     expect(r).not.toContain("extimes");
+
+  it("fixes theta with Planck constant h", () => {
+    const input = "\uD835\uDC61\u2062\u210E\u2061\uD835\uDC52\u2062\uD835\uDC61\u2062\uD835\uDC4E";
+    const r = normalizeText(input);
+    expect(r).toContain("\\theta");
+  });
+
+  it("fixes arrowP,T (no word boundary)", () => {
+    const r = normalizeText("arrowP,T");
+    expect(r).toContain("\\rightarrow");
+  });
+
+  it("fixes TAB + imes from JSON corruption", () => {
+    const r = normalizeText("3\times 5");
+    expect(r).toContain("\\times");
+  });
   });
 
   it("screenshot bug: c = 3 \\t× 10^8 \\text{ ms}^{-1}", () => {

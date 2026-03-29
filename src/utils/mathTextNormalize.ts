@@ -42,6 +42,13 @@ export const deUnicodeText = (value: string): string => {
     .replace(/₃/g, "_{3}").replace(/₄/g, "_{4}").replace(/₅/g, "_{5}")
     .replace(/₆/g, "_{6}").replace(/₇/g, "_{7}").replace(/₈/g, "_{8}")
     .replace(/₉/g, "_{9}")
+    // Letterlike symbols (PDF extractors use these)
+    .replace(/\u210E/g, "h")
+    .replace(/\u210F/g, "\\hbar ")
+    .replace(/\u2113/g, "l")
+    .replace(/\u2147/g, "e")
+    .replace(/\u2148/g, "i")
+    .replace(/\u2149/g, "j")
     // Unicode math operators
     .replace(/×/g, "\\times ")
     .replace(/·/g, "\\cdot ")
@@ -87,6 +94,7 @@ export const deUnicodeText = (value: string): string => {
 };
 
 export const normalizeText = (value: string) => {
+  try {
   const convertMathMLToTex = (input: string) => {
     if (typeof window === "undefined" || typeof DOMParser === "undefined") return input;
     const assistiveRegex = /<mjx-assistive-mml[\s\S]*?<\/mjx-assistive-mml>/gi;
@@ -140,10 +148,21 @@ export const normalizeText = (value: string) => {
 
   const withMathML = value.includes("<mjx-container") ? convertMathMLToTex(value) : value;
   const preFixed = withMathML
-    .replace(/\\t\s*×/g, "\\times")
-    .replace(/\t\s*×/g, " \\times ")
-    .replace(/\n\s*×/g, " \\times ")
-    .replace(/\r\s*×/g, " \\times ");
+    // Reassemble \times split by JSON corruption
+    .replace(/\\t\s*\u00D7/g, "\\times ")
+    .replace(/\t\s*\u00D7/g, " \\times ")
+    .replace(/\t\s*imes\b/g, "\\times ")
+    .replace(/\t\s*ext(\s*\{)/g, "\\text$1")
+    .replace(/\t\s*heta\b/g, "\\theta ")
+    .replace(/\t\s*au\b/g, "\\tau ")
+    .replace(/\n\s*\u00D7/g, " \\times ")
+    .replace(/\n\s*abla\b/g, "\\nabla ")
+    .replace(/\n\s*eq\b/g, "\\neq ")
+    .replace(/\r\s*\u00D7/g, " \\times ")
+    .replace(/\r\s*ight/g, "\\right")
+    .replace(/\r\s*ho\b/g, "\\rho ")
+    .replace(/\f\s*rac/g, "\\frac")
+    .replace(/[\t\f]/g, " ");
   const unescaped = preFixed
     .replace(/\\n(?![A-Za-z])/g, "\n")
     .replace(/\\t(?![A-Za-z])/g, "\t")
@@ -153,21 +172,22 @@ export const normalizeText = (value: string) => {
   // Strip Unicode math corruption (invisible chars, Unicode operators, italic letters)
   const deUnicode = deUnicodeText(unescaped);
   const fixedCommands = deUnicode
-    .replace(/\brightarrow\b/g, "\\rightarrow")
-    .replace(/\bleftarrow\b/g, "\\leftarrow")
-    .replace(/\barrow\b/g, "\\rightarrow")
-    .replace(/\btimes\b(?!\s*\\)/g, "\\times")
-    .replace(/\bfrac\b(?!\s*[{\\])/g, "\\frac")
-    .replace(/\bsqrt\b(?!\s*[{\\])/g, "\\sqrt")
-    .replace(/\balpha\b(?!\s*[{\\])/g, "\\alpha")
-    .replace(/\bbeta\b(?!\s*[{\\])/g, "\\beta")
-    .replace(/\bgamma\b(?!\s*[{\\])/g, "\\gamma")
-    .replace(/\btheta\b(?!\s*[{\\])/g, "\\theta")
-    .replace(/\bomega\b(?!\s*[{\\])/g, "\\omega")
-    .replace(/\binfty\b(?!\s*[{\\])/g, "\\infty")
-    .replace(/\bsigma\b(?!\s*[{\\])/g, "\\sigma")
-    .replace(/\bdelta\b(?!\s*[{\\])/g, "\\delta")
-    .replace(/\blambda\b(?!\s*[{\\])/g, "\\lambda");
+    // Use (?=[^a-z]|$) instead of word boundaries
+    .replace(/\brightarrow(?=[^a-z]|$)/gi, "\\rightarrow ")
+    .replace(/\bleftarrow(?=[^a-z]|$)/gi, "\\leftarrow ")
+    .replace(/\barrow(?=[^a-z]|$)/gi, "\\rightarrow ")
+    .replace(/\btimes(?=[^a-z]|$)/gi, "\\times ")
+    .replace(/\bfrac(?=[^a-z]|$)/g, "\\frac")
+    .replace(/\bsqrt(?=[^a-z]|$)/g, "\\sqrt")
+    .replace(/\balpha(?=[^a-z]|$)/g, "\\alpha ")
+    .replace(/\bbeta(?=[^a-z]|$)/g, "\\beta ")
+    .replace(/\bgamma(?=[^a-z]|$)/g, "\\gamma ")
+    .replace(/\btheta(?=[^a-z]|$)/g, "\\theta ")
+    .replace(/\bdelta(?=[^a-z]|$)/g, "\\delta ")
+    .replace(/\bomega(?=[^a-z]|$)/g, "\\omega ")
+    .replace(/\bsigma(?=[^a-z]|$)/g, "\\sigma ")
+    .replace(/\blambda(?=[^a-z]|$)/g, "\\lambda ")
+    .replace(/\binfty(?=[^a-z]|$)/g, "\\infty ");
   const cleanedLatex = fixedCommands.replace(/ext(?=[\{\s\-\^]|$)/g, (match, offset, str) => {
     if (offset >= 2 && str[offset - 2] === "\\" && str[offset - 1] === "t") return match;
     if (offset >= 1 && str[offset - 1] === "\\") return match;
@@ -221,30 +241,45 @@ export const normalizeText = (value: string) => {
     }
   }
 
-  return formattedOptions;
+    return formattedOptions;
+  } catch (e) {
+    console.error("[MarkdownMath] normalizeText crashed:", e);
+    console.error("[MarkdownMath] input preview:", value.slice(0, 300));
+    return value;
+  }
 };
 
 export const fixLatexMath = (text: string): string => {
   if (!text) return "";
-  return text
-    .replace(/\\t\{([+-])\}/g, "$1")
-    .replace(/\\t([A-Za-z]+)/g, safeTextReplace)
-    .replace(/\\left(?!\s*[\(\[\{\|\.])/g, "\\left.")
-    .replace(/\\right(?!\s*[\)\]\}\|\.])/g, "\\right.")
-    .replace(/\\x\s*(?=(?:\\rightarrow|→|\\to))/g, "")
-    .replace(/(?<!\\)rightleftharpoons/g, "\\rightleftharpoons")
-    .replace(/(?<!\\)leftharpoons/g, "\\leftharpoons")
-    .replace(/(?<!\\)rightarrow/g, "\\rightarrow")
-    .replace(/(?<!\\)leftarrow/g, "\\leftarrow")
-    .replace(/(?<!\\)times/g, "\\times")
-    .replace(/(?<!\\)cdot/g, "\\cdot")
-    .replace(/(?<!\\)infty/g, "\\infty")
-    .replace(/(?<!\\)approx/g, "\\approx")
-    .replace(/(?<!\\)neq/g, "\\neq")
-    .replace(/(?<!\\)leq/g, "\\leq")
-    .replace(/(?<!\\)geq/g, "\\geq")
-    .replace(/(?<!\\)pm/g, "\\pm")
-    .replace(/(?<!\\)text\{/g, "\\text{");
+  let result = text
+    .replace(/\t\{([+-])\}/g, "$1")
+    .replace(/\t([A-Za-z]+)/g, safeTextReplace)
+    .replace(/\left(?!\s*[\(\[\{\|\.])/g, "\\left.")
+    .replace(/\right(?!\s*[\)\]\}\|\.])/g, "\\right.")
+    .replace(/\x\s*(?=(?:\rightarrow|???|\to))/g, "")
+    .replace(/(?<!\)rightleftharpoons/g, "\\rightleftharpoons")
+    .replace(/(?<!\)leftharpoons/g, "\\leftharpoons")
+    .replace(/(?<!\)rightarrow/g, "\\rightarrow")
+    .replace(/(?<!\)leftarrow/g, "\\leftarrow")
+    .replace(/(?<!\)times/g, "\\times")
+    .replace(/(?<!\)cdot/g, "\\cdot")
+    .replace(/(?<!\)infty/g, "\\infty")
+    .replace(/(?<!\)approx/g, "\\approx")
+    .replace(/(?<!\)neq/g, "\\neq")
+    .replace(/(?<!\)leq/g, "\\leq")
+    .replace(/(?<!\)geq/g, "\\geq")
+    .replace(/(?<!\)pm/g, "\\pm")
+    .replace(/(?<!\)text\{/g, "\\text{");
+
+  const leftCount = (result.match(/\left\s*[(\[{|.]/g) || []).length;
+  const rightCount = (result.match(/\right\s*[)\]}|.]/g) || []).length;
+  if (leftCount > rightCount) {
+    result += "\\right.".repeat(leftCount - rightCount);
+  } else if (rightCount > leftCount) {
+    result = "\\left.".repeat(rightCount - leftCount) + result;
+  }
+
+  return result;
 };
 
 export const fixMathOnlyGlitches = (text: string): string =>
