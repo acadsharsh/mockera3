@@ -252,27 +252,27 @@ export const normalizeText = (value: string) => {
 export const fixLatexMath = (text: string): string => {
   if (!text) return "";
   let result = text
-    .replace(/\t\{([+-])\}/g, "$1")
-    .replace(/\t([A-Za-z]+)/g, safeTextReplace)
-    .replace(/\left(?!\s*[\(\[\{\|\.])/g, "\\left.")
-    .replace(/\right(?!\s*[\)\]\}\|\.])/g, "\\right.")
-    .replace(/\x\s*(?=(?:\rightarrow|???|\to))/g, "")
-    .replace(/(?<!\)rightleftharpoons/g, "\\rightleftharpoons")
-    .replace(/(?<!\)leftharpoons/g, "\\leftharpoons")
-    .replace(/(?<!\)rightarrow/g, "\\rightarrow")
-    .replace(/(?<!\)leftarrow/g, "\\leftarrow")
-    .replace(/(?<!\)times/g, "\\times")
-    .replace(/(?<!\)cdot/g, "\\cdot")
-    .replace(/(?<!\)infty/g, "\\infty")
-    .replace(/(?<!\)approx/g, "\\approx")
-    .replace(/(?<!\)neq/g, "\\neq")
-    .replace(/(?<!\)leq/g, "\\leq")
-    .replace(/(?<!\)geq/g, "\\geq")
-    .replace(/(?<!\)pm/g, "\\pm")
-    .replace(/(?<!\)text\{/g, "\\text{");
+    .replace(/\\t\{([+-])\}/g, "$1")
+    .replace(/\\t([A-Za-z]+)/g, safeTextReplace)
+    .replace(/\\left(?!\s*[\(\[\{\|\.])/g, "\\left.")
+    .replace(/\\right(?!\s*[\)\]\}\|\.])/g, "\\right.")
+    .replace(/\\x\s*(?=(?:\\rightarrow|\\to))/g, "")
+    .replace(/(?<!\\)rightleftharpoons/g, "\\rightleftharpoons")
+    .replace(/(?<!\\)leftharpoons/g, "\\leftharpoons")
+    .replace(/(?<!\\)rightarrow/g, "\\rightarrow")
+    .replace(/(?<!\\)leftarrow/g, "\\leftarrow")
+    .replace(/(?<!\\)times/g, "\\times")
+    .replace(/(?<!\\)cdot/g, "\\cdot")
+    .replace(/(?<!\\)infty/g, "\\infty")
+    .replace(/(?<!\\)approx/g, "\\approx")
+    .replace(/(?<!\\)neq/g, "\\neq")
+    .replace(/(?<!\\)leq/g, "\\leq")
+    .replace(/(?<!\\)geq/g, "\\geq")
+    .replace(/(?<!\\)pm/g, "\\pm")
+    .replace(/(?<!\\)text\{/g, "\\text{");
 
-  const leftCount = (result.match(/\left\s*[(\[{|.]/g) || []).length;
-  const rightCount = (result.match(/\right\s*[)\]}|.]/g) || []).length;
+  const leftCount = (result.match(/\\left\s*[(\[{|.]/g) || []).length;
+  const rightCount = (result.match(/\\right\s*[)\]}|.]/g) || []).length;
   if (leftCount > rightCount) {
     result += "\\right.".repeat(leftCount - rightCount);
   } else if (rightCount > leftCount) {
