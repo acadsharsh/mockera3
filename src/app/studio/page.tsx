@@ -187,7 +187,16 @@ const [isPanning, setIsPanning] = useState(false);
   useEffect(() => {
     let isMounted = true;
     fetch("/prompts/jee-extraction.txt")
-      .then((res) => (res.ok ? res.text() : Promise.reject(new Error("Prompt load failed"))))
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Prompt load failed");
+        }
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("text/html")) {
+          throw new Error("Prompt returned HTML");
+        }
+        return res.text();
+      })
       .then((data) => {
         if (isMounted) setAdminJsonPrompt(data.trim() ? data : "Prompt file is empty.");
       })

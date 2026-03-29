@@ -16,6 +16,7 @@ const allowedPrefixes = [
   "/test-analysis",
   "/api",
   "/_next",
+  "/prompts",
 ];
 const allowedPaths = ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/site.webmanifest"];
 const adminOnlyPrefixes = ["/studio", "/api/pyq", "/api/tests", "/api/upload"];
