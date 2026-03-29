@@ -4,7 +4,6 @@ import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassRail from "@/components/GlassRail";
 import { safeJson } from "@/lib/safe-json";
-import jeePrompt from "@/prompts/jee-extraction.md?raw";
 
 type ExamItem = {
   id: string;
@@ -135,6 +134,7 @@ export default function CreatorStudio() {
   const [manualAnswerKey, setManualAnswerKey] = useState("");
 
   const [showJsonImport, setShowJsonImport] = useState(false);
+  const [adminJsonPrompt, setAdminJsonPrompt] = useState("Loading prompt...");
   const [showCropsPreview, setShowCropsPreview] = useState(false);
   const [jsonImportText, setJsonImportText] = useState("");
   const [jsonImportStatus, setJsonImportStatus] = useState<{
@@ -185,6 +185,21 @@ const [isPanning, setIsPanning] = useState(false);
   const scaleInitRef = useRef(false);
 
   useEffect(() => {
+    let isMounted = true;
+    fetch("/prompts/jee-extraction.txt")
+      .then((res) => (res.ok ? res.text() : Promise.reject(new Error("Prompt load failed"))))
+      .then((data) => {
+        if (isMounted) setAdminJsonPrompt(data.trim() ? data : "Prompt file is empty.");
+      })
+      .catch(() => {
+        if (isMounted) setAdminJsonPrompt("Prompt unavailable. Please refresh.");
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+useEffect(() => {
     let mounted = true;
     import("pdfjs-dist").then((mod) => {
       if (!mounted) return;
@@ -1419,7 +1434,8 @@ const [isPanning, setIsPanning] = useState(false);
     }
   };
 
-  const adminJsonPrompt = jeePrompt;
+    // Loaded from public/prompts/jee-extraction.txt
+  // default is set via state hook above
 
   const userJsonPrompt = adminJsonPrompt;
 
