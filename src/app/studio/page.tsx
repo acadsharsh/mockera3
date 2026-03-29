@@ -1481,11 +1481,9 @@ Writing `\nu` in JSON creates NEWLINE + "u" (broken).
 **Simple rule: Every backslash in LaTeX = two backslashes in JSON.**
 
 ### CORRECT example:
-
 {"text": "If $\\theta = \\frac{\\pi}{2}$ and $F = 3 \\times 10^{-5} \\text{ N}$"}
 
 ### WRONG example (breaks rendering):
-
 {"text": "If $\theta = \frac{\pi}{2}$ and $F = 3 \times 10^{-5} \text{ N}$"}
 
 ---
@@ -1543,6 +1541,40 @@ Also NEVER output:
 - Invisible Unicode (U+2062 invisible times, U+2061 function application, U+2063 invisible separator) ? delete entirely
 - Superscript digits (??????????) ? use `^{n}`
 - Subscript digits (??????????) ? use `_{n}`
+
+---
+
+## 2.5 PDF CORRUPTION PATTERNS ? DO NOT COPY VERBATIM
+
+The PDF text extractor produces CORRUPTED text. NEVER copy-paste from the PDF. Always INTERPRET the content and REWRITE it cleanly.
+
+### Common PDF corruption you will see:
+
+| Corrupted input              | What it actually means  | Write in JSON            |
+|------------------------------|------------------------|--------------------------|
+| `??????????????` or `?`           | right arrow            | `\\rightarrow`           |
+| `????????????????????????????`        | right arrow            | `\\rightarrow`           |
+| `??????????????` or `?`            | multiplication         | `\\times`                |
+| `???????????`                     | fraction               | `\\frac{}{}`             |
+| `???????????`                     | square root            | `\\sqrt{}`               |
+| `?????????????`                   | alpha                  | `\\alpha`                |
+| `????????`                       | PV^alpha               | `$PV^{\\alpha}$`         |
+| `?` (invisible character)    | nothing ? delete it    | (remove)                 |
+| `??` `??` `??` `??` (italic)     | regular letters        | `B` `P` `V` `n`         |
+| `5?\t ?10?4`                  | 5 ? 10^{-4}           | `$5 \\times 10^{-4}$`   |
+| `10?4` or `10??`              | 10 to the minus 4     | `$10^{-4}$`              |
+
+### Match-the-column formatting:
+
+When you see a match-the-column question, format it as a markdown table. Example:
+{"text": "Match List I with List II:\n\n| List I | List II |\n|---|---|\n| (a) One unit of force in TK system | (P) $\\frac{5}{18} \\times 10^{-4}$ SI unit |\n| (b) One unit of kinetic energy in TK system | (Q) $\\frac{5}{18} \\times 10^{-3}$ MKS unit |\n| (c) One unit of pressure in TK system | (R) $\\frac{5}{18} \\times 10^{0}$ MKS unit |\n| (d) One unit of work in TK system | (S) $\\frac{5}{18} \\times 10^{4}$ MKS unit |"}
+
+### Key rules:
+1. NEVER output math italic Unicode characters (?? ?? ?? ?? ?? ?? ??) ? use plain ASCII
+2. NEVER output invisible times (? U+2062) ? delete it
+3. Fractions must use `\\frac{numerator}{denominator}`
+4. All numbers with powers of 10 must be: `$N \\times 10^{power}$`
+5. Arrows between match items: use `\\rightarrow` not Unicode arrows
 
 ---
 
@@ -1618,21 +1650,25 @@ Field rules:
 
 ## 6. SELF-CHECK BEFORE OUTPUTTING
 
-Scan your entire JSON output. If ANY of these exist, fix them before outputting:
+Scan your ENTIRE JSON output for these patterns. If ANY exist, you have a bug ? fix before outputting:
 
-| Pattern found in your output  | Bug                                    |
-|-------------------------------|----------------------------------------|
-| `\t` that is not `\\t`       | Will become TAB ? add extra backslash  |
-| `\n` that is not `\\n`       | Will become NEWLINE ? add backslash    |
-| `\r` that is not `\\r`       | Will become CARRIAGE RETURN ? fix it   |
-| `\b` that is not `\\b`       | Will become BACKSPACE ? fix it         |
-| `\f` that is not `\\f`       | Will become FORM FEED ? fix it         |
-| Any Unicode math symbol (????)| Replace with double-escaped LaTeX     |
-| Any math italic Unicode (??????) | Replace with plain ASCII letter       |
-| `extimes` or bare `imes`     | Should be `\\times`                    |
-| `\text` with single backslash| Should be `\\text`                     |
-| Unmatched `$` signs          | Every `$` needs a closing `$`          |
-| `^` or `_` without braces    | Add `{}` for multi-character content   |
+| Pattern found in your output     | Bug                                        |
+|----------------------------------|--------------------------------------------|
+| `\t` that is not `\\t`          | Will become TAB ? add extra backslash      |
+| `\n` that is not `\\n`          | Will become NEWLINE ? add extra backslash  |
+| `\r` that is not `\\r`          | Will become CARRIAGE RETURN ? fix it       |
+| `\b` that is not `\\b`          | Will become BACKSPACE ? fix it             |
+| `\f` that is not `\\f`          | Will become FORM FEED ? fix it             |
+| Any `?` (Unicode multiply)       | Use `\\times` instead                      |
+| Any `? ? ? ? ? ? ? ? ? ? ?`     | Use `\\alpha` `\\beta` etc.               |
+| Any `?? ?? ?? ?? ?? ??` (math italic)| Use plain ASCII `B P V n a r`             |
+| Any `?` (invisible times)        | Delete it entirely                         |
+| `extimes` or bare `imes`         | Should be `\\times`                        |
+| `arrow` as text                  | Should be `\\rightarrow`                   |
+| `10-4` or `10?4` (no caret)     | Should be `$10^{-4}$`                      |
+| `5/18` inline (not fraction)    | Should be `$\\frac{5}{18}$`                |
+| Unmatched `$` signs              | Every `$` needs a closing `$`              |
+| `^` or `_` without braces        | Add `{}` for multi-character content       |
 
 ---
 

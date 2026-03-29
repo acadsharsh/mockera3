@@ -153,7 +153,11 @@ const normalizeText = (value: string) => {
   };
 
   const withMathML = value.includes("<mjx-container") ? convertMathMLToTex(value) : value;
-  const preFixed = withMathML.replace(/\\t\s*×/g, "\\times");
+  const preFixed = withMathML
+    .replace(/\\t\s*×/g, "\\times")
+    .replace(/\t\s*×/g, " \\times ")
+    .replace(/\n\s*×/g, " \\times ")
+    .replace(/\r\s*×/g, " \\times ");
   const unescaped = preFixed
     .replace(/\\n(?![A-Za-z])/g, "\n")
     .replace(/\\t(?![A-Za-z])/g, "\t")
@@ -162,7 +166,23 @@ const normalizeText = (value: string) => {
 
   // Strip Unicode math corruption (invisible chars, Unicode operators, italic letters)
   const deUnicode = deUnicodeText(unescaped);
-  const cleanedLatex = deUnicode.replace(/ext(?=[\{\s\-\^]|$)/g, (match, offset, str) => {
+  const fixedCommands = deUnicode
+    .replace(/\brightarrow\b/g, "\\rightarrow")
+    .replace(/\bleftarrow\b/g, "\\leftarrow")
+    .replace(/\barrow\b/g, "\\rightarrow")
+    .replace(/\btimes\b(?!\s*\\)/g, "\\times")
+    .replace(/\bfrac\b(?!\s*[{\\])/g, "\\frac")
+    .replace(/\bsqrt\b(?!\s*[{\\])/g, "\\sqrt")
+    .replace(/\balpha\b(?!\s*[{\\])/g, "\\alpha")
+    .replace(/\bbeta\b(?!\s*[{\\])/g, "\\beta")
+    .replace(/\bgamma\b(?!\s*[{\\])/g, "\\gamma")
+    .replace(/\btheta\b(?!\s*[{\\])/g, "\\theta")
+    .replace(/\bomega\b(?!\s*[{\\])/g, "\\omega")
+    .replace(/\binfty\b(?!\s*[{\\])/g, "\\infty")
+    .replace(/\bsigma\b(?!\s*[{\\])/g, "\\sigma")
+    .replace(/\bdelta\b(?!\s*[{\\])/g, "\\delta")
+    .replace(/\blambda\b(?!\s*[{\\])/g, "\\lambda");
+  const cleanedLatex = fixedCommands.replace(/ext(?=[\{\s\-\^]|$)/g, (match, offset, str) => {
     if (offset >= 2 && str[offset - 2] === "\\" && str[offset - 1] === "t") return match;
     if (offset >= 1 && str[offset - 1] === "\\") return match;
     return "";
