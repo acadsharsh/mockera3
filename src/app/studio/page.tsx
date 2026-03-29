@@ -134,6 +134,7 @@ export default function CreatorStudio() {
   const [manualAnswerKey, setManualAnswerKey] = useState("");
 
   const [showJsonImport, setShowJsonImport] = useState(false);
+  const [showCropsPreview, setShowCropsPreview] = useState(false);
   const [jsonImportText, setJsonImportText] = useState("");
   const [jsonImportStatus, setJsonImportStatus] = useState<{
     message: string;
@@ -2556,15 +2557,25 @@ Rules:
             {cropRects.length > 0 && !showJsonImport && (
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs uppercase tracking-[0.2em] text-white/50">
-                    Crops Preview
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs uppercase tracking-[0.2em] text-white/50">
+                      Crops Preview
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-white/70 hover:border-white/40 hover:text-white"
+                      onClick={() => setShowCropsPreview((prev) => !prev)}
+                    >
+                      {showCropsPreview ? "Hide" : "Show"}
+                    </button>
                   </div>
                   <div className="text-[11px] text-white/50">
                     Click to select • Delete removes crop
                   </div>
                 </div>
-                <div className="mt-3 grid grid-cols-1 gap-3">
-                  {cropRects.map((crop, index) => (
+                {showCropsPreview ? (
+                  <div className="mt-3 grid grid-cols-1 gap-3">
+                    {cropRects.map((crop, index) => (
                     <button
                       key={crop.id}
                       type="button"
@@ -2607,8 +2618,13 @@ Rules:
                         </button>
                       </div>
                     </button>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-3 text-[11px] text-white/50">
+                    Preview hidden. Show to view crop images.
+                  </div>
+                )}
               </div>
             )}
 
