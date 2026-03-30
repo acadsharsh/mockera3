@@ -24,130 +24,137 @@ const safeTextReplace = (_match: string, word: string): string => {
   return `\\text{${word}}`;
 };
 
+const GREEK_ITALIC_MAP: Record<number, string> = {
+  0x1d6fc: "\\alpha ",
+  0x1d6fd: "\\beta ",
+  0x1d6fe: "\\gamma ",
+  0x1d6ff: "\\delta ",
+  0x1d700: "\\varepsilon ",
+  0x1d701: "\\zeta ",
+  0x1d702: "\\eta ",
+  0x1d703: "\\theta ",
+  0x1d704: "\\iota ",
+  0x1d705: "\\kappa ",
+  0x1d706: "\\lambda ",
+  0x1d707: "\\mu ",
+  0x1d708: "\\nu ",
+  0x1d709: "\\xi ",
+  0x1d70b: "\\pi ",
+  0x1d70c: "\\rho ",
+  0x1d70e: "\\sigma ",
+  0x1d70f: "\\tau ",
+  0x1d710: "\\upsilon ",
+  0x1d711: "\\phi ",
+  0x1d712: "\\chi ",
+  0x1d713: "\\psi ",
+  0x1d714: "\\omega ",
+};
+
+const BMP_CHAR_MAP: Record<number, string> = {
+  0x2062: "",
+  0x2061: "",
+  0x2063: "",
+  0x2064: "",
+  0x210e: "h",
+  0x210f: "\\hbar ",
+  0x2113: "l",
+  0x2147: "e",
+  0x2148: "i",
+  0x2149: "j",
+  0x2212: "-",
+  0x2070: "^{0}",
+  0x00b9: "^{1}",
+  0x00b2: "^{2}",
+  0x00b3: "^{3}",
+  0x2074: "^{4}",
+  0x2075: "^{5}",
+  0x2076: "^{6}",
+  0x2077: "^{7}",
+  0x2078: "^{8}",
+  0x2079: "^{9}",
+  0x207b: "^{-}",
+  0x2080: "_{0}",
+  0x2081: "_{1}",
+  0x2082: "_{2}",
+  0x2083: "_{3}",
+  0x2084: "_{4}",
+  0x2085: "_{5}",
+  0x2086: "_{6}",
+  0x2087: "_{7}",
+  0x2088: "_{8}",
+  0x2089: "_{9}",
+  0x00d7: "\\times ",
+  0x00b7: "\\cdot ",
+  0x00f7: "\\div ",
+  0x00b1: "\\pm ",
+  0x2248: "\\approx ",
+  0x2260: "\\neq ",
+  0x2264: "\\leq ",
+  0x2265: "\\geq ",
+  0x2192: "\\rightarrow ",
+  0x2190: "\\leftarrow ",
+  0x21cc: "\\rightleftharpoons ",
+  0x221e: "\\infty ",
+  0x00b0: "^{\\circ}",
+  0x03b1: "\\alpha ",
+  0x03b2: "\\beta ",
+  0x03b3: "\\gamma ",
+  0x03b4: "\\delta ",
+  0x03b5: "\\varepsilon ",
+  0x03b6: "\\zeta ",
+  0x03b7: "\\eta ",
+  0x03b8: "\\theta ",
+  0x03bb: "\\lambda ",
+  0x03bc: "\\mu ",
+  0x03bd: "\\nu ",
+  0x03be: "\\xi ",
+  0x03c0: "\\pi ",
+  0x03c1: "\\rho ",
+  0x03c3: "\\sigma ",
+  0x03c4: "\\tau ",
+  0x03c6: "\\phi ",
+  0x03c7: "\\chi ",
+  0x03c8: "\\psi ",
+  0x03c9: "\\omega ",
+  0x03a9: "\\Omega ",
+  0x0394: "\\Delta ",
+  0x03a3: "\\Sigma ",
+  0x0393: "\\Gamma ",
+  0x039b: "\\Lambda ",
+  0x03a0: "\\Pi ",
+  0x03a6: "\\Phi ",
+  0x03a8: "\\Psi ",
+};
+
 export const deUnicodeText = (value: string): string => {
-  return value
-    // Invisible chars
-    .replace(/\u2062/g, "")
-    .replace(/\u2061/g, "")
-    .replace(/\u2063/g, "")
-    .replace(/\u2064/g, "")
+  const out: string[] = [];
 
-    // Letterlike symbols
-    .replace(/\u210E/g, "h")
-    .replace(/\u210F/g, "\\hbar ")
-    .replace(/\u2113/g, "l")
-    .replace(/\u2147/g, "e")
-    .replace(/\u2148/g, "i")
-    .replace(/\u2149/g, "j")
+  for (const ch of value) {
+    const cp = ch.codePointAt(0)!;
 
-    // Unicode minus
-    .replace(/\u2212/g, "-")
+    if (cp >= 0x1d44e && cp <= 0x1d467) {
+      out.push(String.fromCharCode(cp - 0x1d44e + 97));
+      continue;
+    }
+    if (cp >= 0x1d434 && cp <= 0x1d44d) {
+      out.push(String.fromCharCode(cp - 0x1d434 + 65));
+      continue;
+    }
+    const greek = GREEK_ITALIC_MAP[cp];
+    if (greek) {
+      out.push(greek);
+      continue;
+    }
+    const bmp = BMP_CHAR_MAP[cp];
+    if (bmp !== undefined) {
+      out.push(bmp);
+      continue;
+    }
 
-    // Superscript digits
-    .replace(/\u2070/g, "^{0}")
-    .replace(/\u00B9/g, "^{1}")
-    .replace(/\u00B2/g, "^{2}")
-    .replace(/\u00B3/g, "^{3}")
-    .replace(/\u2074/g, "^{4}")
-    .replace(/\u2075/g, "^{5}")
-    .replace(/\u2076/g, "^{6}")
-    .replace(/\u2077/g, "^{7}")
-    .replace(/\u2078/g, "^{8}")
-    .replace(/\u2079/g, "^{9}")
-    .replace(/\u207B/g, "^{-}")
+    out.push(ch);
+  }
 
-    // Subscript digits
-    .replace(/\u2080/g, "_{0}")
-    .replace(/\u2081/g, "_{1}")
-    .replace(/\u2082/g, "_{2}")
-    .replace(/\u2083/g, "_{3}")
-    .replace(/\u2084/g, "_{4}")
-    .replace(/\u2085/g, "_{5}")
-    .replace(/\u2086/g, "_{6}")
-    .replace(/\u2087/g, "_{7}")
-    .replace(/\u2088/g, "_{8}")
-    .replace(/\u2089/g, "_{9}")
-
-    // Unicode math operators
-    .replace(/\u00D7/g, "\\times ")
-    .replace(/\u00B7/g, "\\cdot ")
-    .replace(/\u00F7/g, "\\div ")
-    .replace(/\u00B1/g, "\\pm ")
-    .replace(/\u2248/g, "\\approx ")
-    .replace(/\u2260/g, "\\neq ")
-    .replace(/\u2264/g, "\\leq ")
-    .replace(/\u2265/g, "\\geq ")
-    .replace(/\u2192/g, "\\rightarrow ")
-    .replace(/\u2190/g, "\\leftarrow ")
-    .replace(/\u21CC/g, "\\rightleftharpoons ")
-    .replace(/\u221E/g, "\\infty ")
-    .replace(/\u00B0/g, "^{\\circ}")
-
-    // Math italic a-z (U+1D44E–U+1D467)
-    .replace(/[\u{1D44E}-\u{1D467}]/gu, (c) => {
-      const cp = c.codePointAt(0);
-      return cp ? String.fromCharCode(cp - 0x1D44E + 97) : c;
-    })
-    // Math italic A-Z (U+1D434–U+1D44D)
-    .replace(/[\u{1D434}-\u{1D44D}]/gu, (c) => {
-      const cp = c.codePointAt(0);
-      return cp ? String.fromCharCode(cp - 0x1D434 + 65) : c;
-    })
-
-    // Greek italic (astral plane)
-    .replace(/\u{1D6FC}/gu, "\\alpha ")
-    .replace(/\u{1D6FD}/gu, "\\beta ")
-    .replace(/\u{1D6FE}/gu, "\\gamma ")
-    .replace(/\u{1D6FF}/gu, "\\delta ")
-    .replace(/\u{1D700}/gu, "\\varepsilon ")
-    .replace(/\u{1D701}/gu, "\\zeta ")
-    .replace(/\u{1D702}/gu, "\\eta ")
-    .replace(/\u{1D703}/gu, "\\theta ")
-    .replace(/\u{1D704}/gu, "\\iota ")
-    .replace(/\u{1D705}/gu, "\\kappa ")
-    .replace(/\u{1D706}/gu, "\\lambda ")
-    .replace(/\u{1D707}/gu, "\\mu ")
-    .replace(/\u{1D708}/gu, "\\nu ")
-    .replace(/\u{1D709}/gu, "\\xi ")
-    .replace(/\u{1D70B}/gu, "\\pi ")
-    .replace(/\u{1D70C}/gu, "\\rho ")
-    .replace(/\u{1D70E}/gu, "\\sigma ")
-    .replace(/\u{1D70F}/gu, "\\tau ")
-    .replace(/\u{1D710}/gu, "\\upsilon ")
-    .replace(/\u{1D711}/gu, "\\phi ")
-    .replace(/\u{1D712}/gu, "\\chi ")
-    .replace(/\u{1D713}/gu, "\\psi ")
-    .replace(/\u{1D714}/gu, "\\omega ")
-
-    // Regular Unicode Greek
-    .replace(/\u03B1/g, "\\alpha ")
-    .replace(/\u03B2/g, "\\beta ")
-    .replace(/\u03B3/g, "\\gamma ")
-    .replace(/\u03B4/g, "\\delta ")
-    .replace(/\u03B5/g, "\\varepsilon ")
-    .replace(/\u03B6/g, "\\zeta ")
-    .replace(/\u03B7/g, "\\eta ")
-    .replace(/\u03B8/g, "\\theta ")
-    .replace(/\u03BB/g, "\\lambda ")
-    .replace(/\u03BC/g, "\\mu ")
-    .replace(/\u03BD/g, "\\nu ")
-    .replace(/\u03BE/g, "\\xi ")
-    .replace(/\u03C0/g, "\\pi ")
-    .replace(/\u03C1/g, "\\rho ")
-    .replace(/\u03C3/g, "\\sigma ")
-    .replace(/\u03C4/g, "\\tau ")
-    .replace(/\u03C6/g, "\\phi ")
-    .replace(/\u03C7/g, "\\chi ")
-    .replace(/\u03C8/g, "\\psi ")
-    .replace(/\u03C9/g, "\\omega ")
-    .replace(/\u03A9/g, "\\Omega ")
-    .replace(/\u0394/g, "\\Delta ")
-    .replace(/\u03A3/g, "\\Sigma ")
-    .replace(/\u0393/g, "\\Gamma ")
-    .replace(/\u039B/g, "\\Lambda ")
-    .replace(/\u03A0/g, "\\Pi ")
-    .replace(/\u03A6/g, "\\Phi ")
-    .replace(/\u03A8/g, "\\Psi ");
+  return out.join("");
 };
 
 const convertMathMLToTex = (input: string) => {
