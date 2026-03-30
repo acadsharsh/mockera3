@@ -1,6 +1,8 @@
-// src/utils/mathTextNormalize.ts
+from pathlib import Path
 
-// --- Known LaTeX commands starting with \t -------------------
+content = r'''// src/utils/mathTextNormalize.ts
+
+// --- Known LaTeX commands starting with \t ---
 const LATEX_T_SUFFIXES = new Set([
   "imes", "heta", "au", "o", "ilde", "riangle", "riangleleft",
   "riangleright", "riangleq", "an", "anh", "ag", "herefore",
@@ -12,7 +14,7 @@ const safeTextReplace = (_match: string, word: string): string => {
   return `\\text{${word}}`;
 };
 
-// --- Unicode cleanup -----------------------------------------
+// --- Unicode cleanup ---
 export const deUnicodeText = (value: string): string => {
   return value
     // Invisible chars
@@ -21,7 +23,7 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u2063/g, "")
     .replace(/\u2064/g, "")
 
-    // Letterlike symbols (PDF extractors use these)
+    // Letterlike symbols
     .replace(/\u210E/g, "h")
     .replace(/\u210F/g, "\\hbar ")
     .replace(/\u2113/g, "l")
@@ -72,18 +74,18 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u221E/g, "\\infty ")
     .replace(/\u00B0/g, "^{\\circ}")
 
-    // Math italic a-z (U+1D44E–U+1D467) — uses u flag
+    // Math italic a-z (u flag)
     .replace(/[\u{1D44E}-\u{1D467}]/gu, (c) => {
       const cp = c.codePointAt(0)!;
       return String.fromCharCode(cp - 0x1D44E + 97);
     })
-    // Math italic A-Z (U+1D434–U+1D44D)
+    // Math italic A-Z
     .replace(/[\u{1D434}-\u{1D44D}]/gu, (c) => {
       const cp = c.codePointAt(0)!;
       return String.fromCharCode(cp - 0x1D434 + 65);
     })
 
-    // Greek italic (astral plane — u flag required)
+    // Greek italic (astral)
     .replace(/\u{1D6FC}/gu, "\\alpha ")
     .replace(/\u{1D6FD}/gu, "\\beta ")
     .replace(/\u{1D6FE}/gu, "\\gamma ")
@@ -108,7 +110,7 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u{1D713}/gu, "\\psi ")
     .replace(/\u{1D714}/gu, "\\omega ")
 
-    // Regular Unicode Greek (BMP — no u flag needed)
+    // Regular Unicode Greek (BMP)
     .replace(/\u03B1/g, "\\alpha ")
     .replace(/\u03B2/g, "\\beta ")
     .replace(/\u03B3/g, "\\gamma ")
@@ -139,7 +141,7 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u03A8/g, "\\Psi ");
 };
 
-// --- MathML conversion ---------------------------------------
+// --- MathML conversion ---
 const convertMathMLToTex = (input: string) => {
   if (typeof window === "undefined" || typeof DOMParser === "undefined")
     return input;
@@ -195,14 +197,14 @@ const convertMathMLToTex = (input: string) => {
   });
 };
 
-// --- Main normalize ------------------------------------------
+// --- Main normalize ---
 export const normalizeText = (value: string): string => {
   try {
     const withMathML = value.includes("<mjx-container")
       ? convertMathMLToTex(value)
       : value;
 
-    // Reassemble JSON-corrupted LaTeX BEFORE unescape destroys \t ? TAB
+    // Reassemble JSON-corrupted LaTeX BEFORE unescape destroys \t -> TAB
     const preFixed = withMathML
       .replace(/\\t\s*\u00D7/g, "\\times ")
       .replace(/\\t\s*imes\b/g, "\\times ")
@@ -223,7 +225,7 @@ export const normalizeText = (value: string): string => {
       .replace(/\\r(?![A-Za-z])/g, "\r")
       .replace(/\\\$/g, "$");
 
-    // Fix actual control chars + × that survived unescape
+    // Fix actual control chars + times that survived unescape
     const postFixed = unescaped
       .replace(/\t\s*\u00D7/g, " \\times ")
       .replace(/\t\s*imes\b/g, "\\times ")
@@ -234,7 +236,6 @@ export const normalizeText = (value: string): string => {
     const deUnicode = deUnicodeText(postFixed);
 
     // Fix corrupted LaTeX command names from PDF extraction
-    // Uses (?=[^a-z]|$) instead of \b because "arrowP" has no word boundary
     const fixedCommands = deUnicode
       .replace(/\brightarrow(?=[^a-z]|$)/gi, "\\rightarrow ")
       .replace(/\bleftarrow(?=[^a-z]|$)/gi, "\\leftarrow ")
@@ -257,7 +258,7 @@ export const normalizeText = (value: string): string => {
       .replace(/\\frac\s*(?!\{)(\S+)\s+(?!\{)(\S+)/g, "\\frac{$1}{$2}")
       .replace(/\\sqrt\s*(?!\{)(\S+)/g, "\\sqrt{$1}");
 
-    // Strip orphan "ext" from PDF corruption but NOT from \text{}
+    // Strip orphan ext from PDF corruption but NOT from \text{}
     const cleanedLatex = withBraces.replace(
       /ext(?=[\{\s\-\^]|$)/g,
       (match, offset, str) => {
@@ -272,7 +273,7 @@ export const normalizeText = (value: string): string => {
       }
     );
 
-    // Safe \t ? \text (skips \times, \theta, etc.)
+    // Safe \t -> \text (skips \times, \theta, etc.)
     const withTextFix = cleanedLatex.replace(
       /\\t([A-Za-z]+)/g,
       safeTextReplace
@@ -349,7 +350,7 @@ export const normalizeText = (value: string): string => {
   }
 };
 
-// --- Fix LaTeX inside math mode ------------------------------
+// --- Fix LaTeX inside math mode ---
 export const fixLatexMath = (text: string): string => {
   if (!text) return "";
   let result = text
