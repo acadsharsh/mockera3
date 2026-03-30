@@ -59,29 +59,45 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u2190/g, "\\leftarrow ")
     .replace(/\u21CC/g, "\\rightleftharpoons ")
     .replace(/\u221E/g, "\\infty ")
+    .replace(/\u00B0/g, "^{\\circ}")  // degree symbol
 
-    // Mathematical italic a–z (U+1D44E – U+1D467)
-    .replace(/[\uD835][\uDC4E-\uDC67]/g, (c) => {
-      const cp = c.codePointAt(0);
-      return cp ? String.fromCharCode(cp - 0x1D44E + 97) : c;
+    // ? Math italic a-z (Unicode-aware regex with u flag)
+    .replace(/[\u{1D44E}-\u{1D467}]/gu, (c) => {
+      const cp = c.codePointAt(0)!;
+      return String.fromCharCode(cp - 0x1D44E + 97);
     })
-    // Mathematical italic A–Z (U+1D434 – U+1D44D)
-    .replace(/[\uD835][\uDC34-\uDC4D]/g, (c) => {
-      const cp = c.codePointAt(0);
-      return cp ? String.fromCharCode(cp - 0x1D434 + 65) : c;
+    // ? Math italic A-Z
+    .replace(/[\u{1D434}-\u{1D44D}]/gu, (c) => {
+      const cp = c.codePointAt(0)!;
+      return String.fromCharCode(cp - 0x1D434 + 65);
     })
 
-    // Greek italic letters
-    .replace(/\uD835\uDEFC/g, "\\alpha ").replace(/\uD835\uDEFD/g, "\\beta ").replace(/\uD835\uDEFE/g, "\\gamma ")
-    .replace(/\uD835\uDEFF/g, "\\delta ").replace(/\uD835\uDF00/g, "\\varepsilon ").replace(/\uD835\uDF01/g, "\\zeta ")
-    .replace(/\uD835\uDF02/g, "\\eta ").replace(/\uD835\uDF03/g, "\\theta ").replace(/\uD835\uDF04/g, "\\iota ")
-    .replace(/\uD835\uDF05/g, "\\kappa ").replace(/\uD835\uDF06/g, "\\lambda ").replace(/\uD835\uDF07/g, "\\mu ")
-    .replace(/\uD835\uDF08/g, "\\nu ").replace(/\uD835\uDF09/g, "\\xi ").replace(/\uD835\uDF0B/g, "\\pi ")
-    .replace(/\uD835\uDF0C/g, "\\rho ").replace(/\uD835\uDF0E/g, "\\sigma ").replace(/\uD835\uDF0F/g, "\\tau ")
-    .replace(/\uD835\uDF10/g, "\\upsilon ").replace(/\uD835\uDF11/g, "\\phi ").replace(/\uD835\uDF12/g, "\\chi ")
-    .replace(/\uD835\uDF13/g, "\\psi ").replace(/\uD835\uDF14/g, "\\omega ")
+    // ? Greek italic (Unicode-aware)
+    .replace(/\u{1D6FC}/gu, "\\alpha ")
+    .replace(/\u{1D6FD}/gu, "\\beta ")
+    .replace(/\u{1D6FE}/gu, "\\gamma ")
+    .replace(/\u{1D6FF}/gu, "\\delta ")
+    .replace(/\u{1D700}/gu, "\\varepsilon ")
+    .replace(/\u{1D701}/gu, "\\zeta ")
+    .replace(/\u{1D702}/gu, "\\eta ")
+    .replace(/\u{1D703}/gu, "\\theta ")
+    .replace(/\u{1D704}/gu, "\\iota ")
+    .replace(/\u{1D705}/gu, "\\kappa ")
+    .replace(/\u{1D706}/gu, "\\lambda ")
+    .replace(/\u{1D707}/gu, "\\mu ")
+    .replace(/\u{1D708}/gu, "\\nu ")
+    .replace(/\u{1D709}/gu, "\\xi ")
+    .replace(/\u{1D70B}/gu, "\\pi ")
+    .replace(/\u{1D70C}/gu, "\\rho ")
+    .replace(/\u{1D70E}/gu, "\\sigma ")
+    .replace(/\u{1D70F}/gu, "\\tau ")
+    .replace(/\u{1D710}/gu, "\\upsilon ")
+    .replace(/\u{1D711}/gu, "\\phi ")
+    .replace(/\u{1D712}/gu, "\\chi ")
+    .replace(/\u{1D713}/gu, "\\psi ")
+    .replace(/\u{1D714}/gu, "\\omega ")
 
-    // Regular Unicode Greek
+    // Regular Unicode Greek (BMP — these still work fine)
     .replace(/\u03B1/g, "\\alpha ").replace(/\u03B2/g, "\\beta ").replace(/\u03B3/g, "\\gamma ")
     .replace(/\u03B4/g, "\\delta ").replace(/\u03B5/g, "\\varepsilon ").replace(/\u03B6/g, "\\zeta ")
     .replace(/\u03B7/g, "\\eta ").replace(/\u03B8/g, "\\theta ").replace(/\u03BB/g, "\\lambda ")
@@ -189,8 +205,19 @@ export const normalizeText = (value: string): string => {
       .replace(/\blambda(?=[^a-z]|$)/g, "\\lambda ")
       .replace(/\binfty(?=[^a-z]|$)/g, "\\infty ");
 
+    // -- NEW: reconstruct \frac{}{} and \sqrt{} from bare patterns --
+    const withBraces = fixedCommands
+      .replace(
+        /\\frac\s*(?!\{)(\S+)\s+(?!\{)(\S+)/g,
+        "\\frac{$1}{$2}"
+      )
+      .replace(
+        /\\sqrt\s*(?!\{)(\S+)/g,
+        "\\sqrt{$1}"
+      );
+
     // Strip orphan "ext" from PDF corruption but NOT from \text{}
-    const cleanedLatex = fixedCommands.replace(
+    const cleanedLatex = withBraces.replace(
       /ext(?=[\{\s\-\^]|$)/g,
       (match, offset, str) => {
         if (offset >= 2 && str[offset - 2] === "\\" && str[offset - 1] === "t") return match;
