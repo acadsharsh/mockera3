@@ -22,28 +22,39 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u2064/g, "")
 
     // Letterlike symbols (PDF extractors use these)
-    .replace(/\u210E/g, "h")       // h Planck constant
+    .replace(/\u210E/g, "h")
     .replace(/\u210F/g, "\\hbar ")
-    .replace(/\u2113/g, "l")       // l script l
-    .replace(/\u2147/g, "e")       // ? Euler's number
-    .replace(/\u2148/g, "i")       // ? imaginary
+    .replace(/\u2113/g, "l")
+    .replace(/\u2147/g, "e")
+    .replace(/\u2148/g, "i")
     .replace(/\u2149/g, "j")
 
     // Unicode minus
     .replace(/\u2212/g, "-")
 
     // Superscript digits
-    .replace(/\u2070/g, "^{0}").replace(/\u00B9/g, "^{1}").replace(/\u00B2/g, "^{2}")
-    .replace(/\u00B3/g, "^{3}").replace(/\u2074/g, "^{4}").replace(/\u2075/g, "^{5}")
-    .replace(/\u2076/g, "^{6}").replace(/\u2077/g, "^{7}").replace(/\u2078/g, "^{8}")
+    .replace(/\u2070/g, "^{0}")
+    .replace(/\u00B9/g, "^{1}")
+    .replace(/\u00B2/g, "^{2}")
+    .replace(/\u00B3/g, "^{3}")
+    .replace(/\u2074/g, "^{4}")
+    .replace(/\u2075/g, "^{5}")
+    .replace(/\u2076/g, "^{6}")
+    .replace(/\u2077/g, "^{7}")
+    .replace(/\u2078/g, "^{8}")
     .replace(/\u2079/g, "^{9}")
-    // Superscript minus
     .replace(/\u207B/g, "^{-}")
 
     // Subscript digits
-    .replace(/\u2080/g, "_{0}").replace(/\u2081/g, "_{1}").replace(/\u2082/g, "_{2}")
-    .replace(/\u2083/g, "_{3}").replace(/\u2084/g, "_{4}").replace(/\u2085/g, "_{5}")
-    .replace(/\u2086/g, "_{6}").replace(/\u2087/g, "_{7}").replace(/\u2088/g, "_{8}")
+    .replace(/\u2080/g, "_{0}")
+    .replace(/\u2081/g, "_{1}")
+    .replace(/\u2082/g, "_{2}")
+    .replace(/\u2083/g, "_{3}")
+    .replace(/\u2084/g, "_{4}")
+    .replace(/\u2085/g, "_{5}")
+    .replace(/\u2086/g, "_{6}")
+    .replace(/\u2087/g, "_{7}")
+    .replace(/\u2088/g, "_{8}")
     .replace(/\u2089/g, "_{9}")
 
     // Unicode math operators
@@ -59,20 +70,20 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u2190/g, "\\leftarrow ")
     .replace(/\u21CC/g, "\\rightleftharpoons ")
     .replace(/\u221E/g, "\\infty ")
-    .replace(/\u00B0/g, "^{\\circ}")  // degree symbol
+    .replace(/\u00B0/g, "^{\\circ}")
 
-    // ? Math italic a-z (Unicode-aware regex with u flag)
+    // Math italic a-z (U+1D44E–U+1D467) — uses u flag
     .replace(/[\u{1D44E}-\u{1D467}]/gu, (c) => {
       const cp = c.codePointAt(0)!;
       return String.fromCharCode(cp - 0x1D44E + 97);
     })
-    // ? Math italic A-Z
+    // Math italic A-Z (U+1D434–U+1D44D)
     .replace(/[\u{1D434}-\u{1D44D}]/gu, (c) => {
       const cp = c.codePointAt(0)!;
       return String.fromCharCode(cp - 0x1D434 + 65);
     })
 
-    // ? Greek italic (Unicode-aware)
+    // Greek italic (astral plane — u flag required)
     .replace(/\u{1D6FC}/gu, "\\alpha ")
     .replace(/\u{1D6FD}/gu, "\\beta ")
     .replace(/\u{1D6FE}/gu, "\\gamma ")
@@ -97,28 +108,50 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u{1D713}/gu, "\\psi ")
     .replace(/\u{1D714}/gu, "\\omega ")
 
-    // Regular Unicode Greek (BMP \u0097 these still work fine)
-    .replace(/\u03B1/g, "\\alpha ").replace(/\u03B2/g, "\\beta ").replace(/\u03B3/g, "\\gamma ")
-    .replace(/\u03B4/g, "\\delta ").replace(/\u03B5/g, "\\varepsilon ").replace(/\u03B6/g, "\\zeta ")
-    .replace(/\u03B7/g, "\\eta ").replace(/\u03B8/g, "\\theta ").replace(/\u03BB/g, "\\lambda ")
-    .replace(/\u03BC/g, "\\mu ").replace(/\u03BD/g, "\\nu ").replace(/\u03BE/g, "\\xi ")
-    .replace(/\u03C0/g, "\\pi ").replace(/\u03C1/g, "\\rho ").replace(/\u03C3/g, "\\sigma ")
-    .replace(/\u03C4/g, "\\tau ").replace(/\u03C6/g, "\\phi ").replace(/\u03C7/g, "\\chi ")
-    .replace(/\u03C8/g, "\\psi ").replace(/\u03C9/g, "\\omega ")
-    .replace(/\u03A9/g, "\\Omega ").replace(/\u0394/g, "\\Delta ").replace(/\u03A3/g, "\\Sigma ")
-    .replace(/\u0393/g, "\\Gamma ").replace(/\u039B/g, "\\Lambda ").replace(/\u03A0/g, "\\Pi ")
-    .replace(/\u03A6/g, "\\Phi ").replace(/\u03A8/g, "\\Psi ");
+    // Regular Unicode Greek (BMP — no u flag needed)
+    .replace(/\u03B1/g, "\\alpha ")
+    .replace(/\u03B2/g, "\\beta ")
+    .replace(/\u03B3/g, "\\gamma ")
+    .replace(/\u03B4/g, "\\delta ")
+    .replace(/\u03B5/g, "\\varepsilon ")
+    .replace(/\u03B6/g, "\\zeta ")
+    .replace(/\u03B7/g, "\\eta ")
+    .replace(/\u03B8/g, "\\theta ")
+    .replace(/\u03BB/g, "\\lambda ")
+    .replace(/\u03BC/g, "\\mu ")
+    .replace(/\u03BD/g, "\\nu ")
+    .replace(/\u03BE/g, "\\xi ")
+    .replace(/\u03C0/g, "\\pi ")
+    .replace(/\u03C1/g, "\\rho ")
+    .replace(/\u03C3/g, "\\sigma ")
+    .replace(/\u03C4/g, "\\tau ")
+    .replace(/\u03C6/g, "\\phi ")
+    .replace(/\u03C7/g, "\\chi ")
+    .replace(/\u03C8/g, "\\psi ")
+    .replace(/\u03C9/g, "\\omega ")
+    .replace(/\u03A9/g, "\\Omega ")
+    .replace(/\u0394/g, "\\Delta ")
+    .replace(/\u03A3/g, "\\Sigma ")
+    .replace(/\u0393/g, "\\Gamma ")
+    .replace(/\u039B/g, "\\Lambda ")
+    .replace(/\u03A0/g, "\\Pi ")
+    .replace(/\u03A6/g, "\\Phi ")
+    .replace(/\u03A8/g, "\\Psi ");
 };
 
 // --- MathML conversion ---------------------------------------
 const convertMathMLToTex = (input: string) => {
-  if (typeof window === "undefined" || typeof DOMParser === "undefined") return input;
+  if (typeof window === "undefined" || typeof DOMParser === "undefined")
+    return input;
   const assistiveRegex = /<mjx-assistive-mml[\s\S]*?<\/mjx-assistive-mml>/gi;
   return input.replace(assistiveRegex, (match) => {
     const mathMatch = match.match(/<math[\s\S]*?<\/math>/i);
     if (!mathMatch) return "";
     try {
-      const doc = new DOMParser().parseFromString(mathMatch[0], "application/xml");
+      const doc = new DOMParser().parseFromString(
+        mathMatch[0],
+        "application/xml"
+      );
       const math = doc.querySelector("math");
       if (!math) return "";
       const nodeToTex = (node: Element): string => {
@@ -127,16 +160,31 @@ const convertMathMLToTex = (input: string) => {
         const text = node.textContent ?? "";
         const clean = text.replace(/\u2212/g, "-");
         switch (name) {
-          case "mi": case "mn": case "mo": case "mtext": return clean;
-          case "mrow": return children.map(nodeToTex).join("");
-          case "msub": return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}`;
-          case "msup": return `${nodeToTex(children[0])}^{${nodeToTex(children[1])}}`;
-          case "msubsup": return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}^{${nodeToTex(children[2])}}`;
-          case "mfrac": return `\\frac{${nodeToTex(children[0])}}{${nodeToTex(children[1])}}`;
-          case "msqrt": return `\\sqrt{${children.map(nodeToTex).join("")}}`;
-          case "mroot": return `\\sqrt[${nodeToTex(children[1])}]{${nodeToTex(children[0])}}`;
-          case "mspace": return " ";
-          default: return children.length ? children.map(nodeToTex).join("") : clean;
+          case "mi":
+          case "mn":
+          case "mo":
+          case "mtext":
+            return clean;
+          case "mrow":
+            return children.map(nodeToTex).join("");
+          case "msub":
+            return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}`;
+          case "msup":
+            return `${nodeToTex(children[0])}^{${nodeToTex(children[1])}}`;
+          case "msubsup":
+            return `${nodeToTex(children[0])}_{${nodeToTex(children[1])}}^{${nodeToTex(children[2])}}`;
+          case "mfrac":
+            return `\\frac{${nodeToTex(children[0])}}{${nodeToTex(children[1])}}`;
+          case "msqrt":
+            return `\\sqrt{${children.map(nodeToTex).join("")}}`;
+          case "mroot":
+            return `\\sqrt[${nodeToTex(children[1])}]{${nodeToTex(children[0])}}`;
+          case "mspace":
+            return " ";
+          default:
+            return children.length
+              ? children.map(nodeToTex).join("")
+              : clean;
         }
       };
       const tex = nodeToTex(math);
@@ -154,21 +202,20 @@ export const normalizeText = (value: string): string => {
       ? convertMathMLToTex(value)
       : value;
 
-    // Reassemble \t + \u00D7 and other JSON-corrupted LaTeX commands
-    // BEFORE the unescape step destroys \t ? TAB
+    // Reassemble JSON-corrupted LaTeX BEFORE unescape destroys \t ? TAB
     const preFixed = withMathML
-      .replace(/\\t\s*\u00D7/g, "\\times ")      // literal \t + \u00D7
-      .replace(/\\t\s*imes\b/g, "\\times ")       // literal \t + imes
-      .replace(/\\t\s*ext(\s*\{)/g, "\\text$1")   // literal \t + ext{ ? \text{
-      .replace(/\\t\s*heta\b/g, "\\theta ")       // literal \t + heta
-      .replace(/\\t\s*au\b/g, "\\tau ")           // literal \t + au
-      .replace(/\\n\s*abla\b/g, "\\nabla ")       // literal \n + abla
-      .replace(/\\n\s*eq\b/g, "\\neq ")           // literal \n + eq
-      .replace(/\\r\s*ight/g, "\\right")          // literal \r + ight
-      .replace(/\\r\s*ho\b/g, "\\rho ")           // literal \r + ho
-      .replace(/\\f\s*rac/g, "\\frac")            // literal \f + rac
-      .replace(/\\b\s*eta\b/g, "\\beta ")         // literal \b + eta
-      .replace(/\\b\s*ar/g, "\\bar");             // literal \b + ar
+      .replace(/\\t\s*\u00D7/g, "\\times ")
+      .replace(/\\t\s*imes\b/g, "\\times ")
+      .replace(/\\t\s*ext(\s*\{)/g, "\\text$1")
+      .replace(/\\t\s*heta\b/g, "\\theta ")
+      .replace(/\\t\s*au\b/g, "\\tau ")
+      .replace(/\\n\s*abla\b/g, "\\nabla ")
+      .replace(/\\n\s*eq\b/g, "\\neq ")
+      .replace(/\\r\s*ight/g, "\\right")
+      .replace(/\\r\s*ho\b/g, "\\rho ")
+      .replace(/\\f\s*rac/g, "\\frac")
+      .replace(/\\b\s*eta\b/g, "\\beta ")
+      .replace(/\\b\s*ar/g, "\\bar");
 
     const unescaped = preFixed
       .replace(/\\n(?![A-Za-z])/g, "\n")
@@ -176,18 +223,18 @@ export const normalizeText = (value: string): string => {
       .replace(/\\r(?![A-Za-z])/g, "\r")
       .replace(/\\\$/g, "$");
 
-    // Now fix actual control chars + \u00D7 that survived
+    // Fix actual control chars + × that survived unescape
     const postFixed = unescaped
-      .replace(/\t\s*\u00D7/g, " \\times ")       // TAB char + \u00D7
-      .replace(/\t\s*imes\b/g, "\\times ")         // TAB char + imes
-      .replace(/\n\s*\u00D7/g, " \\times ")        // NEWLINE + \u00D7
-      .replace(/\r\s*\u00D7/g, " \\times ")        // CR + \u00D7
-      .replace(/[\t\f]/g, " ");                    // clean remaining control chars
+      .replace(/\t\s*\u00D7/g, " \\times ")
+      .replace(/\t\s*imes\b/g, "\\times ")
+      .replace(/\n\s*\u00D7/g, " \\times ")
+      .replace(/\r\s*\u00D7/g, " \\times ")
+      .replace(/[\t\f]/g, " ");
 
     const deUnicode = deUnicodeText(postFixed);
 
     // Fix corrupted LaTeX command names from PDF extraction
-    // e.g. after deUnicode: "theta" "alpha" "arrow" as bare words
+    // Uses (?=[^a-z]|$) instead of \b because "arrowP" has no word boundary
     const fixedCommands = deUnicode
       .replace(/\brightarrow(?=[^a-z]|$)/gi, "\\rightarrow ")
       .replace(/\bleftarrow(?=[^a-z]|$)/gi, "\\leftarrow ")
@@ -205,29 +252,31 @@ export const normalizeText = (value: string): string => {
       .replace(/\blambda(?=[^a-z]|$)/g, "\\lambda ")
       .replace(/\binfty(?=[^a-z]|$)/g, "\\infty ");
 
-    // -- NEW: reconstruct \frac{}{} and \sqrt{} from bare patterns --
+    // Reconstruct \frac{}{} and \sqrt{} from bare patterns
     const withBraces = fixedCommands
-      .replace(
-        /\\frac\s*(?!\{)(\S+)\s+(?!\{)(\S+)/g,
-        "\\frac{$1}{$2}"
-      )
-      .replace(
-        /\\sqrt\s*(?!\{)(\S+)/g,
-        "\\sqrt{$1}"
-      );
+      .replace(/\\frac\s*(?!\{)(\S+)\s+(?!\{)(\S+)/g, "\\frac{$1}{$2}")
+      .replace(/\\sqrt\s*(?!\{)(\S+)/g, "\\sqrt{$1}");
 
     // Strip orphan "ext" from PDF corruption but NOT from \text{}
     const cleanedLatex = withBraces.replace(
       /ext(?=[\{\s\-\^]|$)/g,
       (match, offset, str) => {
-        if (offset >= 2 && str[offset - 2] === "\\" && str[offset - 1] === "t") return match;
+        if (
+          offset >= 2 &&
+          str[offset - 2] === "\\" &&
+          str[offset - 1] === "t"
+        )
+          return match;
         if (offset >= 1 && str[offset - 1] === "\\") return match;
         return "";
       }
     );
 
-    // Safe \t ? \text conversion (skips \times, \theta, etc.)
-    const withTextFix = cleanedLatex.replace(/\\t([A-Za-z]+)/g, safeTextReplace);
+    // Safe \t ? \text (skips \times, \theta, etc.)
+    const withTextFix = cleanedLatex.replace(
+      /\\t([A-Za-z]+)/g,
+      safeTextReplace
+    );
 
     const withExtTimesFix = withTextFix.replace(/extimes/g, "\\times");
     const withTimesFix = withExtTimesFix.replace(
@@ -252,9 +301,19 @@ export const normalizeText = (value: string): string => {
 
     // Inline table detection
     const inlineTablePattern = /\|\s*-{3,}\s*\|\s*-{3,}\s*\|/;
-    if (inlineTablePattern.test(formattedOptions) && !formattedOptions.includes("\n")) {
-      const tokens = formattedOptions.split("|").map((t) => t.trim()).filter((t) => t.length > 0);
-      if (tokens.length >= 5 && tokens[3]?.startsWith("-") && tokens[4]?.startsWith("-")) {
+    if (
+      inlineTablePattern.test(formattedOptions) &&
+      !formattedOptions.includes("\n")
+    ) {
+      const tokens = formattedOptions
+        .split("|")
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+      if (
+        tokens.length >= 5 &&
+        tokens[3]?.startsWith("-") &&
+        tokens[4]?.startsWith("-")
+      ) {
         const intro = tokens[0];
         const header1 = tokens[1];
         const header2 = tokens[2];
@@ -263,7 +322,8 @@ export const normalizeText = (value: string): string => {
         while (idx + 1 < tokens.length) {
           const left = tokens[idx];
           const right = tokens[idx + 1];
-          if (left.toLowerCase().startsWith("choose the correct answer")) break;
+          if (left.toLowerCase().startsWith("choose the correct answer"))
+            break;
           rows.push([left, right]);
           idx += 2;
         }
@@ -273,7 +333,12 @@ export const normalizeText = (value: string): string => {
           "|---|---|",
           ...rows.map(([l, r]) => `| ${l} | ${r} |`),
         ];
-        return [intro, "", ...tableLines, ...(trailing ? ["", trailing] : [])].join("\n");
+        return [
+          intro,
+          "",
+          ...tableLines,
+          ...(trailing ? ["", trailing] : []),
+        ].join("\n");
       }
     }
 
