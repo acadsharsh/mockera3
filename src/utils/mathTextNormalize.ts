@@ -83,12 +83,12 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u221E/g, "\\infty ")
     .replace(/\u00B0/g, "^{\\circ}")
 
-    // Math italic a-z (U+1D44E–U+1D467)
+    // Math italic a-z (U+1D44Eâ€“U+1D467)
     .replace(/[\u{1D44E}-\u{1D467}]/gu, (c) => {
       const cp = c.codePointAt(0);
       return cp ? String.fromCharCode(cp - 0x1D44E + 97) : c;
     })
-    // Math italic A-Z (U+1D434–U+1D44D)
+    // Math italic A-Z (U+1D434â€“U+1D44D)
     .replace(/[\u{1D434}-\u{1D44D}]/gu, (c) => {
       const cp = c.codePointAt(0);
       return cp ? String.fromCharCode(cp - 0x1D434 + 65) : c;
