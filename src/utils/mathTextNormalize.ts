@@ -97,7 +97,7 @@ export const deUnicodeText = (value: string): string => {
     .replace(/\u{1D713}/gu, "\\psi ")
     .replace(/\u{1D714}/gu, "\\omega ")
 
-    // Regular Unicode Greek (BMP — these still work fine)
+    // Regular Unicode Greek (BMP \u0097 these still work fine)
     .replace(/\u03B1/g, "\\alpha ").replace(/\u03B2/g, "\\beta ").replace(/\u03B3/g, "\\gamma ")
     .replace(/\u03B4/g, "\\delta ").replace(/\u03B5/g, "\\varepsilon ").replace(/\u03B6/g, "\\zeta ")
     .replace(/\u03B7/g, "\\eta ").replace(/\u03B8/g, "\\theta ").replace(/\u03BB/g, "\\lambda ")
@@ -154,10 +154,10 @@ export const normalizeText = (value: string): string => {
       ? convertMathMLToTex(value)
       : value;
 
-    // Reassemble \t + × and other JSON-corrupted LaTeX commands
+    // Reassemble \t + \u00D7 and other JSON-corrupted LaTeX commands
     // BEFORE the unescape step destroys \t ? TAB
     const preFixed = withMathML
-      .replace(/\\t\s*\u00D7/g, "\\times ")      // literal \t + ×
+      .replace(/\\t\s*\u00D7/g, "\\times ")      // literal \t + \u00D7
       .replace(/\\t\s*imes\b/g, "\\times ")       // literal \t + imes
       .replace(/\\t\s*ext(\s*\{)/g, "\\text$1")   // literal \t + ext{ ? \text{
       .replace(/\\t\s*heta\b/g, "\\theta ")       // literal \t + heta
@@ -176,12 +176,12 @@ export const normalizeText = (value: string): string => {
       .replace(/\\r(?![A-Za-z])/g, "\r")
       .replace(/\\\$/g, "$");
 
-    // Now fix actual control chars + × that survived
+    // Now fix actual control chars + \u00D7 that survived
     const postFixed = unescaped
-      .replace(/\t\s*\u00D7/g, " \\times ")       // TAB char + ×
+      .replace(/\t\s*\u00D7/g, " \\times ")       // TAB char + \u00D7
       .replace(/\t\s*imes\b/g, "\\times ")         // TAB char + imes
-      .replace(/\n\s*\u00D7/g, " \\times ")        // NEWLINE + ×
-      .replace(/\r\s*\u00D7/g, " \\times ")        // CR + ×
+      .replace(/\n\s*\u00D7/g, " \\times ")        // NEWLINE + \u00D7
+      .replace(/\r\s*\u00D7/g, " \\times ")        // CR + \u00D7
       .replace(/[\t\f]/g, " ");                    // clean remaining control chars
 
     const deUnicode = deUnicodeText(postFixed);
