@@ -70,6 +70,7 @@ gtag('config', 'G-D1VHC992WK');`,
           <Toaster richColors />
           <Analytics />
           <SpeedInsights />
+          <Analytics />
         </Providers>
       </body>
     </html>
